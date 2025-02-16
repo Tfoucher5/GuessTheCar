@@ -1,16 +1,23 @@
 {
   "1223239281523556413": {
     "username": "blitzen44",
-    "carsGuessed": 4,
-    "totalAttempts": 37,
-    "bestTime": 91107,
-    "partialGuesses": 2
+    "carsGuessed": 6,
+    "totalAttempts": 57,
+    "bestTime": 18304,
+    "partialGuesses": 4
   },
   "573543227525824516": {
     "username": "t3sk0",
-    "carsGuessed": 1,
-    "totalAttempts": 11,
+    "carsGuessed": 2,
+    "totalAttempts": 19,
     "bestTime": 8418,
     "partialGuesses": 1
+  },
+  "573543227525824517": {
+    "username": "Muhamad",
+    "carsGuessed": 1500,
+    "totalAttempts": 2000,
+    "bestTime": 1000,
+    "partialGuesses": 0
   }
 }
