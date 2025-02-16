@@ -62,7 +62,7 @@ class GameManager {
     async handleGuessCarCommand(interaction) {
         const existingGame = Array.from(this.activeGames.values())
             .find(game => game.userId === interaction.user.id);
-    
+
         if (existingGame) {
             const embed = GameEmbedBuilder.createGameEmbed(existingGame, {
                 color: '#FF0000',
@@ -72,12 +72,12 @@ class GameManager {
             await interaction.reply({ embeds: [embed], ephemeral: true });
             return;
         }
-    
+
         try {
             console.log("Début de la gestion de la commande");
             await interaction.deferReply({ ephemeral: true });
             console.log("Réponse différée envoyée");
-    
+
             const car = await CarApiService.getRandomCar();
             if (!car) {
                 console.log("Erreur de récupération de la voiture");
@@ -89,36 +89,36 @@ class GameManager {
                 await interaction.followUp({ embeds: [errorEmbed] });
                 return;
             }
-    
+
             console.log("Voiture récupérée :", car);
-    
+
             const thread = await interaction.channel.threads.create({
                 name: `🚗 Partie de ${interaction.user.username}`,
                 type: ChannelType.PublicThread,
                 autoArchiveDuration: 60
             });
-    
+
             console.log("Thread créé :", thread);
-    
+
             const game = new Game(car, interaction.user.id, interaction.user.username, thread.id);
             game.timeoutId = setTimeout(() => this.handleGameTimeout(thread.id, game), this.GAME_TIMEOUT);
-    
+
             this.activeGames.set(thread.id, game);
-    
+
             const gameStartEmbed = GameEmbedBuilder.createGameEmbed(game, {
                 title: '🚗 Nouvelle partie',
                 description: 'C\'est parti ! Devine la **marque** de la voiture.\nTape `!indice` pour obtenir des indices.\nTu as 10 essais maximum !',
                 footer: 'La partie se termine automatiquement après 5 minutes d\'inactivité'
             });
-    
+
             console.log("Embed de démarrage créé");
-    
+
             await thread.send({ embeds: [gameStartEmbed] });
             console.log("Embed envoyé dans le thread");
-    
+
             await interaction.followUp(`Partie créée ! Rendez-vous dans ${thread}`);
             console.log("Réponse finale envoyée");
-    
+
         } catch (error) {
             console.error("Erreur dans handleGuessCarCommand:");
             await interaction.followUp({
@@ -126,12 +126,12 @@ class GameManager {
                 ephemeral: true
             });
         }
-    }     
+    }
 
     async handleAbandonCommand(interaction) {
         const userGame = Array.from(this.activeGames.entries())
             .find(([_, game]) => game.userId === interaction.user.id);
-    
+
         if (!userGame) {
             const embed = GameEmbedBuilder.createGameEmbed(null, {
                 color: '#FF0000',
@@ -141,7 +141,7 @@ class GameManager {
             await interaction.reply({ embeds: [embed], ephemeral: true });
             return;
         }
-    
+
         const [threadId, game] = userGame;
         try {
             const thread = await this.client.channels.fetch(threadId);
@@ -149,18 +149,18 @@ class GameManager {
                 this.activeGames.delete(threadId);
                 throw new Error('Thread introuvable');
             }
-    
+
             clearTimeout(game.timeoutId);
-            
+
             const abandonEmbed = GameEmbedBuilder.createGameEmbed(game, {
                 color: '#FFA500',
                 title: '🏳️ Partie abandonnée',
                 description: `La voiture était : ${game.make} ${game.model}`
             });
-            
+
             await thread.send({ embeds: [abandonEmbed] });
             this.activeGames.delete(threadId);
-    
+
             await this.handleDelayedThreadClose(thread, game.timeoutId);
         } catch (error) {
             console.error('Erreur lors de l\'abandon:', error);
@@ -181,7 +181,7 @@ class GameManager {
                 title: '⏰ Temps écoulé',
                 description: `La partie a été abandonnée après 5 minutes d'inactivité.\nLa voiture était: ${game.make} ${game.model}`
             });
-            
+
             await thread.send({ embeds: [timeoutEmbed] });
             await thread.setArchived(true);
             this.activeGames.delete(threadId);
@@ -192,12 +192,12 @@ class GameManager {
         if (timeoutId) {
             clearTimeout(timeoutId);
         }
-        
+
         try {
             const updatedThread = await this.client.channels.fetch(thread.id);
             if (updatedThread) {
                 await updatedThread.setLocked(true);
-                
+
                 await updatedThread.send({
                     embeds: [GameEmbedBuilder.createGameEmbed(null, {
                         color: '#808080',
@@ -207,7 +207,7 @@ class GameManager {
                 });
 
                 await new Promise(resolve => setTimeout(resolve, this.THREAD_CLOSE_DELAY));
-                
+
                 const threadToDelete = await this.client.channels.fetch(thread.id);
                 if (threadToDelete) {
                     await threadToDelete.delete();
@@ -228,7 +228,7 @@ class GameManager {
             title: '💡 Indice',
             description: hintDescription
         });
-        
+
         await message.reply({ embeds: [hintEmbed] });
     }
 
@@ -268,19 +268,19 @@ class GameManager {
         try {
             const userAnswer = message.content.toLowerCase().trim();
             let hintMessage = '';
-            
+
             if (!game.model) {
                 console.error('Model undefined for game:', game);
                 throw new Error('Données de jeu invalides');
             }
-            
+
             if (game.attempts === 5) {
                 hintMessage = `\n💡 Le modèle commence par "${game.modelFirstLetter}"`;
             } else if (game.attempts === 7) {
                 const lastLetter = game.model[game.model.length - 1];
                 hintMessage = `\n💡 Le modèle se termine par "${lastLetter}"`;
             }
-    
+
             if (userAnswer === game.model.toLowerCase()) {
                 await this.handleSuccessfulGuess(message, game);
             } else if (game.attempts >= 10) {
@@ -301,7 +301,7 @@ class GameManager {
                 description: 'Une erreur est survenue lors de la vérification de votre réponse. La partie va être abandonnée.'
             });
             await message.reply({ embeds: [errorEmbed] });
-            
+
             if (game && game.timeoutId) {
                 clearTimeout(game.timeoutId);
             }
@@ -312,7 +312,7 @@ class GameManager {
     async handleSuccessfulGuess(message, game) {
         const timeSpent = game.getTimeSpent();
         const fullSuccess = !game.makeFailed;
-        
+
         this.scoreManager.updateScore(message.author.id, message.author.username, fullSuccess);
         this.scoreManager.updateGameStats(message.author.id, game.attempts, timeSpent);
 
@@ -332,7 +332,7 @@ class GameManager {
         const timeSpent = game.getTimeSpent();
         this.scoreManager.updateScore(message.author.id, message.author.username, false);
         this.scoreManager.updateGameStats(message.author.id, game.attempts, timeSpent);
-        
+
         const gameOverEmbed = GameEmbedBuilder.createGameEmbed(game, {
             color: '#FFA500',
             title: '⌛ Plus d\'essais',
@@ -348,7 +348,7 @@ class GameManager {
 
     async handleLeaderboardCommand(interaction) {
         const leaderboard = this.scoreManager.getLeaderboard();
-        
+
         if (leaderboard.length === 0) {
             const embed = GameEmbedBuilder.createGameEmbed(null, {
                 color: '#FFD700',
@@ -358,30 +358,30 @@ class GameManager {
             await interaction.reply({ embeds: [embed] });
             return;
         }
-    
+
         const leaderboardText = leaderboard.map((player, index) => {
             const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🎮';
             const avgAttempts = player.averageAttempts.toFixed(1);
             const bestTime = player.bestTime ? `${(player.bestTime / 1000).toFixed(1)}s` : 'N/A';
-            
+
             return `${medal} **${index + 1}.** ${player.username}\n` +
-                   `Points: ${player.totalScore.toFixed(1)} (${player.carsGuessed} complètes + ${player.partialGuesses} partielles)\n` +
-                   `Moyenne: ${avgAttempts} essais | Meilleur temps: ${bestTime}\n`;
+                `Points: ${player.totalScore.toFixed(1)} (${player.carsGuessed} complètes + ${player.partialGuesses} partielles)\n` +
+                `Moyenne: ${avgAttempts} essais | Meilleur temps: ${bestTime}\n`;
         }).join('\n');
-    
+
         const leaderboardEmbed = GameEmbedBuilder.createGameEmbed(null, {
             color: '#FFD700',
             title: '🏆 Classement des meilleurs joueurs',
             description: leaderboardText || 'Aucun joueur n\'a encore marqué de points !'
         });
-        
+
         await interaction.reply({ embeds: [leaderboardEmbed] });
     }
 
     async handleStatsCommand(interaction) {
         // Force le rechargement des scores avant de vérifier les stats
         await this.scoreManager.loadScores();
-        
+
         const stats = this.scoreManager.getUserStats(interaction.user.id);
         if (!stats || (stats.carsGuessed === 0 && stats.partialGuesses === 0)) {
             const embed = GameEmbedBuilder.createGameEmbed(null, {
@@ -392,22 +392,22 @@ class GameManager {
             await interaction.reply({ embeds: [embed] });
             return;
         }
-    
+
         const totalScore = stats.calculateTotalScore();
         const avgAttempts = stats.averageAttempts;
         const bestTime = stats.bestTime ? `${(stats.bestTime / 1000).toFixed(1)} secondes` : 'N/A';
-    
+
         const statsEmbed = GameEmbedBuilder.createGameEmbed(null, {
             color: '#4169E1',
             title: `📊 Statistiques de ${interaction.user.username}`,
-            description: 
+            description:
                 `🏆 Score total: ${totalScore.toFixed(1)} points\n` +
                 `✨ Réussites complètes: ${stats.carsGuessed}\n` +
                 `⭐ Réussites partielles: ${stats.partialGuesses}\n` +
                 `🎯 Moyenne d'essais: ${avgAttempts.toFixed(1)}\n` +
                 `⚡ Meilleur temps: ${bestTime}`
         });
-    
+
         await interaction.reply({ embeds: [statsEmbed] });
     }
 
@@ -415,7 +415,7 @@ class GameManager {
         const helpEmbed = GameEmbedBuilder.createGameEmbed(null, {
             color: '#4169E1',
             title: '📖 Aide - Guess The Car',
-            description: 
+            description:
                 '**🎮 Déroulement**\n' +
                 '1. Devinez d\'abord la marque de la voiture\n' +
                 '2. Puis devinez le modèle\n' +
@@ -432,7 +432,7 @@ class GameManager {
                 '**⏰ Timeout**\n' +
                 'Une partie est automatiquement abandonnée après 5 minutes d\'inactivité'
         });
-        
+
         await interaction.reply({ embeds: [helpEmbed] });
     }
 }
