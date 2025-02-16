@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, REST, Routes, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, REST, Routes, EmbedBuilder, ChannelType } = require('discord.js');
 const axios = require('axios');
 const fs = require('fs');
 
@@ -15,6 +15,7 @@ const client = new Client({
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 const activeGames = new Map();
 const userScores = loadScores();
+const GAME_TIMEOUT = 300000; // 5 minutes
 
 function loadScores() {
     if (!fs.existsSync('scores.json')) {
@@ -148,6 +149,30 @@ async function getRandomCar() {
     }
 }
 
+function createGameEmbed(game, message) {
+    return new EmbedBuilder()
+        .setColor(message.color || '#00FF00')
+        .setTitle(message.title)
+        .setDescription(message.description)
+        .setFooter({ 
+            text: `Partie de ${game.playerName} | Essais: ${game.attempts}/10${message.footer ? ' | ' + message.footer : ''}`
+        });
+}
+
+async function handleGameTimeout(threadId, game) {
+    const thread = await client.channels.fetch(threadId);
+    if (thread && activeGames.has(threadId)) {
+        const timeoutEmbed = new EmbedBuilder()
+            .setColor('#FF0000')
+            .setTitle('⏰ Temps écoulé')
+            .setDescription(`La partie a été abandonnée après 5 minutes d'inactivité.\nLa voiture était: ${game.make} ${game.model}`);
+        
+        await thread.send({ embeds: [timeoutEmbed] });
+        await thread.setArchived(true);
+        activeGames.delete(threadId);
+    }
+}
+
 async function registerCommands() {
     try {
         console.log('Enregistrement des commandes Slash...');
@@ -174,6 +199,11 @@ async function registerCommands() {
                         name: 'stats',
                         description: 'Affiche vos statistiques personnelles.',
                         type: 1,
+                    },
+                    {
+                        name: 'aide',
+                        description: 'Affiche les règles du jeu et les commandes disponibles.',
+                        type: 1,
                     }
                 ]
             }
@@ -192,19 +222,20 @@ client.once('ready', () => {
 client.on('interactionCreate', async (interaction) => {
     if (!interaction.isCommand()) return;
 
-    const { commandName, channelId, user } = interaction;
+    const { commandName, user } = interaction;
 
     if (commandName === 'guesscar') {
-        if (activeGames.has(channelId)) {
+        const existingGame = Array.from(activeGames.values()).find(game => game.userId === user.id);
+        if (existingGame) {
             const embed = new EmbedBuilder()
                 .setColor('#FF0000')
                 .setTitle('❌ Partie déjà en cours')
-                .setDescription('Une partie est déjà en cours dans ce canal !');
-            await interaction.reply({ embeds: [embed] });
+                .setDescription('Vous avez déjà une partie en cours dans un autre fil !');
+            await interaction.reply({ embeds: [embed], ephemeral: true });
             return;
         }
 
-        await interaction.reply('🎮 Recherche d\'une voiture...');
+        await interaction.deferReply();
 
         const car = await getRandomCar();
         if (!car) {
@@ -216,7 +247,13 @@ client.on('interactionCreate', async (interaction) => {
             return;
         }
 
-        activeGames.set(channelId, {
+        const thread = await interaction.channel.threads.create({
+            name: `🚗 Partie de ${user.username}`,
+            type: ChannelType.PrivateThread,
+            autoArchiveDuration: 60
+        });
+
+        const game = {
             ...car,
             step: 'make',
             hintsUsed: 0,
@@ -224,34 +261,48 @@ client.on('interactionCreate', async (interaction) => {
             attempts: 0,
             startTime: Date.now(),
             userId: user.id,
-            makeFailed: false
+            playerName: user.username,
+            makeFailed: false,
+            timeoutId: setTimeout(() => handleGameTimeout(thread.id, game), GAME_TIMEOUT)
+        };
+
+        activeGames.set(thread.id, game);
+
+        const gameStartEmbed = createGameEmbed(game, {
+            title: '🚗 Nouvelle partie',
+            description: 'C\'est parti ! Devine la **marque** de la voiture.\nTape `!indice` pour obtenir des indices.\nTu as 10 essais maximum !',
+            footer: 'La partie se termine automatiquement après 5 minutes d\'inactivité'
         });
 
-        const gameStartEmbed = new EmbedBuilder()
-            .setColor('#00FF00')
-            .setTitle('🚗 Nouvelle partie')
-            .setDescription('C\'est parti ! Devine la **marque** de la voiture.\nTape `!indice` pour obtenir des indices.\nTu as 10 essais maximum !')
-            .setFooter({ text: 'Bonne chance !' });
-
-        await interaction.followUp({ embeds: [gameStartEmbed] });
+        await thread.send({ embeds: [gameStartEmbed] });
+        await interaction.followUp(`Partie créée ! Rendez-vous dans ${thread}`);
 
     } else if (commandName === 'abandon') {
-        const game = activeGames.get(channelId);
-        if (!game || game.userId !== user.id) {
+        const userThread = Array.from(activeGames.entries()).find(([_, game]) => game.userId === user.id);
+        if (!userThread) {
             const embed = new EmbedBuilder()
                 .setColor('#FF0000')
                 .setTitle('❌ Aucune partie en cours')
-                .setDescription('Aucune partie en cours que vous pouvez abandonner.');
-            await interaction.reply({ embeds: [embed] });
+                .setDescription('Vous n\'avez aucune partie en cours.');
+            await interaction.reply({ embeds: [embed], ephemeral: true });
             return;
         }
 
+        const [threadId, game] = userThread;
+        const thread = await client.channels.fetch(threadId);
+
+        clearTimeout(game.timeoutId);
+        
         const abandonEmbed = new EmbedBuilder()
             .setColor('#FFA500')
             .setTitle('🏳️ Partie abandonnée')
             .setDescription(`La voiture était : ${game.make} ${game.model}`);
-        await interaction.reply({ embeds: [abandonEmbed] });
-        activeGames.delete(channelId);
+        
+        await thread.send({ embeds: [abandonEmbed] });
+        await thread.setArchived(true);
+        activeGames.delete(threadId);
+        
+        await interaction.reply({ content: 'Partie abandonnée !', ephemeral: true });
 
     } else if (commandName === 'classement') {
         const leaderboard = getLeaderboard();
@@ -299,6 +350,31 @@ client.on('interactionCreate', async (interaction) => {
             );
 
         await interaction.reply({ embeds: [statsEmbed] });
+
+    } else if (commandName === 'aide') {
+        const helpEmbed = new EmbedBuilder()
+            .setColor('#4169E1')
+            .setTitle('📖 Aide - Guess The Car')
+            .setDescription('Bienvenue dans Guess The Car ! Voici les règles du jeu :')
+            .addFields(
+                { 
+                    name: '🎮 Déroulement', 
+                    value: '1. Devinez d\'abord la marque de la voiture\n2. Puis devinez le modèle\n3. Vous avez 10 essais pour chaque étape' 
+                },
+                {   name: '📝 Points', 
+                    value: '• 1 point pour une réussite complète\n• 0.5 point si vous trouvez avec aide ou uniquement la marque' 
+                },
+                { 
+                    name: '⌨️ Commandes', 
+                    value: '`/guesscar` - Démarrer une nouvelle partie\n`/abandon` - Abandonner la partie en cours\n`/classement` - Voir le classement\n`/stats` - Voir vos statistiques\n`!indice` - Obtenir un indice pendant la partie' 
+                },
+                {
+                    name: '⏰ Timeout',
+                    value: 'Une partie est automatiquement abandonnée après 5 minutes d\'inactivité'
+                }
+            );
+        
+        await interaction.reply({ embeds: [helpEmbed] });
     }
 });
 
@@ -307,6 +383,10 @@ client.on('messageCreate', async (message) => {
 
     const game = activeGames.get(message.channelId);
     if (!game || game.userId !== message.author.id) return;
+
+    // Réinitialiser le timeout à chaque message
+    clearTimeout(game.timeoutId);
+    game.timeoutId = setTimeout(() => handleGameTimeout(message.channelId, game), GAME_TIMEOUT);
 
     const userAnswer = message.content.toLowerCase().trim();
 
@@ -318,10 +398,12 @@ client.on('messageCreate', async (message) => {
             hintDescription = `📏 Le modèle contient ${game.modelLength} lettres / chiffres`;
         }
 
-        const hintEmbed = new EmbedBuilder()
-            .setColor('#FFA500')
-            .setTitle('💡 Indice')
-            .setDescription(hintDescription);
+        const hintEmbed = createGameEmbed(game, {
+            color: '#FFA500',
+            title: '💡 Indice',
+            description: hintDescription
+        });
+        
         await message.reply({ embeds: [hintEmbed] });
         return;
     }
@@ -337,26 +419,28 @@ client.on('messageCreate', async (message) => {
         if (userAnswer === game.make.toLowerCase()) {
             game.step = 'model';
             game.attempts = 0;
-            const successEmbed = new EmbedBuilder()
-                .setColor('#00FF00')
-                .setTitle('✅ Marque trouvée !')
-                .setDescription(`C'est bien ${game.make} !\nMaintenant, devine le **modèle** de cette voiture.`);
+            const successEmbed = createGameEmbed(game, {
+                title: '✅ Marque trouvée !',
+                description: `C'est bien ${game.make} !\nMaintenant, devine le **modèle** de cette voiture.`
+            });
             await message.reply({ embeds: [successEmbed] });
         } else {
             if (game.attempts >= 10) {
                 game.makeFailed = true;
                 game.step = 'model';
                 game.attempts = 0;
-                const failedEmbed = new EmbedBuilder()
-                    .setColor('#FFA500')
-                    .setTitle('⌛ Plus d\'essais')
-                    .setDescription(`La marque était: **${game.make}**\nOn passe au modèle !`);
+                const failedEmbed = createGameEmbed(game, {
+                    color: '#FFA500',
+                    title: '⌛ Plus d\'essais',
+                    description: `La marque était: **${game.make}**\nOn passe au modèle !`
+                });
                 await message.reply({ embeds: [failedEmbed] });
             } else {
-                const wrongEmbed = new EmbedBuilder()
-                    .setColor('#FF0000')
-                    .setTitle('❌ Mauvaise réponse')
-                    .setDescription(`Ce n'est pas la bonne marque, essaie encore ! (${10 - game.attempts} essais restants)${hintMessage}`);
+                const wrongEmbed = createGameEmbed(game, {
+                    color: '#FF0000',
+                    title: '❌ Mauvaise réponse',
+                    description: `Ce n'est pas la bonne marque, essaie encore ! (${10 - game.attempts} essais restants)${hintMessage}`
+                });
                 await message.reply({ embeds: [wrongEmbed] });
             }
         }
@@ -393,7 +477,9 @@ client.on('messageCreate', async (message) => {
                     { name: '🏆 Score total', value: `${totalScore.toFixed(1)} points` }
                 );
 
+            clearTimeout(game.timeoutId);
             await message.reply({ embeds: [winEmbed] });
+            await message.channel.setArchived(true);
             activeGames.delete(message.channelId);
         } else {
             if (game.attempts >= 10) {
@@ -401,18 +487,22 @@ client.on('messageCreate', async (message) => {
                 updateScore(message.author.id, message.author.username, false);
                 updateGameStats(message.author.id, game.attempts, timeSpent);
                 
-                const gameOverEmbed = new EmbedBuilder()
-                    .setColor('#FFA500')
-                    .setTitle('⌛ Plus d\'essais')
-                    .setDescription(`Le modèle était: **${game.model}**\nVous gagnez un demi-point pour avoir trouvé la marque.`);
+                const gameOverEmbed = createGameEmbed(game, {
+                    color: '#FFA500',
+                    title: '⌛ Plus d\'essais',
+                    description: `Le modèle était: **${game.model}**\nVous gagnez un demi-point pour avoir trouvé la marque.`
+                });
 
+                clearTimeout(game.timeoutId);
                 await message.reply({ embeds: [gameOverEmbed] });
+                await message.channel.setArchived(true);
                 activeGames.delete(message.channelId);
             } else {
-                const wrongModelEmbed = new EmbedBuilder()
-                    .setColor('#FF0000')
-                    .setTitle('❌ Mauvaise réponse')
-                    .setDescription(`Ce n'est pas le bon modèle, essaie encore ! (${10 - game.attempts} essais restants)${hintMessage}`);
+                const wrongModelEmbed = createGameEmbed(game, {
+                    color: '#FF0000',
+                    title: '❌ Mauvaise réponse',
+                    description: `Ce n'est pas le bon modèle, essaie encore ! (${10 - game.attempts} essais restants)${hintMessage}`
+                });
 
                 await message.reply({ embeds: [wrongModelEmbed] });
             }
