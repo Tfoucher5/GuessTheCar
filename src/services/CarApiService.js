@@ -3,7 +3,7 @@ const mysql = require('mysql2');
 class CarApiService {
     // Créer une connexion à la base de données
     static db = mysql.createConnection({
-        host: '10.192.145.15',
+        host: 'localhost',
         user: 'theo',
         password: 'Not24get',
         database: 'voitures'

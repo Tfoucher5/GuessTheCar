@@ -62,7 +62,7 @@ class GameManager {
     async handleGuessCarCommand(interaction) {
         const existingGame = Array.from(this.activeGames.values())
             .find(game => game.userId === interaction.user.id);
-
+    
         if (existingGame) {
             const embed = GameEmbedBuilder.createGameEmbed(existingGame, {
                 color: '#FF0000',
@@ -72,40 +72,48 @@ class GameManager {
             await interaction.reply({ embeds: [embed], ephemeral: true });
             return;
         }
-
-        await interaction.deferReply();
-
-        const car = await CarApiService.getRandomCar();
-        if (!car) {
-            const errorEmbed = GameEmbedBuilder.createGameEmbed(null, {
-                color: '#FF0000',
-                title: '❌ Erreur',
-                description: 'Désolé, une erreur est survenue lors de la récupération de la voiture. Réessayez !'
+    
+        try {
+            await interaction.deferReply({ ephemeral: true });
+    
+            const car = await CarApiService.getRandomCar();
+            if (!car) {
+                const errorEmbed = GameEmbedBuilder.createGameEmbed(null, {
+                    color: '#FF0000',
+                    title: '❌ Erreur',
+                    description: 'Désolé, une erreur est survenue lors de la récupération de la voiture. Réessayez !'
+                });
+                await interaction.followUp({ embeds: [errorEmbed] });
+                return;
+            }
+    
+            const thread = await interaction.channel.threads.create({
+                name: `🚗 Partie de ${interaction.user.username}`,
+                type: ChannelType.PublicThread,
+                autoArchiveDuration: 60
             });
-            await interaction.followUp({ embeds: [errorEmbed] });
-            return;
+    
+            const game = new Game(car, interaction.user.id, interaction.user.username, thread.id);
+            game.timeoutId = setTimeout(() => this.handleGameTimeout(thread.id, game), this.GAME_TIMEOUT);
+    
+            this.activeGames.set(thread.id, game);
+    
+            const gameStartEmbed = GameEmbedBuilder.createGameEmbed(game, {
+                title: '🚗 Nouvelle partie',
+                description: 'C\'est parti ! Devine la **marque** de la voiture.\nTape `!indice` pour obtenir des indices.\nTu as 10 essais maximum !',
+                footer: 'La partie se termine automatiquement après 5 minutes d\'inactivité'
+            });
+    
+            await thread.send({ embeds: [gameStartEmbed] });
+            await interaction.followUp(`Partie créée ! Rendez-vous dans ${thread}`);
+        } catch (error) {
+            console.error('Erreur dans handleGuessCarCommand:', error);
+            await interaction.followUp({
+                content: 'Une erreur est survenue, veuillez réessayer plus tard.',
+                ephemeral: true
+            });
         }
-
-        const thread = await interaction.channel.threads.create({
-            name: `🚗 Partie de ${interaction.user.username}`,
-            type: ChannelType.PublicThread,
-            autoArchiveDuration: 60
-        });
-
-        const game = new Game(car, interaction.user.id, interaction.user.username, thread.id);
-        game.timeoutId = setTimeout(() => this.handleGameTimeout(thread.id, game), this.GAME_TIMEOUT);
-
-        this.activeGames.set(thread.id, game);
-
-        const gameStartEmbed = GameEmbedBuilder.createGameEmbed(game, {
-            title: '🚗 Nouvelle partie',
-            description: 'C\'est parti ! Devine la **marque** de la voiture.\nTape `!indice` pour obtenir des indices.\nTu as 10 essais maximum !',
-            footer: 'La partie se termine automatiquement après 5 minutes d\'inactivité'
-        });
-
-        await thread.send({ embeds: [gameStartEmbed] });
-        await interaction.followUp(`Partie créée ! Rendez-vous dans ${thread}`);
-    }
+    }    
 
     async handleAbandonCommand(interaction) {
         const userGame = Array.from(this.activeGames.entries())
