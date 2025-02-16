@@ -39,14 +39,19 @@ class CarApiService {
     static async getRandomCar() {
         try {
             const makes = await this.getAllMakes();
+            console.log("Marques récupérées:", makes); 
+    
             if (!makes?.length) throw new Error('Aucune marque disponible');
-
+    
             const randomMake = makes[Math.floor(Math.random() * makes.length)];
+            console.log("Marque sélectionnée:", randomMake); 
+    
             const models = await this.getModelsForMake(randomMake.id);
+            console.log("Modèles pour la marque récupérés:", models); 
             if (!models?.length) throw new Error(`Aucun modèle disponible pour ${randomMake.nom}`);
-
+    
             const randomModel = models[Math.floor(Math.random() * models.length)];
-
+    
             return {
                 make: randomMake.nom,
                 model: randomModel.nom,
@@ -61,7 +66,7 @@ class CarApiService {
             console.error('Erreur lors de la récupération des données:', error);
             return null;
         }
-    }
+    }    
 }
 
 module.exports = CarApiService;
