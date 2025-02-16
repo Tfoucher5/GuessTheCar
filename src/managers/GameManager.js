@@ -77,7 +77,7 @@ class GameManager {
             console.log("Début de la gestion de la commande");
             await interaction.deferReply({ ephemeral: true });
             console.log("Réponse différée envoyée");
-        
+    
             const car = await CarApiService.getRandomCar();
             if (!car) {
                 console.log("Erreur de récupération de la voiture");
@@ -89,41 +89,44 @@ class GameManager {
                 await interaction.followUp({ embeds: [errorEmbed] });
                 return;
             }
-        
+    
             console.log("Voiture récupérée :", car);
+    
             const thread = await interaction.channel.threads.create({
                 name: `🚗 Partie de ${interaction.user.username}`,
                 type: ChannelType.PublicThread,
                 autoArchiveDuration: 60
             });
-        
+    
             console.log("Thread créé :", thread);
+    
             const game = new Game(car, interaction.user.id, interaction.user.username, thread.id);
             game.timeoutId = setTimeout(() => this.handleGameTimeout(thread.id, game), this.GAME_TIMEOUT);
-        
+    
             this.activeGames.set(thread.id, game);
-        
+    
             const gameStartEmbed = GameEmbedBuilder.createGameEmbed(game, {
                 title: '🚗 Nouvelle partie',
                 description: 'C\'est parti ! Devine la **marque** de la voiture.\nTape `!indice` pour obtenir des indices.\nTu as 10 essais maximum !',
                 footer: 'La partie se termine automatiquement après 5 minutes d\'inactivité'
             });
-        
+    
             console.log("Embed de démarrage créé");
-        
+    
             await thread.send({ embeds: [gameStartEmbed] });
             console.log("Embed envoyé dans le thread");
-        
+    
             await interaction.followUp(`Partie créée ! Rendez-vous dans ${thread}`);
             console.log("Réponse finale envoyée");
+    
         } catch (error) {
-            console.error("Erreur dans handleGuessCarCommand:", error);
+            console.error("Erreur dans handleGuessCarCommand:");
             await interaction.followUp({
                 content: 'Une erreur est survenue, veuillez réessayer plus tard.',
                 ephemeral: true
             });
-        }        
-    }    
+        }
+    }     
 
     async handleAbandonCommand(interaction) {
         const userGame = Array.from(this.activeGames.entries())
