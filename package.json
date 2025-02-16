@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "concurrently \"node src/index.js\" \"node api.js\""
   },
   "keywords": [],
   "author": "",
@@ -20,5 +20,8 @@
     "googleapis": "^144.0.0",
     "mysql2": "^3.12.0",
     "ytdl-core": "^4.11.5"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
   }
 }
