@@ -1,4 +1,3 @@
-// api.js
 const express = require('express');
 const mysql = require('mysql2');
 const app = express();
@@ -12,6 +11,39 @@ const db = mysql.createConnection({
     database: 'voitures'
 });
 
+// Stockage des marques et des modèles en mémoire
+let makesCache = [];
+let modelsCache = {};
+
+const loadData = async () => {
+    try {
+        // Charger les marques
+        makesCache = await new Promise((resolve, reject) => {
+            db.query('SELECT * FROM marques', (err, results) => {
+                if (err) return reject(err);
+                resolve(results);
+            });
+        });
+
+        // Charger les modèles pour chaque marque
+        for (let make of makesCache) {
+            modelsCache[make.id] = await new Promise((resolve, reject) => {
+                db.query('SELECT * FROM modeles WHERE marque_id = ?', [make.id], (err, results) => {
+                    if (err) return reject(err);
+                    resolve(results);
+                });
+            });
+        }
+
+        console.log('Données préchargées avec succès.');
+    } catch (error) {
+        console.error('Erreur lors du préchargement des données:', error);
+    }
+};
+
+// Charger les données au démarrage
+loadData();
+
 // Vérifier la connexion à la base de données
 db.connect((err) => {
     if (err) {
@@ -23,69 +55,44 @@ db.connect((err) => {
 
 // Route pour récupérer toutes les marques
 app.get('/api/makes', (req, res) => {
-    db.query('SELECT * FROM marques', (err, results) => {
-        if (err) {
-            console.error('Erreur lors de la récupération des marques:', err);
-            return res.status(500).send('Erreur interne du serveur');
-        }
-        res.json(results);
-    });
+    res.json(makesCache); // Retourner les marques stockées en mémoire
 });
 
 // Route pour récupérer les modèles d'une marque
 app.get('/api/models/:makeId', (req, res) => {
     const makeId = req.params.makeId;
-    db.query('SELECT * FROM modeles WHERE marque_id = ?', [makeId], (err, results) => {
-        if (err) {
-            console.error(`Erreur lors de la récupération des modèles pour la marque ${makeId}:`, err);
-            return res.status(500).send('Erreur interne du serveur');
-        }
-        res.json(results);
-    });
+    const models = modelsCache[makeId];
+    if (models) {
+        res.json(models); // Retourner les modèles en mémoire pour la marque donnée
+    } else {
+        res.status(404).send('Aucun modèle trouvé pour cette marque');
+    }
 });
 
 // Route pour récupérer une voiture aléatoire
-app.get('/api/random-car', async (req, res) => {
-    try {
-        const makes = await new Promise((resolve, reject) => {
-            db.query('SELECT * FROM marques', (err, results) => {
-                if (err) return reject(err);
-                resolve(results);
-            });
-        });
-        
-        if (!makes || makes.length === 0) {
-            return res.status(404).send('Aucune marque disponible');
-        }
-        
-        const randomMake = makes[Math.floor(Math.random() * makes.length)];
-        const models = await new Promise((resolve, reject) => {
-            db.query('SELECT * FROM modeles WHERE marque_id = ?', [randomMake.id], (err, results) => {
-                if (err) return reject(err);
-                resolve(results);
-            });
-        });
-
-        if (!models || models.length === 0) {
-            return res.status(404).send(`Aucun modèle disponible pour ${randomMake.nom}`);
-        }
-
-        const randomModel = models[Math.floor(Math.random() * models.length)];
-
-        res.json({
-            make: randomMake.nom,
-            model: randomModel.nom,
-            makeId: randomMake.id,
-            country: randomMake.pays,
-            modelLength: randomModel.nom.length,
-            makeLength: randomMake.nom.length,
-            firstLetter: randomMake.nom[0],
-            modelFirstLetter: randomModel.nom[0]
-        });
-    } catch (error) {
-        console.error('Erreur lors de la récupération des données:', error);
-        res.status(500).send('Erreur interne du serveur');
+app.get('/api/random-car', (req, res) => {
+    if (makesCache.length === 0) {
+        return res.status(404).send('Aucune marque disponible');
     }
+
+    const randomMake = makesCache[Math.floor(Math.random() * makesCache.length)];
+    const models = modelsCache[randomMake.id];
+    if (!models || models.length === 0) {
+        return res.status(404).send(`Aucun modèle disponible pour ${randomMake.nom}`);
+    }
+
+    const randomModel = models[Math.floor(Math.random() * models.length)];
+
+    res.json({
+        make: randomMake.nom,
+        model: randomModel.nom,
+        makeId: randomMake.id,
+        country: randomMake.pays,
+        modelLength: randomModel.nom.length,
+        makeLength: randomMake.nom.length,
+        firstLetter: randomMake.nom[0],
+        modelFirstLetter: randomModel.nom[0]
+    });
 });
 
 // Lancer le serveur
