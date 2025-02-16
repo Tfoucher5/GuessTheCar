@@ -1,72 +1,38 @@
-const mysql = require('mysql2');
+const axios = require('axios');
 
 class CarApiService {
-    // Créer une connexion à la base de données
-    static db = mysql.createConnection({
-        host: 'localhost',
-        user: 'theo',
-        password: 'Not24get',
-        database: 'voitures'
-    });
-
-    // Méthode pour récupérer toutes les marques
+    // Méthode pour récupérer toutes les marques via l'API
     static async getAllMakes() {
-        return new Promise((resolve, reject) => {
-            this.db.query('SELECT * FROM marques', (err, results) => {
-                if (err) {
-                    console.error('Erreur lors de la récupération des marques:', err);
-                    return reject(err);
-                }
-                resolve(results);
-            });
-        });
+        try {
+            const response = await axios.get('http://localhost:3000/api/makes');
+            return response.data;  // Retourne les marques récupérées
+        } catch (error) {
+            console.error('Erreur lors de la récupération des marques:', error);
+            return [];
+        }
     }
 
-    // Méthode pour récupérer les modèles d'une marque donnée
+    // Méthode pour récupérer les modèles d'une marque donnée via l'API
     static async getModelsForMake(makeId) {
-        return new Promise((resolve, reject) => {
-            this.db.query('SELECT * FROM modeles WHERE marque_id = ?', [makeId], (err, results) => {
-                if (err) {
-                    console.error(`Erreur lors de la récupération des modèles pour la marque ID ${makeId}:`, err);
-                    return reject(err);
-                }
-                resolve(results);
-            });
-        });
+        try {
+            const response = await axios.get(`http://localhost:3000/api/models/${makeId}`);
+            return response.data;  // Retourne les modèles récupérés pour cette marque
+        } catch (error) {
+            console.error(`Erreur lors de la récupération des modèles pour la marque ${makeId}:`, error);
+            return [];
+        }
     }
 
-    // Méthode pour récupérer une voiture aléatoire
+    // Méthode pour récupérer une voiture aléatoire via l'API
     static async getRandomCar() {
         try {
-            const makes = await this.getAllMakes();
-            console.log("Marques récupérées:", makes); 
-    
-            if (!makes?.length) throw new Error('Aucune marque disponible');
-    
-            const randomMake = makes[Math.floor(Math.random() * makes.length)];
-            console.log("Marque sélectionnée:", randomMake); 
-    
-            const models = await this.getModelsForMake(randomMake.id);
-            console.log("Modèles pour la marque récupérés:", models); 
-            if (!models?.length) throw new Error(`Aucun modèle disponible pour ${randomMake.nom}`);
-    
-            const randomModel = models[Math.floor(Math.random() * models.length)];
-    
-            return {
-                make: randomMake.nom,
-                model: randomModel.nom,
-                makeId: randomMake.id,
-                country: randomMake.pays,
-                modelLength: randomModel.nom.length,
-                makeLength: randomMake.nom.length,
-                firstLetter: randomMake.nom[0],
-                modelFirstLetter: randomModel.nom[0]
-            };
+            const response = await axios.get('http://localhost:3000/api/random-car');
+            return response.data;  // Retourne la voiture aléatoire récupérée
         } catch (error) {
-            console.error('Erreur lors de la récupération des données:', error);
+            console.error('Erreur lors de la récupération des données de la voiture:', error);
             return null;
         }
-    }    
+    }
 }
 
 module.exports = CarApiService;
