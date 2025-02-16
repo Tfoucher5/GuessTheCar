@@ -1,0 +1,25 @@
+# Ignorer les fichiers .env contenant des variables sensibles
+.env
+
+# Ignorer le dossier node_modules
+node_modules/
+
+# Ignorer les fichiers logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ignorer les fichiers de configuration d'éditeur ou IDE (optionnel)
+.vscode/
+.idea/
+
+# Ignorer les fichiers systèmes
+.DS_Store
+Thumbs.db
+
+# Ignorer les fichiers générés par le build (optionnel)
+dist/
+build/
+
+# Ignorer les fichiers de cache (optionnel)
+.cache/
