@@ -1,6 +1,9 @@
 # Ignorer les fichiers .env contenant des variables sensibles
 .env
 
+# Ignorer les fichiers de données
+scores.json
+
 # Ignorer le dossier node_modules
 node_modules/
 
