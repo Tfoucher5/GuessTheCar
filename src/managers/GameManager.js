@@ -128,7 +128,7 @@ class GameManager {
             console.log("Réponse finale envoyée");
     
         } catch (error) {
-            console.error("Erreur dans handleGuessCarCommand:", error);
+            console.error("Erreur dans handleGuessCarCommand:");
             await interaction.followUp({
                 content: 'Une erreur est survenue, veuillez réessayer plus tard.',
                 ephemeral: true
