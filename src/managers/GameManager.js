@@ -62,7 +62,7 @@ class GameManager {
     async handleGuessCarCommand(interaction) {
         const existingGame = Array.from(this.activeGames.values())
             .find(game => game.userId === interaction.user.id);
-
+    
         if (existingGame) {
             const embed = GameEmbedBuilder.createGameEmbed(existingGame, {
                 color: '#FF0000',
@@ -72,12 +72,15 @@ class GameManager {
             await interaction.reply({ embeds: [embed], ephemeral: true });
             return;
         }
-
+    
         try {
             console.log("Début de la gestion de la commande");
+            
+            // Répondre immédiatement pour éviter le timeout
             await interaction.deferReply({ ephemeral: true });
             console.log("Réponse différée envoyée");
-
+    
+            // Récupération des données de la voiture
             const car = await CarApiService.getRandomCar();
             if (!car) {
                 console.log("Erreur de récupération de la voiture");
@@ -89,44 +92,49 @@ class GameManager {
                 await interaction.followUp({ embeds: [errorEmbed] });
                 return;
             }
-
+    
             console.log("Voiture récupérée :", car);
-
+    
+            // Création du thread pour la partie
             const thread = await interaction.channel.threads.create({
                 name: `🚗 Partie de ${interaction.user.username}`,
                 type: ChannelType.PublicThread,
                 autoArchiveDuration: 60
             });
-
+    
             console.log("Thread créé :", thread);
-
+    
+            // Création du jeu
             const game = new Game(car, interaction.user.id, interaction.user.username, thread.id);
             game.timeoutId = setTimeout(() => this.handleGameTimeout(thread.id, game), this.GAME_TIMEOUT);
-
+    
             this.activeGames.set(thread.id, game);
-
+    
+            // Création de l'embed de démarrage
             const gameStartEmbed = GameEmbedBuilder.createGameEmbed(game, {
                 title: '🚗 Nouvelle partie',
                 description: 'C\'est parti ! Devine la **marque** de la voiture.\nTape `!indice` pour obtenir des indices.\nTu as 10 essais maximum !',
                 footer: 'La partie se termine automatiquement après 5 minutes d\'inactivité'
             });
-
+    
             console.log("Embed de démarrage créé");
-
+    
+            // Envoi de l'embed dans le thread
             await thread.send({ embeds: [gameStartEmbed] });
             console.log("Embed envoyé dans le thread");
-
+    
+            // Réponse à l'utilisateur pour lui indiquer que la partie a été créée
             await interaction.followUp(`Partie créée ! Rendez-vous dans ${thread}`);
             console.log("Réponse finale envoyée");
-
+    
         } catch (error) {
-            console.error("Erreur dans handleGuessCarCommand:");
+            console.error("Erreur dans handleGuessCarCommand:", error);
             await interaction.followUp({
                 content: 'Une erreur est survenue, veuillez réessayer plus tard.',
                 ephemeral: true
             });
         }
-    }
+    }    
 
     async handleAbandonCommand(interaction) {
         const userGame = Array.from(this.activeGames.entries())
