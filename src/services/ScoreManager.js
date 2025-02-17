@@ -88,4 +88,4 @@ class ScoreManager {
     }
 }
 
-module.exports = { ScoreManager};
+module.exports = ScoreManager;
