@@ -536,6 +536,7 @@ class GameManager {
         const totalScore = stats.calculateTotalScore();
         const avgAttempts = stats.averageAttempts;
         const bestTime = stats.bestTime ? `${(stats.bestTime / 1000).toFixed(1)} secondes` : 'N/A';
+        const lastGameTime = stats.lastGameTime ? `${(stats.lastGameTime / 1000).toFixed(1)} secondes` : 'N/A';
 
         const statsEmbed = GameEmbedBuilder.createGameEmbed(null, {
             color: '#4169E1',
