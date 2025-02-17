@@ -4,6 +4,65 @@ const CarApiService = require('../services/CarApiService');
 const GameEmbedBuilder = require('../utils/EmbedBuilder');
 const { ChannelType } = require('discord.js');
 
+// Fonction pour calculer la distance de Levenshtein
+function levenshteinDistance(str1, str2) {
+    const m = str1.length;
+    const n = str2.length;
+    const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+
+    for (let i = 0; i <= m; i++) {
+        dp[i][0] = i;
+    }
+    for (let j = 0; j <= n; j++) {
+        dp[0][j] = j;
+    }
+
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            if (str1[i - 1] === str2[j - 1]) {
+                dp[i][j] = dp[i - 1][j - 1];
+            } else {
+                dp[i][j] = Math.min(
+                    dp[i - 1][j - 1] + 1,  // substitution
+                    dp[i - 1][j] + 1,      // suppression
+                    dp[i][j - 1] + 1       // insertion
+                );
+            }
+        }
+    }
+
+    return dp[m][n];
+}
+
+// Fonction pour calculer le pourcentage de similarité
+function calculateSimilarity(str1, str2) {
+    const maxLength = Math.max(str1.length, str2.length);
+    const distance = levenshteinDistance(str1, str2);
+    return ((maxLength - distance) / maxLength) * 100;
+}
+
+// Fonction modifiée pour gérer la vérification des réponses
+function checkAnswer(userAnswer, correctAnswer) {
+    const similarity = calculateSimilarity(userAnswer.toLowerCase(), correctAnswer.toLowerCase());
+
+    if (similarity >= 75) {
+        return {
+            isCorrect: true,
+            feedback: "Correct ! La réponse était légèrement différente mais suffisamment proche."
+        };
+    } else if (similarity >= 50) {
+        return {
+            isCorrect: false,
+            feedback: "Presque ! Tu es sur la bonne voie."
+        };
+    } else {
+        return {
+            isCorrect: false,
+            feedback: "Pas tout à fait, continue à chercher !"
+        };
+    }
+}
+
 class GameManager {
     constructor(client, scoreManager) {
         this.client = client;
@@ -62,7 +121,7 @@ class GameManager {
     async handleGuessCarCommand(interaction) {
         const existingGame = Array.from(this.activeGames.values())
             .find(game => game.userId === interaction.user.id);
-    
+
         if (existingGame) {
             const embed = GameEmbedBuilder.createGameEmbed(existingGame, {
                 color: '#FF0000',
@@ -72,14 +131,14 @@ class GameManager {
             await interaction.reply({ embeds: [embed], ephemeral: true });
             return;
         }
-    
+
         try {
             console.log("Début de la gestion de la commande");
-            
+
             // Répondre immédiatement pour éviter le timeout
             await interaction.deferReply({ ephemeral: true });
             console.log("Réponse différée envoyée");
-    
+
             // Récupération des données de la voiture
             const car = await CarApiService.getRandomCar();
             if (!car) {
@@ -92,41 +151,41 @@ class GameManager {
                 await interaction.followUp({ embeds: [errorEmbed] });
                 return;
             }
-    
+
             console.log("Voiture récupérée :", car);
-    
+
             // Création du thread pour la partie
             const thread = await interaction.channel.threads.create({
                 name: `🚗 Partie de ${interaction.user.username}`,
                 type: ChannelType.PublicThread,
                 autoArchiveDuration: 60
             });
-    
+
             console.log("Thread créé :", thread);
-    
+
             // Création du jeu
             const game = new Game(car, interaction.user.id, interaction.user.username, thread.id);
             game.timeoutId = setTimeout(() => this.handleGameTimeout(thread.id, game), this.GAME_TIMEOUT);
-    
+
             this.activeGames.set(thread.id, game);
-    
+
             // Création de l'embed de démarrage
             const gameStartEmbed = GameEmbedBuilder.createGameEmbed(game, {
                 title: '🚗 Nouvelle partie',
                 description: 'C\'est parti ! Devine la **marque** de la voiture.\nTape `!indice` pour obtenir des indices.\nTu as 10 essais maximum !',
                 footer: 'La partie se termine automatiquement après 5 minutes d\'inactivité'
             });
-    
+
             console.log("Embed de démarrage créé");
-    
+
             // Envoi de l'embed dans le thread
             await thread.send({ embeds: [gameStartEmbed] });
             console.log("Embed envoyé dans le thread");
-    
+
             // Réponse à l'utilisateur pour lui indiquer que la partie a été créée
             await interaction.followUp(`Partie créée ! Rendez-vous dans ${thread}`);
             console.log("Réponse finale envoyée");
-    
+
         } catch (error) {
             console.error("Erreur dans handleGuessCarCommand:");
             await interaction.followUp({
@@ -134,7 +193,7 @@ class GameManager {
                 ephemeral: true
             });
         }
-    }    
+    }
 
     async handleAbandonCommand(interaction) {
         const userGame = Array.from(this.activeGames.entries())
@@ -244,12 +303,14 @@ class GameManager {
         const userAnswer = message.content.toLowerCase().trim();
         let hintMessage = game.attempts === 5 ? `\n💡 La marque commence par "${game.firstLetter}"` : '';
 
-        if (userAnswer === game.make.toLowerCase()) {
+        const result = checkAnswer(userAnswer, game.make);
+
+        if (result.isCorrect) {
             game.step = 'model';
             game.resetAttempts();
             const successEmbed = GameEmbedBuilder.createGameEmbed(game, {
                 title: '✅ Marque trouvée !',
-                description: `C'est bien ${game.make} !\nMaintenant, devine le **modèle** de cette voiture.`
+                description: `${result.feedback}\nC'est bien ${game.make} !\nMaintenant, devine le **modèle** de cette voiture.`
             });
             await message.reply({ embeds: [successEmbed] });
         } else if (game.attempts >= 10) {
@@ -266,7 +327,7 @@ class GameManager {
             const wrongEmbed = GameEmbedBuilder.createGameEmbed(game, {
                 color: '#FF0000',
                 title: '❌ Mauvaise réponse',
-                description: `Ce n'est pas la bonne marque, essaie encore ! (${10 - game.attempts} essais restants)${hintMessage}`
+                description: `${result.feedback}\n(${10 - game.attempts} essais restants)${hintMessage}`
             });
             await message.reply({ embeds: [wrongEmbed] });
         }
@@ -289,7 +350,9 @@ class GameManager {
                 hintMessage = `\n💡 Le modèle se termine par "${lastLetter}"`;
             }
 
-            if (userAnswer === game.model.toLowerCase()) {
+            const result = checkAnswer(userAnswer, game.model);
+
+            if (result.isCorrect) {
                 await this.handleSuccessfulGuess(message, game);
             } else if (game.attempts >= 10) {
                 await this.handleFailedGuess(message, game);
@@ -297,7 +360,7 @@ class GameManager {
                 const wrongModelEmbed = GameEmbedBuilder.createGameEmbed(game, {
                     color: '#FF0000',
                     title: '❌ Mauvaise réponse',
-                    description: `Ce n'est pas le bon modèle, essaie encore ! (${10 - game.attempts} essais restants)${hintMessage}`
+                    description: `${result.feedback}\n(${10 - game.attempts} essais restants)${hintMessage}`
                 });
                 await message.reply({ embeds: [wrongModelEmbed] });
             }
