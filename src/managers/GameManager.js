@@ -139,19 +139,22 @@ class GameManager {
     }
 
     async handleAbandonCommand(interaction) {
+        // D'abord, différer la réponse pour éviter le timeout
+        await interaction.deferReply({ ephemeral: true });
+    
         const userGame = Array.from(this.activeGames.entries())
             .find(([_, game]) => game.userId === interaction.user.id);
-
+    
         if (!userGame) {
             const embed = GameEmbedBuilder.createGameEmbed(null, {
                 color: '#FF0000',
                 title: '❌ Aucune partie en cours',
                 description: 'Vous n\'avez aucune partie en cours.'
             });
-            await interaction.reply({ embeds: [embed], ephemeral: true });
+            await interaction.editReply({ embeds: [embed] });
             return;
         }
-
+    
         const [threadId, game] = userGame;
         try {
             const thread = await this.client.channels.fetch(threadId);
@@ -159,18 +162,24 @@ class GameManager {
                 this.activeGames.delete(threadId);
                 throw new Error('Thread introuvable');
             }
-
+    
             clearTimeout(game.timeoutId);
-
+    
             const abandonEmbed = GameEmbedBuilder.createGameEmbed(game, {
                 color: '#FFA500',
                 title: '🏳️ Partie abandonnée',
                 description: `La voiture était : ${game.make} ${game.model}`
             });
-
+    
             await thread.send({ embeds: [abandonEmbed] });
             this.activeGames.delete(threadId);
-
+    
+            // Répondre à l'interaction
+            await interaction.editReply({ 
+                content: "Partie abandonnée avec succès", 
+                ephemeral: true 
+            });
+    
             await this.handleDelayedThreadClose(thread, game.timeoutId);
         } catch (error) {
             console.error('Erreur lors de l\'abandon:', error);
@@ -179,7 +188,7 @@ class GameManager {
                 title: '❌ Erreur',
                 description: 'Une erreur est survenue lors de l\'abandon de la partie.'
             });
-            await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+            await interaction.editReply({ embeds: [errorEmbed] });
         }
     }
 
