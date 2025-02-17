@@ -23,10 +23,5 @@ module.exports = [
         name: 'aide',
         description: 'Affiche les règles du jeu et les commandes disponibles.',
         type: 1,
-    },
-    {
-        name: 'challenge',
-        description: 'Démarre une partie en mode challenge. Devines le plus de voitures dans le temps impartis !',
-        type: 1,
     }
 ];
