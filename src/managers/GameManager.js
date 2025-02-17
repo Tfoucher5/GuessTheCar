@@ -289,7 +289,7 @@ class GameManager {
     async handleHintRequest(message, game) {
         let hintDescription = game.step === 'make'
             ? `🌍 Pays d'origine: ${game.country}\n📏 La marque contient ${game.makeLength} lettres`
-            : `📏 Le modèle contient ${game.modelLength} lettres / chiffres\n📆 Le modèle est de ${game.ModelDate}`;
+            : `📏 Le modèle contient ${game.modelLength} lettres / chiffres\n📆 Le modèle est de ${game.modelDate}`;
 
         const hintEmbed = GameEmbedBuilder.createGameEmbed(game, {
             color: '#FFA500',
