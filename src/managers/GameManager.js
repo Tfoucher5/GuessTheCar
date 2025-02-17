@@ -250,8 +250,9 @@ class GameManager {
             });
 
             await thread.send({ embeds: [timeoutEmbed] });
-            await thread.setArchived(true);
             this.activeGames.delete(threadId);
+
+            await this.handleDelayedThreadClose(thread, game.timeoutId);
         }
     }
 
