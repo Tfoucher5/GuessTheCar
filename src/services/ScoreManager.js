@@ -83,3 +83,5 @@ class ScoreManager {
         return players;
     }
 }
+
+module.exports = { ScoreManager};

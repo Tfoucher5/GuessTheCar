@@ -34,4 +34,4 @@ class UserStats {
     }
 }
 
-module.exports = { UserStats, ScoreManager };
+module.exports = { UserStats };
