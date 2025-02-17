@@ -2,7 +2,7 @@
 const Game = require('../models/Game');
 const CarApiService = require('../services/CarApiService');
 const GameEmbedBuilder = require('../utils/EmbedBuilder');
-const Verification = require('../utils/verification');
+const Verification = require('../utils/Verification');
 const { ChannelType } = require('discord.js');
 
 
