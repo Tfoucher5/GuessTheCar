@@ -434,13 +434,20 @@ class GameManager {
     async handleSuccessfulGuess(message, game) {
         const timeSpent = game.getTimeSpent();
         const fullSuccess = !game.makeFailed;
-        const points = this.calculatePoints(game.modelDifficulte, fullSuccess);
+        const basePoints = fullSuccess ? 1 : 0.5;
+        const difficultyPoints = this.calculatePoints(game.modelDifficulte, fullSuccess);
 
-        this.scoreManager.updateScore(message.author.id, message.author.username, fullSuccess, points);
+        this.scoreManager.updateScore(
+            message.author.id, 
+            message.author.username, 
+            fullSuccess, 
+            basePoints,
+            difficultyPoints
+        );
+        
         this.scoreManager.updateGameStats(message.author.id, game.attempts, timeSpent);
 
         const userScore = this.scoreManager.getUserStats(message.author.id);
-
         const difficultyText = game.modelDifficulte === 3 ? "difficile" :
             game.modelDifficulte === 2 ? "moyen" : "facile";
 
@@ -448,9 +455,10 @@ class GameManager {
             title: '🎉 Victoire !',
             description: `Félicitations ! Vous avez trouvé ${game.make} ${game.model} !\n` +
                 `Niveau de difficulté: ${difficultyText}\n` +
-                `Points gagnés: ${points}\n` +
+                `Points de base gagnés: ${basePoints}\n` +
+                `Points avec bonus de difficulté: ${difficultyPoints}\n` +
                 `Temps: ${(timeSpent / 1000).toFixed(1)} secondes\n` +
-                `Score total: ${userScore.totalPoints.toFixed(1)}`
+                `Score total: ${userScore.totalDifficultyPoints.toFixed(1)}`
         });
 
         clearTimeout(game.timeoutId);
@@ -535,8 +543,9 @@ class GameManager {
             color: '#4169E1',
             title: `📊 Statistiques de ${interaction.user.username}`,
             description:
-                `🏆 Score total: ${stats.totalPoints.toFixed(1)} points\n` +
-                `✨ Réussites complètes: ${stats.carsGuessed}\n` +
+                `🏆 Score total: ${stats.totalDifficultyPoints.toFixed(1)} points\n` +
+                `✨ Points de base: ${stats.totalPoints.toFixed(1)}\n` +
+                `🌟 Réussites complètes: ${stats.carsGuessed}\n` +
                 `⭐ Réussites partielles: ${stats.partialGuesses}\n` +
                 `🎯 Moyenne d'essais: ${stats.averageAttempts.toFixed(1)}\n` +
                 `⚡ Meilleur temps: ${stats.bestTime ? `${(stats.bestTime / 1000).toFixed(1)} secondes` : 'N/A'}`

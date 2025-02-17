@@ -38,7 +38,8 @@ class ScoreManager {
                     totalPoints: stats.totalPoints,
                     totalAttempts: stats.totalAttempts,
                     bestTime: stats.bestTime,
-                    lastGameTime: stats.lastGameTime
+                    lastGameTime: stats.lastGameTime,
+                    totalDifficultyPoints: stats.totalDifficultyPoints // Ajout du nouveau champ
                 };
             }
             await fs.writeFile(this.filePath, JSON.stringify(scores, null, 2));
@@ -51,14 +52,14 @@ class ScoreManager {
         return this.stats.get(userId);
     }
 
-    async updateScore(userId, username, isFullSuccess, points) {
+    async updateScore(userId, username, isFullSuccess, points, difficultyPoints) { // Ajout du paramètre difficultyPoints
         let userStats = this.stats.get(userId);
         if (!userStats) {
             userStats = new UserStats(username);
             this.stats.set(userId, userStats);
         }
         
-        userStats.addPoints(points, isFullSuccess);
+        userStats.addPoints(points, isFullSuccess, difficultyPoints); // Passage du nouveau paramètre
         await this.saveScores();
     }
 
@@ -75,7 +76,7 @@ class ScoreManager {
             .filter(stats => stats.totalPoints > 0)
             .map(stats => ({
                 username: stats.username,
-                totalScore: stats.totalPoints,
+                totalScore: stats.totalDifficultyPoints, // Utilisation des points avec difficulté
                 carsGuessed: stats.carsGuessed,
                 partialGuesses: stats.partialGuesses,
                 averageAttempts: stats.averageAttempts,

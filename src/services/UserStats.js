@@ -1,16 +1,17 @@
 class UserStats {
     constructor(username) {
         this.username = username;
-        this.carsGuessed = 0;          // Nombre de réussites complètes
-        this.partialGuesses = 0;       // Nombre de réussites partielles
-        this.totalPoints = 0;          // Total des points gagnés
-        this.totalAttempts = 0;        // Nombre total d'essais
-        this.bestTime = null;          // Meilleur temps en millisecondes
-        this.lastGameTime = null;      // Temps de la dernière partie
+        this.carsGuessed = 0;
+        this.partialGuesses = 0;
+        this.totalPoints = 0;          // Points de base
+        this.totalDifficultyPoints = 0; // Points avec multiplicateur de difficulté
+        this.totalAttempts = 0;
+        this.bestTime = null;
+        this.lastGameTime = null;
     }
 
-    addPoints(points, isFullSuccess) {
-        this.totalPoints += points;
+    addPoints(points, isFullSuccess, difficultyPoints) {
+        this.totalPoints += points + difficultyPoints;
         if (isFullSuccess) {
             this.carsGuessed++;
         } else {
