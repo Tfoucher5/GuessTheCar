@@ -2,7 +2,7 @@
 const Game = require('../models/Game');
 const CarApiService = require('../services/CarApiService');
 const GameEmbedBuilder = require('../utils/EmbedBuilder');
-const verifiation = require('../utils/verification');
+const Verification = require('../utils/verification');
 const { ChannelType } = require('discord.js');
 
 
@@ -247,7 +247,7 @@ class GameManager {
         const userAnswer = message.content.toLowerCase().trim();
         let hintMessage = game.attempts === 5 ? `\n💡 La marque commence par "${game.firstLetter}"` : '';
 
-        const result = verification.checkAnswer(userAnswer, game.make);
+        const result = Verification.checkAnswer(userAnswer, game.make);
 
         if (result.isCorrect) {
             game.step = 'model';
@@ -294,7 +294,7 @@ class GameManager {
                 hintMessage = `\n💡 Le modèle se termine par "${lastLetter}"`;
             }
 
-            const result = verification.checkAnswer(userAnswer, game.model);
+            const result = Verification.checkAnswer(userAnswer, game.model);
 
             if (result.isCorrect) {
                 await this.handleSuccessfulGuess(message, game);
