@@ -440,7 +440,6 @@ class GameManager {
         this.scoreManager.updateGameStats(message.author.id, game.attempts, timeSpent);
 
         const userScore = this.scoreManager.getUserStats(message.author.id);
-        const totalScore = userScore.calculateTotalScore();
 
         const difficultyText = game.modelDifficulte === 3 ? "difficile" :
             game.modelDifficulte === 2 ? "moyen" : "facile";
@@ -451,7 +450,7 @@ class GameManager {
                 `Niveau de difficulté: ${difficultyText}\n` +
                 `Points gagnés: ${points}\n` +
                 `Temps: ${(timeSpent / 1000).toFixed(1)} secondes\n` +
-                `Score total: ${totalScore}`
+                `Score total: ${userScore.totalPoints.toFixed(1)}`
         });
 
         clearTimeout(game.timeoutId);
@@ -519,7 +518,6 @@ class GameManager {
     }
 
     async handleStatsCommand(interaction) {
-        // Force le rechargement des scores avant de vérifier les stats
         await this.scoreManager.loadScores();
 
         const stats = this.scoreManager.getUserStats(interaction.user.id);
@@ -533,19 +531,15 @@ class GameManager {
             return;
         }
 
-        const totalScore = stats.calculateTotalScore();
-        const avgAttempts = stats.averageAttempts;
-        const bestTime = stats.bestTime ? `${(stats.bestTime / 1000).toFixed(1)} secondes` : 'N/A';
-
         const statsEmbed = GameEmbedBuilder.createGameEmbed(null, {
             color: '#4169E1',
             title: `📊 Statistiques de ${interaction.user.username}`,
             description:
-                `🏆 Score total: ${totalScore.toFixed(1)} points\n` +
+                `🏆 Score total: ${stats.totalPoints.toFixed(1)} points\n` +
                 `✨ Réussites complètes: ${stats.carsGuessed}\n` +
                 `⭐ Réussites partielles: ${stats.partialGuesses}\n` +
-                `🎯 Moyenne d'essais: ${avgAttempts.toFixed(1)}\n` +
-                `⚡ Meilleur temps: ${bestTime}`
+                `🎯 Moyenne d'essais: ${stats.averageAttempts.toFixed(1)}\n` +
+                `⚡ Meilleur temps: ${stats.bestTime ? `${(stats.bestTime / 1000).toFixed(1)} secondes` : 'N/A'}`
         });
 
         await interaction.reply({ embeds: [statsEmbed] });
