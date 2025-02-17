@@ -146,7 +146,7 @@ VALUES
     ('Lynk & Co', 'Chine'), -- 132
     ('Marcos', 'Royaume-Uni'), -- 133
     ('Mastretta', 'Mexique'), -- 134
-    ('Mitsuoka', 'Japon');
+    ('Mitsuoka', 'Japon'); -- 135
 
 -- 135
 -- Insertion des modèles avec les IDs corrigés

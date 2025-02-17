@@ -46,7 +46,7 @@ class GameManager {
 
         const userAnswer = message.content.toLowerCase().trim();
 
-        switch(userAnswer) {
+        switch (userAnswer) {
             case '!indice':
                 await this.handleHintRequest(message, game);
                 return;
@@ -147,10 +147,10 @@ class GameManager {
     async handleAbandonCommand(interaction) {
         // D'abord, différer la réponse pour éviter le timeout
         await interaction.deferReply({ ephemeral: true });
-    
+
         const userGame = Array.from(this.activeGames.entries())
             .find(([_, game]) => game.userId === interaction.user.id);
-    
+
         if (!userGame) {
             const embed = GameEmbedBuilder.createGameEmbed(null, {
                 color: '#FF0000',
@@ -160,7 +160,7 @@ class GameManager {
             await interaction.editReply({ embeds: [embed] });
             return;
         }
-    
+
         const [threadId, game] = userGame;
         try {
             const thread = await this.client.channels.fetch(threadId);
@@ -168,24 +168,24 @@ class GameManager {
                 this.activeGames.delete(threadId);
                 throw new Error('Thread introuvable');
             }
-    
+
             clearTimeout(game.timeoutId);
-    
+
             const abandonEmbed = GameEmbedBuilder.createGameEmbed(game, {
                 color: '#FFA500',
                 title: '🏳️ Partie abandonnée',
                 description: `La voiture était : ${game.make} ${game.model}`
             });
-    
+
             await thread.send({ embeds: [abandonEmbed] });
             this.activeGames.delete(threadId);
-    
+
             // Répondre à l'interaction
-            await interaction.editReply({ 
-                content: "Partie abandonnée avec succès", 
-                ephemeral: true 
+            await interaction.editReply({
+                content: "Partie abandonnée avec succès",
+                ephemeral: true
             });
-    
+
             await this.handleDelayedThreadClose(thread, game.timeoutId);
         } catch (error) {
             console.error('Erreur lors de l\'abandon:', error);
@@ -201,10 +201,19 @@ class GameManager {
     async handleGameTimeout(threadId, game) {
         const thread = await this.client.channels.fetch(threadId);
         if (thread && this.activeGames.has(threadId)) {
+            // Calculer les points si la marque a été trouvée
+            let pointsMessage = '';
+            if (game.step === 'model') {
+                const points = this.calculatePoints(game.modelDifficulte, false);
+                this.scoreManager.updateScore(game.userId, game.username, false, points);
+                pointsMessage = `\nVous gagnez ${points} points pour avoir trouvé la marque.`;
+            }
+
             const timeoutEmbed = GameEmbedBuilder.createGameEmbed(game, {
                 color: '#FF0000',
                 title: '⏰ Temps écoulé',
-                description: `La partie a été abandonnée après 5 minutes d'inactivité.\nLa voiture était: ${game.make} ${game.model}`
+                description: `La partie a été abandonnée après 5 minutes d'inactivité.\n` +
+                    `La voiture était: ${game.make} ${game.model}${pointsMessage}`
             });
 
             await thread.send({ embeds: [timeoutEmbed] });
@@ -332,12 +341,12 @@ class GameManager {
     calculatePoints(difficulty, fullSuccess) {
         // Base points
         let points = fullSuccess ? 1 : 0.5;
-        
+
         // Multiplier based on difficulty (1: Easy, 2: Medium, 3: Hard)
-        const multiplier = difficulty === 3 ? 2 : 
-                          difficulty === 2 ? 1.5 : 
-                          1;
-        
+        const multiplier = difficulty === 3 ? 2 :
+            difficulty === 2 ? 1.5 :
+                1;
+
         return points * multiplier;
     }
 
@@ -433,7 +442,17 @@ class GameManager {
         const userScore = this.scoreManager.getUserStats(message.author.id);
         const totalScore = userScore.calculateTotalScore();
 
-        const winEmbed = GameEmbedBuilder.createWinEmbed(game, timeSpent, fullSuccess, totalScore, points);
+        const difficultyText = game.modelDifficulte === 3 ? "difficile" :
+            game.modelDifficulte === 2 ? "moyen" : "facile";
+
+        const winEmbed = GameEmbedBuilder.createGameEmbed(game, {
+            title: '🎉 Victoire !',
+            description: `Félicitations ! Vous avez trouvé ${game.make} ${game.model} !\n` +
+                `Niveau de difficulté: ${difficultyText}\n` +
+                `Points gagnés: ${points}\n` +
+                `Temps: ${(timeSpent / 1000).toFixed(1)} secondes\n` +
+                `Score total: ${totalScore}`
+        });
 
         clearTimeout(game.timeoutId);
         await message.reply({ embeds: [winEmbed] });
@@ -444,13 +463,20 @@ class GameManager {
 
     async handleFailedGuess(message, game) {
         const timeSpent = game.getTimeSpent();
-        this.scoreManager.updateScore(message.author.id, message.author.username, false);
+        const points = this.calculatePoints(game.modelDifficulte, false); // Points partiels pour avoir trouvé la marque
+
+        this.scoreManager.updateScore(message.author.id, message.author.username, false, points);
         this.scoreManager.updateGameStats(message.author.id, game.attempts, timeSpent);
+
+        const difficultyText = game.modelDifficulte === 3 ? "difficile" :
+            game.modelDifficulte === 2 ? "moyen" : "facile";
 
         const gameOverEmbed = GameEmbedBuilder.createGameEmbed(game, {
             color: '#FFA500',
             title: '⌛ Plus d\'essais',
-            description: `Le modèle était: **${game.model}**\nVous gagnez un demi-point pour avoir trouvé la marque.`
+            description: `Le modèle était: **${game.model}**\n` +
+                `Niveau de difficulté: ${difficultyText}\n` +
+                `Vous gagnez ${points} points pour avoir trouvé la marque.`
         });
 
         clearTimeout(game.timeoutId);
@@ -486,7 +512,7 @@ class GameManager {
         const leaderboardEmbed = GameEmbedBuilder.createGameEmbed(null, {
             color: '#FFD700',
             title: '🏆 Classement des meilleurs joueurs',
-            description: leaderboardText || 'Aucun joueur n\'a encore marqué de points !'
+            description: leaderboardText
         });
 
         await interaction.reply({ embeds: [leaderboardEmbed] });
@@ -519,7 +545,8 @@ class GameManager {
                 `✨ Réussites complètes: ${stats.carsGuessed}\n` +
                 `⭐ Réussites partielles: ${stats.partialGuesses}\n` +
                 `🎯 Moyenne d'essais: ${avgAttempts.toFixed(1)}\n` +
-                `⚡ Meilleur temps: ${bestTime}`
+                `⚡ Meilleur temps: ${bestTime}\n` +
+                `🕒 Temps dernière partie: ${lastGameTime}`
         });
 
         await interaction.reply({ embeds: [statsEmbed] });
@@ -543,6 +570,8 @@ class GameManager {
                 '`/classement` - Voir le classement\n' +
                 '`/stats` - Voir vos statistiques\n' +
                 '`!indice` - Obtenir un indice pendant la partie\n\n' +
+                '`!change` - Changer de voiture à deviner pendant la partie\n\n' +
+                '`!terminer` - mettre fin à la partie en cours\n\n' +
                 '**⏰ Timeout**\n' +
                 'Une partie est automatiquement abandonnée après 5 minutes d\'inactivité'
         });
