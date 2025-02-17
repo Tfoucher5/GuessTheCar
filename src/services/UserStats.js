@@ -11,7 +11,8 @@ class UserStats {
     }
 
     addPoints(points, isFullSuccess, difficultyPoints) {
-        this.totalPoints += points + difficultyPoints;
+        this.totalPoints += points;
+        this.totalDifficultyPoints += difficultyPoints;
         if (isFullSuccess) {
             this.carsGuessed++;
         } else {
