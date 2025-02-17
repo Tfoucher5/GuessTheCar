@@ -98,7 +98,7 @@ class GameManager {
             // Création du thread pour la partie
             const thread = await interaction.channel.threads.create({
                 name: `🚗 Partie de ${interaction.user.username}`,
-                type: ChannelType.PublicThread,
+                type: ChannelType.PrivateThread,
                 autoArchiveDuration: 60
             });
     
