@@ -536,7 +536,6 @@ class GameManager {
         const totalScore = stats.calculateTotalScore();
         const avgAttempts = stats.averageAttempts;
         const bestTime = stats.bestTime ? `${(stats.bestTime / 1000).toFixed(1)} secondes` : 'N/A';
-        const lastGameTime = stats.lastGameTime ? `${(stats.lastGameTime / 1000).toFixed(1)} secondes` : 'N/A';
 
         const statsEmbed = GameEmbedBuilder.createGameEmbed(null, {
             color: '#4169E1',
@@ -546,8 +545,7 @@ class GameManager {
                 `✨ Réussites complètes: ${stats.carsGuessed}\n` +
                 `⭐ Réussites partielles: ${stats.partialGuesses}\n` +
                 `🎯 Moyenne d'essais: ${avgAttempts.toFixed(1)}\n` +
-                `⚡ Meilleur temps: ${bestTime}\n` +
-                `🕒 Temps dernière partie: ${lastGameTime}`
+                `⚡ Meilleur temps: ${bestTime}`
         });
 
         await interaction.reply({ embeds: [statsEmbed] });
