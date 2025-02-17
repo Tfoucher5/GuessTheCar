@@ -512,7 +512,7 @@ class GameManager {
             const bestTime = player.bestTime ? `${(player.bestTime / 1000).toFixed(1)}s` : 'N/A';
 
             return `${medal} **${index + 1}.** ${player.username}\n` +
-                `Points: ${player.totalScore.toFixed(1)} (${player.carsGuessed} complètes + ${player.partialGuesses} partielles)\n` +
+                `Points: ${player.totalDifficultyPoints.toFixed(1)} (${player.carsGuessed} complètes + ${player.partialGuesses} partielles)\n` +
                 `Moyenne: ${avgAttempts} essais | Meilleur temps: ${bestTime}\n`;
         }).join('\n');
 

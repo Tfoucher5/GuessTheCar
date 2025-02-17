@@ -148,7 +148,6 @@ VALUES
     ('Mastretta', 'Mexique'), -- 134
     ('Mitsuoka', 'Japon'); -- 135
 
--- 135
 -- Insertion des modèles avec les IDs corrigés
 INSERT INTO
     modeles (marque_id, nom, annee, difficulte)
