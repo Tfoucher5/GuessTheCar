@@ -1,4 +1,3 @@
-// src/managers/GameManager.js
 const Game = require('../models/Game');
 const CarApiService = require('../services/CarApiService');
 const GameEmbedBuilder = require('../utils/EmbedBuilder');
@@ -47,9 +46,16 @@ class GameManager {
 
         const userAnswer = message.content.toLowerCase().trim();
 
-        if (userAnswer === '!indice') {
-            await this.handleHintRequest(message, game);
-            return;
+        switch(userAnswer) {
+            case '!indice':
+                await this.handleHintRequest(message, game);
+                return;
+            case '!change':
+                await this.handleCarChange(message, game);
+                return;
+            case '!terminer':
+                await this.handleGameEnd(message, game);
+                return;
         }
 
         game.incrementAttempts();
@@ -252,6 +258,89 @@ class GameManager {
         await message.reply({ embeds: [hintEmbed] });
     }
 
+    async handleCarChange(message, game) {
+        try {
+            const newCar = await CarApiService.getRandomCar();
+            if (!newCar) {
+                const errorEmbed = GameEmbedBuilder.createGameEmbed(game, {
+                    color: '#FF0000',
+                    title: '❌ Erreur',
+                    description: 'Impossible de changer de voiture. Veuillez réessayer.'
+                });
+                await message.reply({ embeds: [errorEmbed] });
+                return;
+            }
+
+            // Mise à jour du jeu avec la nouvelle voiture
+            game.updateCar(newCar);
+            game.step = 'make';
+            game.resetAttempts();
+            game.makeFailed = false;
+
+            const newGameEmbed = GameEmbedBuilder.createGameEmbed(game, {
+                title: '🔄 Nouvelle voiture',
+                description: 'Voiture changée ! Devine la **marque** de la nouvelle voiture.\nTape `!indice` pour obtenir des indices.'
+            });
+
+            await message.reply({ embeds: [newGameEmbed] });
+        } catch (error) {
+            console.error('Erreur lors du changement de voiture:', error);
+            const errorEmbed = GameEmbedBuilder.createGameEmbed(game, {
+                color: '#FF0000',
+                title: '❌ Erreur',
+                description: 'Une erreur est survenue lors du changement de voiture.'
+            });
+            await message.reply({ embeds: [errorEmbed] });
+        }
+    }
+
+    async handleGameEnd(message, game) {
+        const timeSpent = game.getTimeSpent();
+        let points = 0;
+        let description = '';
+
+        if (game.step === 'model' && !game.makeFailed) {
+            // La partie est terminée avec succès complet
+            points = this.calculatePoints(game.modelDifficulte, true);
+            description = `Partie terminée ! Vous gagnez ${points} points pour avoir trouvé la marque et le modèle !`;
+        } else if (game.step === 'model') {
+            // La partie est terminée avec seulement la marque trouvée
+            points = this.calculatePoints(game.modelDifficulte, false);
+            description = `Partie terminée ! Vous gagnez ${points} points pour avoir trouvé la marque.`;
+        } else {
+            description = 'Partie terminée sans points. Vous n\'avez pas encore trouvé la marque.';
+        }
+
+        if (points > 0) {
+            this.scoreManager.updateScore(message.author.id, message.author.username, true, points);
+            this.scoreManager.updateGameStats(message.author.id, game.attempts, timeSpent);
+        }
+
+        const endEmbed = GameEmbedBuilder.createGameEmbed(game, {
+            color: '#4169E1',
+            title: '🏁 Fin de partie',
+            description: `${description}\nLa voiture était: ${game.make} ${game.model}`
+        });
+
+        clearTimeout(game.timeoutId);
+        await message.reply({ embeds: [endEmbed] });
+        this.activeGames.delete(message.channelId);
+
+        await this.handleDelayedThreadClose(message.channel, game.timeoutId);
+    }
+
+    calculatePoints(difficulty, fullSuccess) {
+        // Base points
+        let points = fullSuccess ? 1 : 0.5;
+        
+        // Multiplier based on difficulty (1: Easy, 2: Medium, 3: Hard)
+        const multiplier = difficulty === 3 ? 2 : 
+                          difficulty === 2 ? 1.5 : 
+                          1;
+        
+        return points * multiplier;
+    }
+
     async handleMakeGuess(message, game) {
         const userAnswer = message.content.toLowerCase().trim();
         let hintMessage = game.attempts === 5 ? `\n💡 La marque commence par "${game.firstLetter}"` : '';
@@ -336,14 +425,15 @@ class GameManager {
     async handleSuccessfulGuess(message, game) {
         const timeSpent = game.getTimeSpent();
         const fullSuccess = !game.makeFailed;
+        const points = this.calculatePoints(game.modelDifficulte, fullSuccess);
 
-        this.scoreManager.updateScore(message.author.id, message.author.username, fullSuccess);
+        this.scoreManager.updateScore(message.author.id, message.author.username, fullSuccess, points);
         this.scoreManager.updateGameStats(message.author.id, game.attempts, timeSpent);
 
         const userScore = this.scoreManager.getUserStats(message.author.id);
         const totalScore = userScore.calculateTotalScore();
 
-        const winEmbed = GameEmbedBuilder.createWinEmbed(game, timeSpent, fullSuccess, totalScore);
+        const winEmbed = GameEmbedBuilder.createWinEmbed(game, timeSpent, fullSuccess, totalScore, points);
 
         clearTimeout(game.timeoutId);
         await message.reply({ embeds: [winEmbed] });
