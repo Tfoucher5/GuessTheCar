@@ -2,7 +2,7 @@
 const Game = require('../models/Game');
 const CarApiService = require('../services/CarApiService');
 const GameEmbedBuilder = require('../utils/EmbedBuilder');
-const Verification = require('../utils/Verification');
+const Verification = require('../utils/Verification'); //nNE PAS CHANGER c'est bien Verification le nom du fichier !
 const { ChannelType } = require('discord.js');
 
 

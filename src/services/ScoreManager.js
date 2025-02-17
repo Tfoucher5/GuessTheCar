@@ -98,6 +98,39 @@ class ScoreManager {
 
         return players;
     }
+
+    updateChallengeScore(userId, username, score, carsGuessed) {
+        const userStats = this.getOrCreateUserStats(userId, username);
+        if (!userStats.challengeStats) {
+            userStats.challengeStats = {
+                bestScore: 0,
+                totalGames: 0,
+                carsGuessed: 0
+            };
+        }
+        
+        userStats.challengeStats.totalGames++;
+        userStats.challengeStats.carsGuessed += carsGuessed;
+        if (score > userStats.challengeStats.bestScore) {
+            userStats.challengeStats.bestScore = score;
+        }
+        
+        this.saveScores();
+    }
+    
+    getChallengeLeaderboard() {
+        return Object.values(this.scores)
+            .filter(user => user.challengeStats)
+            .sort((a, b) => b.challengeStats.bestScore - a.challengeStats.bestScore)
+            .slice(0, 10)
+            .map(user => ({
+                username: user.username,
+                bestScore: user.challengeStats.bestScore,
+                totalGames: user.challengeStats.totalGames,
+                carsGuessed: user.challengeStats.carsGuessed,
+                averageCarsPerGame: (user.challengeStats.carsGuessed / user.challengeStats.totalGames).toFixed(1)
+            }));
+    }
 }
 
 module.exports = ScoreManager;
