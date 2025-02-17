@@ -87,6 +87,7 @@ app.get('/api/random-car', (req, res) => {
         make: randomMake.nom,
         model: randomModel.nom,
         makeId: randomMake.id,
+        modelDate: randomModel.annee,
         country: randomMake.pays,
         modelLength: randomModel.nom.length,
         makeLength: randomMake.nom.length,
