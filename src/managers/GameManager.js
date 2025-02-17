@@ -447,6 +447,7 @@ class GameManager {
         
         this.scoreManager.updateGameStats(message.author.id, game.attempts, timeSpent);
 
+        console.log(fame.modelDifficulte);
         const userScore = this.scoreManager.getUserStats(message.author.id);
         const difficultyText = game.modelDifficulte === 3 ? "difficile" :
             game.modelDifficulte === 2 ? "moyen" : "facile";
