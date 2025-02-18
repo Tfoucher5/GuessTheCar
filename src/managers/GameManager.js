@@ -123,8 +123,8 @@ class GameManager {
 
             // Création de l'embed de démarrage
             const gameStartEmbed = GameEmbedBuilder.createGameEmbed(game, {
-                title: `🚗 Nouvelle partie, difficulté : ${difficulte}`,
-                description: 'C\'est parti ! Devine la **marque** de la voiture.\nTape `!indice` pour obtenir des indices.\nTape `!change` pour changer de voiture à deviner.\nTape `!terminer` pour mettre fin à la partie.\nTu as 10 essais maximum !',
+                title: `🚗 Nouvelle partie, difficulté : **${difficulte}**\n`,
+                description: 'C\'est parti ! Devine la **marque** de la voiture.\nTape `!indice` pour obtenir des indices.\nTape `!change` pour changer de voiture à deviner.\nTape `!terminer` pour mettre fin à la partie.\nTu as 10 essais maximum !\n',
                 footer: 'La partie se termine automatiquement après 5 minutes d\'inactivité'
             });
 
