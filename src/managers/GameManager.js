@@ -267,7 +267,7 @@ class GameManager {
     async handleCarChange(message, game) {
         try {
             // Vérifier si le joueur peut encore changer de voiture
-            if (!game.canChangecar()) {
+            if (!game.canChangecar() == true) {
                 const limitEmbed = GameEmbedBuilder.createGameEmbed(game, {
                     color: '#FF0000',
                     title: '❌ Limite atteinte',
