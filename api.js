@@ -84,8 +84,6 @@ app.get('/api/random-car', (req, res) => {
 
     const randomModel = models[Math.floor(Math.random() * models.length)];
 
-    console.log('Voiture aléatoire:', randomMake.nom, randomModel.nom);
-
     res.json({
         make: randomMake.nom,
         model: randomModel.nom,

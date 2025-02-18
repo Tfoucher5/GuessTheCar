@@ -125,15 +125,11 @@ class GameManager {
                 footer: 'La partie se termine automatiquement après 5 minutes d\'inactivité'
             });
 
-            console.log("Embed de démarrage créé");
-
             // Envoi de l'embed dans le thread
             await thread.send({ embeds: [gameStartEmbed] });
-            console.log("Embed envoyé dans le thread");
 
             // Réponse à l'utilisateur pour lui indiquer que la partie a été créée
             await interaction.followUp(`Partie créée ! Rendez-vous dans ${thread}`);
-            console.log("Réponse finale envoyée");
 
         } catch (error) {
             console.error("Erreur dans handleGuessCarCommand:");
@@ -447,10 +443,10 @@ class GameManager {
         
         this.scoreManager.updateGameStats(message.author.id, game.attempts, timeSpent);
 
-        console.log(game.modelDifficulte);
+        console.log("diffiulté : ", game.modelDifficulte);
         const userScore = this.scoreManager.getUserStats(message.author.id);
         const difficultyText = game.modelDifficulte === 3 ? "difficile" :
-            game.modelDifficulte === 2 ? "moyen" : "facile";
+            game.modelDifficulte === 2 ? "moyen" : game.modelDifficulte === 1 ? "facile" : erreur;
 
         const winEmbed = GameEmbedBuilder.createGameEmbed(game, {
             title: '🎉 Victoire !',
