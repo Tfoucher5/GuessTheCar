@@ -135,7 +135,7 @@ class GameManager {
             await interaction.followUp(`Partie créée ! Rendez-vous dans ${thread}`);
 
         } catch (error) {
-            console.error("Erreur dans handleGuessCarCommand:");
+            console.error(`Erreur dans handleGuessCarCommand: ${error}`);
             await interaction.followUp({
                 content: 'Une erreur est survenue, veuillez réessayer plus tard.',
                 ephemeral: true
@@ -579,9 +579,9 @@ class GameManager {
                 '`/abandon` - Abandonner la partie en cours\n' +
                 '`/classement` - Voir le classement\n' +
                 '`/stats` - Voir vos statistiques\n' +
-                '`!indice` - Obtenir un indice pendant la partie\n\n' +
-                '`!change` - Changer de voiture à deviner pendant la partie\n\n' +
-                '`!terminer` - mettre fin à la partie en cours\n\n' +
+                '`!indice` - Obtenir un indice pendant la partie\n' +
+                '`!change` - Changer de voiture à deviner pendant la partie\n' +
+                '`!terminer` - mettre fin à la partie en cours\n' +
                 '**⏰ Timeout**\n' +
                 'Une partie est automatiquement abandonnée après 5 minutes d\'inactivité'
         });
