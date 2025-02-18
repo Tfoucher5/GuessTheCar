@@ -64,6 +64,7 @@ app.get('/api/models/:makeId', (req, res) => {
     const models = modelsCache[makeId];
     if (models) {
         res.json(models); // Retourner les modèles en mémoire pour la marque donnée
+        console.log('Modèles pour la marque', makeId, ':', models);
     } else {
         res.status(404).send('Aucun modèle trouvé pour cette marque');
     }
@@ -82,6 +83,8 @@ app.get('/api/random-car', (req, res) => {
     }
 
     const randomModel = models[Math.floor(Math.random() * models.length)];
+
+    console.log('Voiture aléatoire:', randomMake.nom, randomModel.nom);
 
     res.json({
         make: randomMake.nom,
