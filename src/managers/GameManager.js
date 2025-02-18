@@ -118,7 +118,7 @@ class GameManager {
 
             this.activeGames.set(thread.id, game);
 
-            difficulte = game.modelDifficulte === 3 ? "difficile" :
+            const difficulte = game.modelDifficulte === 3 ? "difficile" :
             game.modelDifficulte === 2 ? "moyen" : game.modelDifficulte === 1 ? "facile" : "erreur";
 
             // Création de l'embed de démarrage
