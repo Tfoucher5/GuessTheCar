@@ -12,7 +12,6 @@ class GameManager {
         this.activeGames = new Map();
         this.GAME_TIMEOUT = 300000; // 5 minutes
         this.THREAD_CLOSE_DELAY = 60000; // 1 minute
-        this.carChangesCount = 0;
     }
 
     async handleCommand(interaction) {

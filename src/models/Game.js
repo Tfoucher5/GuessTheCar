@@ -16,6 +16,7 @@ class Game {
         this.step = 'make';
         this.makeFailed = false;
         this.startTime = Date.now();
+        this.carChangesCount = 0;
     }
 
     updateCar(car) {
