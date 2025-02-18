@@ -446,7 +446,7 @@ class GameManager {
         console.log("diffiulté : ", game.modelDifficulte);
         const userScore = this.scoreManager.getUserStats(message.author.id);
         const difficultyText = game.modelDifficulte === 3 ? "difficile" :
-            game.modelDifficulte === 2 ? "moyen" : game.modelDifficulte === 1 ? "facile" : erreur;
+            game.modelDifficulte === 2 ? "moyen" : game.modelDifficulte === 1 ? "facile" : "erreur";
 
         const winEmbed = GameEmbedBuilder.createGameEmbed(game, {
             title: '🎉 Victoire !',
