@@ -226,12 +226,32 @@ class GameManager {
         if (timeoutId) {
             clearTimeout(timeoutId);
         }
-
+    
         try {
-            const updatedThread = await this.client.channels.fetch(thread.id);
-            if (updatedThread) {
+            // Vérifier si le thread existe et est accessible
+            const updatedThread = await this.client.channels.fetch(thread.id)
+                .catch(() => null);
+            
+            if (!updatedThread) {
+                console.log(`Thread ${thread.id} n'est plus accessible ou a été supprimé`);
+                return;
+            }
+    
+            // Vérifier les permissions avant d'essayer de verrouiller
+            const permissions = updatedThread.permissionsFor(this.client.user);
+            if (!permissions.has('ManageThreads') || !permissions.has('SendMessages')) {
+                console.log(`Permissions insuffisantes pour le thread ${thread.id}`);
+                return;
+            }
+    
+            try {
                 await updatedThread.setLocked(true);
-
+            } catch (error) {
+                console.log(`Impossible de verrouiller le thread ${thread.id}:`, error);
+                return;
+            }
+    
+            try {
                 await updatedThread.send({
                     embeds: [GameEmbedBuilder.createGameEmbed(null, {
                         color: '#808080',
@@ -239,16 +259,28 @@ class GameManager {
                         description: 'Ce fil va être supprimé dans 1 minute.'
                     })]
                 });
-
-                await new Promise(resolve => setTimeout(resolve, this.THREAD_CLOSE_DELAY));
-
-                const threadToDelete = await this.client.channels.fetch(thread.id);
+            } catch (error) {
+                console.log(`Impossible d'envoyer le message de fermeture dans le thread ${thread.id}:`, error);
+                return;
+            }
+    
+            // Attendre avant la suppression
+            await new Promise(resolve => setTimeout(resolve, this.THREAD_CLOSE_DELAY));
+    
+            try {
+                // Vérifier une dernière fois si le thread existe toujours
+                const threadToDelete = await this.client.channels.fetch(thread.id)
+                    .catch(() => null);
+                    
                 if (threadToDelete) {
-                    await threadToDelete.delete();
+                    await threadToDelete.delete()
+                        .catch(error => console.log(`Impossible de supprimer le thread ${thread.id}:`, error));
                 }
+            } catch (error) {
+                console.log(`Erreur lors de la suppression finale du thread ${thread.id}:`, error);
             }
         } catch (error) {
-            console.error('Erreur lors de la fermeture et suppression du fil:', error);
+            console.log('Erreur dans handleDelayedThreadClose:', error);
         }
     }
 
