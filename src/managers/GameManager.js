@@ -106,7 +106,7 @@ class GameManager {
             // Création du thread pour la partie
             const thread = await interaction.channel.threads.create({
                 name: `🚗 Partie de ${interaction.user.username}`,
-                type: ChannelType.PublicThread,
+                type: ChannelType.PrivateThread,
                 autoArchiveDuration: 60
             });
 
@@ -118,10 +118,13 @@ class GameManager {
 
             this.activeGames.set(thread.id, game);
 
+            difficulte = game.modelDifficulte === 3 ? "difficile" :
+            game.modelDifficulte === 2 ? "moyen" : game.modelDifficulte === 1 ? "facile" : "erreur";
+
             // Création de l'embed de démarrage
             const gameStartEmbed = GameEmbedBuilder.createGameEmbed(game, {
-                title: '🚗 Nouvelle partie',
-                description: 'C\'est parti ! Devine la **marque** de la voiture.\nTape `!indice` pour obtenir des indices.\nTu as 10 essais maximum !',
+                title: `🚗 Nouvelle partie, difficulté : ${difficulte}`,
+                description: 'C\'est parti ! Devine la **marque** de la voiture.\nTape `!indice` pour obtenir des indices.\nTape `!change` pour changer de voiture à deviner.\nTape `!terminer` pour mettre fin à la partie.\nTu as 10 essais maximum !',
                 footer: 'La partie se termine automatiquement après 5 minutes d\'inactivité'
             });
 
@@ -298,7 +301,7 @@ class GameManager {
     
             const newGameEmbed = GameEmbedBuilder.createGameEmbed(game, {
                 title: '🔄 Nouvelle voiture',
-                description: `Voiture changée ! Devine la **marque** de la nouvelle voiture.\nTape \`!indice\` pour obtenir des indices.\n\n*Changements restants: ${3 - game.carChangesCount}*`
+                description: `Voiture changée ! Devine la **marque** de la nouvelle voiture.\nTape \`!indice\` pour obtenir des indices.\nTape \`!change\` pour changer encore.\nTape \`!terminer\` pour mettre fin à la partie.\n\n*Changements restants: ${3 - game.carChangesCount}*`
             });
     
             await message.reply({ embeds: [newGameEmbed] });
@@ -461,10 +464,9 @@ class GameManager {
             title: '🎉 Victoire !',
             description: `Félicitations ! Vous avez trouvé ${game.make} ${game.model} !\n` +
                 `Niveau de difficulté: ${difficultyText}\n` +
-                `Points de base gagnés: ${basePoints}\n` +
-                `Points avec bonus de difficulté: ${difficultyPoints}\n` +
-                `Temps: ${(timeSpent / 1000).toFixed(1)} secondes\n` +
-                `Score total: ${userScore.totalDifficultyPoints.toFixed(1)}`
+                `Points de base : ${basePoints}\n` +
+                `Points gagnés grâce au bonus de difficulté: ${difficultyPoints}\n` +
+                `Temps: ${(timeSpent / 1000).toFixed(1)} secondes\n`
         });
 
         clearTimeout(game.timeoutId);
@@ -550,8 +552,8 @@ class GameManager {
             title: `📊 Statistiques de ${interaction.user.username}`,
             description:
                 `🏆 Score total: ${stats.totalDifficultyPoints.toFixed(1)} points\n` +
-                `✨ Points de base: ${stats.totalPoints.toFixed(1)}\n` +
-                `🌟 Réussites complètes: ${stats.carsGuessed}\n` +
+                `✨ Points de base (sans bonus difficulté): ${stats.totalPoints.toFixed(1)}\n` +
+                `🌟 Réussites complètes (marque + modèle): ${stats.carsGuessed}\n` +
                 `⭐ Réussites partielles: ${stats.partialGuesses}\n` +
                 `🎯 Moyenne d'essais: ${stats.averageAttempts.toFixed(1)}\n` +
                 `⚡ Meilleur temps: ${stats.bestTime ? `${(stats.bestTime / 1000).toFixed(1)} secondes` : 'N/A'}`
