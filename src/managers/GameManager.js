@@ -320,30 +320,36 @@ class GameManager {
         const timeSpent = game.getTimeSpent();
         let points = 0;
         let description = '';
-         if (game.step === 'model') {
-            // La partie est terminée avec seulement la marque trouvée
+        if (game.step === 'model') {
             points = this.calculatePoints(game.modelDifficulte, false);
             description = `Partie terminée ! Vous gagnez ${points} points pour avoir trouvé la marque.`;
         } else {
             description = 'Partie terminée sans points. Vous n\'avez pas encore trouvé la marque.';
         }
-
+    
         if (points > 0) {
             this.scoreManager.updateScore(message.author.id, message.author.username, true, points);
             this.scoreManager.updateGameStats(message.author.id, game.attempts, timeSpent);
         }
-
+    
         const endEmbed = GameEmbedBuilder.createGameEmbed(game, {
             color: '#4169E1',
             title: '🏁 Fin de partie',
             description: `${description}\nLa voiture était: ${game.make} ${game.model}`
         });
-
+    
         clearTimeout(game.timeoutId);
         await message.reply({ embeds: [endEmbed] });
         this.activeGames.delete(message.channelId);
-
-        await this.handleDelayedThreadClose(message.channel, game.timeoutId);
+    
+        try {
+            const thread = await this.client.channels.fetch(message.channelId);
+            if (thread) {
+                await this.handleDelayedThreadClose(thread, game.timeoutId);
+            }
+        } catch (error) {
+            console.error('Erreur lors de la fermeture du thread:', error);
+        }
     }
 
     calculatePoints(difficulty, fullSuccess) {
@@ -444,7 +450,7 @@ class GameManager {
         const fullSuccess = !game.makeFailed;
         const basePoints = fullSuccess ? 1 : 0.5;
         const difficultyPoints = this.calculatePoints(game.modelDifficulte, fullSuccess);
-
+    
         this.scoreManager.updateScore(
             message.author.id, 
             message.author.username, 
@@ -454,12 +460,11 @@ class GameManager {
         );
         
         this.scoreManager.updateGameStats(message.author.id, game.attempts, timeSpent);
-
-        console.log("diffiulté : ", game.modelDifficulte);
+    
         const userScore = this.scoreManager.getUserStats(message.author.id);
         const difficultyText = game.modelDifficulte === 3 ? "difficile" :
             game.modelDifficulte === 2 ? "moyen" : game.modelDifficulte === 1 ? "facile" : "erreur";
-
+    
         const winEmbed = GameEmbedBuilder.createGameEmbed(game, {
             title: '🎉 Victoire !',
             description: `Félicitations ! Vous avez trouvé ${game.make} ${game.model} !\n` +
@@ -468,24 +473,31 @@ class GameManager {
                 `Points gagnés grâce au bonus de difficulté: ${difficultyPoints}\n` +
                 `Temps: ${(timeSpent / 1000).toFixed(1)} secondes\n`
         });
-
+    
         clearTimeout(game.timeoutId);
         await message.reply({ embeds: [winEmbed] });
         this.activeGames.delete(message.channelId);
-
-        await this.handleDelayedThreadClose(message.channel, game.timeoutId);
+    
+        try {
+            const thread = await this.client.channels.fetch(message.channelId);
+            if (thread) {
+                await this.handleDelayedThreadClose(thread, game.timeoutId);
+            }
+        } catch (error) {
+            console.error('Erreur lors de la fermeture du thread:', error);
+        }
     }
 
     async handleFailedGuess(message, game) {
         const timeSpent = game.getTimeSpent();
-        const points = this.calculatePoints(game.modelDifficulte, false); // Points partiels pour avoir trouvé la marque
-
+        const points = this.calculatePoints(game.modelDifficulte, false);
+    
         this.scoreManager.updateScore(message.author.id, message.author.username, false, points);
         this.scoreManager.updateGameStats(message.author.id, game.attempts, timeSpent);
-
+    
         const difficultyText = game.modelDifficulte === 3 ? "difficile" :
             game.modelDifficulte === 2 ? "moyen" : "facile";
-
+    
         const gameOverEmbed = GameEmbedBuilder.createGameEmbed(game, {
             color: '#FFA500',
             title: '⌛ Plus d\'essais',
@@ -493,12 +505,19 @@ class GameManager {
                 `Niveau de difficulté: ${difficultyText}\n` +
                 `Vous gagnez ${points} points pour avoir trouvé la marque.`
         });
-
+    
         clearTimeout(game.timeoutId);
         await message.reply({ embeds: [gameOverEmbed] });
         this.activeGames.delete(message.channelId);
-
-        await this.handleDelayedThreadClose(message.channel, game.timeoutId);
+    
+        try {
+            const thread = await this.client.channels.fetch(message.channelId);
+            if (thread) {
+                await this.handleDelayedThreadClose(thread, game.timeoutId);
+            }
+        } catch (error) {
+            console.error('Erreur lors de la fermeture du thread:', error);
+        }
     }
 
     async handleLeaderboardCommand(interaction) {
