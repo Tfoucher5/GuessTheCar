@@ -230,27 +230,50 @@ class GameManager {
         try {
             // Vérifier si le thread existe et est accessible
             const updatedThread = await this.client.channels.fetch(thread.id)
-                .catch(() => null);
+                .catch(error => {
+                    console.log(`Thread ${thread.id} n'est plus accessible:`, error.message);
+                    return null;
+                });
             
             if (!updatedThread) {
-                console.log(`Thread ${thread.id} n'est plus accessible ou a été supprimé`);
+                console.log(`Thread ${thread.id} n'existe plus ou n'est pas accessible`);
                 return;
             }
     
-            // Vérifier les permissions avant d'essayer de verrouiller
+            // Vérifier en détail les permissions nécessaires
             const permissions = updatedThread.permissionsFor(this.client.user);
-            if (!permissions.has('ManageThreads') || !permissions.has('SendMessages')) {
-                console.log(`Permissions insuffisantes pour le thread ${thread.id}`);
+            const requiredPermissions = ['ManageThreads', 'SendMessages'];
+            const missingPermissions = requiredPermissions.filter(perm => !permissions.has(perm));
+    
+            if (missingPermissions.length > 0) {
+                console.log(`Permissions manquantes pour le thread ${thread.id}: ${missingPermissions.join(', ')}`);
+                
+                // Si on peut au moins envoyer des messages, notifier dans le thread
+                if (permissions.has('SendMessages')) {
+                    try {
+                        await updatedThread.send({
+                            embeds: [GameEmbedBuilder.createGameEmbed(null, {
+                                color: '#FF0000',
+                                title: '⚠️ Permissions insuffisantes',
+                                description: 'Le bot ne peut pas fermer ce thread automatiquement. Un administrateur devra le faire manuellement.'
+                            })]
+                        });
+                    } catch (error) {
+                        console.log(`Impossible d'envoyer le message d'avertissement:`, error.message);
+                    }
+                }
                 return;
             }
     
+            // Tentative de verrouillage avec gestion d'erreur détaillée
             try {
                 await updatedThread.setLocked(true);
             } catch (error) {
-                console.log(`Impossible de verrouiller le thread ${thread.id}:`, error);
+                console.log(`Erreur lors du verrouillage du thread ${thread.id}:`, error.message);
                 return;
             }
     
+            // Envoi du message de fermeture
             try {
                 await updatedThread.send({
                     embeds: [GameEmbedBuilder.createGameEmbed(null, {
@@ -260,27 +283,39 @@ class GameManager {
                     })]
                 });
             } catch (error) {
-                console.log(`Impossible d'envoyer le message de fermeture dans le thread ${thread.id}:`, error);
+                console.log(`Erreur lors de l'envoi du message de fermeture:`, error.message);
                 return;
             }
     
             // Attendre avant la suppression
             await new Promise(resolve => setTimeout(resolve, this.THREAD_CLOSE_DELAY));
     
+            // Dernière tentative de suppression
             try {
-                // Vérifier une dernière fois si le thread existe toujours
                 const threadToDelete = await this.client.channels.fetch(thread.id)
                     .catch(() => null);
                     
                 if (threadToDelete) {
                     await threadToDelete.delete()
-                        .catch(error => console.log(`Impossible de supprimer le thread ${thread.id}:`, error));
+                        .catch(error => {
+                            console.log(`Erreur lors de la suppression du thread ${thread.id}:`, error.message);
+                            // Notification en cas d'échec de la suppression
+                            if (permissions.has('SendMessages')) {
+                                threadToDelete.send({
+                                    embeds: [GameEmbedBuilder.createGameEmbed(null, {
+                                        color: '#FF0000',
+                                        title: '⚠️ Erreur de suppression',
+                                        description: 'Le fil n\'a pas pu être supprimé automatiquement. Un administrateur devra le faire manuellement.'
+                                    })]
+                                }).catch(() => {});
+                            }
+                        });
                 }
             } catch (error) {
-                console.log(`Erreur lors de la suppression finale du thread ${thread.id}:`, error);
+                console.log(`Erreur finale lors de la gestion du thread ${thread.id}:`, error.message);
             }
         } catch (error) {
-            console.log('Erreur dans handleDelayedThreadClose:', error);
+            console.log('Erreur générale dans handleDelayedThreadClose:', error.message);
         }
     }
 
