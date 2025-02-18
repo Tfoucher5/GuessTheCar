@@ -12,6 +12,15 @@ class GameManager {
         this.activeGames = new Map();
         this.GAME_TIMEOUT = 300000; // 5 minutes
         this.THREAD_CLOSE_DELAY = 60000; // 1 minute
+        this.carChangesCount = 0;
+    }
+
+    canChangecar() {
+        return this.carChangesCount < 3;
+    }
+
+    incrementCarChanges() {
+        this.carChangesCount++;
     }
 
     async handleCommand(interaction) {
@@ -265,6 +274,17 @@ class GameManager {
 
     async handleCarChange(message, game) {
         try {
+            // Vérifier si le joueur peut encore changer de voiture
+            if (!game.canChangecar()) {
+                const limitEmbed = GameEmbedBuilder.createGameEmbed(game, {
+                    color: '#FF0000',
+                    title: '❌ Limite atteinte',
+                    description: 'Vous avez déjà utilisé vos 3 changements de voiture pour cette partie.'
+                });
+                await message.reply({ embeds: [limitEmbed] });
+                return;
+            }
+    
             const newCar = await CarApiService.getRandomCar();
             if (!newCar) {
                 const errorEmbed = GameEmbedBuilder.createGameEmbed(game, {
@@ -275,18 +295,21 @@ class GameManager {
                 await message.reply({ embeds: [errorEmbed] });
                 return;
             }
-
+    
+            // Incrémenter le compteur de changements
+            game.incrementCarChanges();
+    
             // Mise à jour du jeu avec la nouvelle voiture
             game.updateCar(newCar);
             game.step = 'make';
             game.resetAttempts();
             game.makeFailed = false;
-
+    
             const newGameEmbed = GameEmbedBuilder.createGameEmbed(game, {
                 title: '🔄 Nouvelle voiture',
-                description: 'Voiture changée ! Devine la **marque** de la nouvelle voiture.\nTape `!indice` pour obtenir des indices.'
+                description: `Voiture changée ! Devine la **marque** de la nouvelle voiture.\nTape \`!indice\` pour obtenir des indices.\n\n*Changements restants: ${3 - game.carChangesCount}*`
             });
-
+    
             await message.reply({ embeds: [newGameEmbed] });
         } catch (error) {
             console.error('Erreur lors du changement de voiture:', error);
