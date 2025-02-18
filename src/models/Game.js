@@ -42,6 +42,14 @@ class Game {
     getTimeSpent() {
         return Date.now() - this.startTime;
     }
+
+    canChangecar() {
+        return this.carChangesCount < 3;
+    }
+
+    incrementCarChanges() {
+        this.carChangesCount++;
+    }
 }
 
 module.exports = Game;

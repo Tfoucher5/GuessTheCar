@@ -15,14 +15,6 @@ class GameManager {
         this.carChangesCount = 0;
     }
 
-    canChangecar() {
-        return this.carChangesCount < 3;
-    }
-
-    incrementCarChanges() {
-        this.carChangesCount++;
-    }
-
     async handleCommand(interaction) {
         const { commandName, user } = interaction;
 
