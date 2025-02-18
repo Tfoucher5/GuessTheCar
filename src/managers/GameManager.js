@@ -303,12 +303,7 @@ class GameManager {
         const timeSpent = game.getTimeSpent();
         let points = 0;
         let description = '';
-
-        if (game.step === 'model' && !game.makeFailed) {
-            // La partie est terminée avec succès complet
-            points = this.calculatePoints(game.modelDifficulte, true);
-            description = `Partie terminée ! Vous gagnez ${points} points pour avoir trouvé la marque et le modèle !`;
-        } else if (game.step === 'model') {
+         if (game.step === 'model') {
             // La partie est terminée avec seulement la marque trouvée
             points = this.calculatePoints(game.modelDifficulte, false);
             description = `Partie terminée ! Vous gagnez ${points} points pour avoir trouvé la marque.`;
