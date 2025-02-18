@@ -28,7 +28,7 @@ class UserStats {
     updateStats(attempts, time) {
         this.totalAttempts += attempts;
         this.lastGameTime = time;
-        
+
         // Met à jour le meilleur temps si c'est la première partie ou si c'est un nouveau record
         if (!this.bestTime || time < this.bestTime) {
             this.bestTime = time;

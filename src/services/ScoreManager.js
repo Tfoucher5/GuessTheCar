@@ -17,6 +17,7 @@ class ScoreManager {
             for (const userId in scores) {
                 const userData = scores[userId];
                 const userStats = new UserStats(userData.username);
+                userData.totalDifficultyPoints = userData.totalDifficultyPoints || 0;
                 Object.assign(userStats, userData);
                 this.stats.set(userId, userStats);
             }
