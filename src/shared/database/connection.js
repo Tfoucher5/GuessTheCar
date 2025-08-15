@@ -1,97 +1,100 @@
-const mysql = require('mysql2/promise');
-const dbConfig = require('../config/database');
-const logger = require('../utils/logger');
-const { DatabaseError } = require('../errors');
+// src/shared/database/connection.js - VERSION CORRIGÉE
 
-let pool = null;
+require('dotenv').config();
+const mysql = require('mysql2/promise');
+const logger = require('../utils/logger');
+
+let connection = null;
 
 /**
  * Initialise la connexion à la base de données
  */
 async function initializeDatabase() {
+    if (connection) {
+        return connection; // Déjà initialisée
+    }
+
+    const config = {
+        host: process.env.DB_HOST || 'localhost',
+        port: process.env.DB_PORT || 3306,
+        user: process.env.DB_USER || 'root',
+        database: process.env.DB_NAME || 'guessthecar'
+    };
+
+    if (process.env.DB_PASSWORD && process.env.DB_PASSWORD !== '') {
+        config.password = process.env.DB_PASSWORD;
+    }
+
     try {
-        pool = mysql.createPool({
-            ...dbConfig,
-            waitForConnections: true,
-            queueLimit: 0
-        });
-
-        // Test de connexion
-        const connection = await pool.getConnection();
-        await connection.ping();
-        connection.release();
-
-        logger.info('Database connection pool created successfully');
-        return pool;
+        connection = await mysql.createConnection(config);
+        logger.info('Database connection initialized');
+        return connection;
     } catch (error) {
-        logger.error('Failed to initialize database:', error);
-        throw new DatabaseError('Failed to connect to database', error);
+        logger.error('Failed to initialize database connection:', error);
+        throw error;
     }
 }
 
 /**
- * Obtient le pool de connexions
- */
-function getPool() {
-    if (!pool) {
-        throw new DatabaseError('Database not initialized. Call initializeDatabase() first.');
-    }
-    return pool;
-}
-
-/**
- * Exécute une requête avec gestion d'erreur
+ * Exécute une requête SQL
  */
 async function executeQuery(query, params = []) {
     try {
-        const [results] = await pool.execute(query, params);
+        // S'assurer que la connexion est initialisée
+        if (!connection) {
+            await initializeDatabase();
+        }
+
+        const [results] = await connection.execute(query, params);
         return results;
     } catch (error) {
-        logger.error('Database query error:', { query, params, error: error.message });
+        logger.error('Database query error:', {
+            query: query.replace(/\s+/g, ' ').trim(),
+            params,
+            error: error.message
+        });
+        
+        // Si connexion fermée, essayer de reconnecter
+        if (error.code === 'PROTOCOL_CONNECTION_LOST') {
+            logger.info('Reconnecting to database...');
+            connection = null;
+            await initializeDatabase();
+            const [results] = await connection.execute(query, params);
+            return results;
+        }
+        
         throw new DatabaseError(`Query execution failed: ${error.message}`, error);
     }
 }
 
 /**
- * Exécute une transaction
+ * Ferme la connexion à la base de données
  */
-async function executeTransaction(queries) {
-    const connection = await pool.getConnection();
-
-    try {
-        await connection.beginTransaction();
-
-        const results = [];
-        for (const { query, params } of queries) {
-            const [result] = await connection.execute(query, params);
-            results.push(result);
-        }
-
-        await connection.commit();
-        return results;
-    } catch (error) {
-        await connection.rollback();
-        logger.error('Transaction failed:', error);
-        throw new DatabaseError(`Transaction failed: ${error.message}`, error);
-    } finally {
-        connection.release();
+async function closeConnection() {
+    if (connection) {
+        await connection.end();
+        connection = null;
+        logger.info('Database connection closed');
     }
 }
 
 /**
- * Ferme proprement le pool de connexions
+ * Classe d'erreur pour les erreurs de base de données
  */
-async function closeDatabase() {
-    if (pool) {
-        await pool.end();
-        logger.info('Database connection pool closed');
+class DatabaseError extends Error {
+    constructor(message, originalError = null) {
+        super(message);
+        this.name = 'DatabaseError';
+        this.statusCode = 500;
+        this.isOperational = true;
+        this.code = 'DATABASE_ERROR';
+        this.originalError = originalError;
     }
 }
 
 module.exports = {
-    initializeDatabase,
-    getPool,
     executeQuery,
-    executeTransaction,
-    closeDatabase
+    initializeDatabase,
+    closeConnection,
+    DatabaseError
 };

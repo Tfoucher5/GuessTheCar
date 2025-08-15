@@ -1,7 +1,7 @@
 const PlayerRepository = require('../../shared/database/repositories/PlayerRepository');
 const Player = require('./Player');
+const { ValidationError } = require('../../shared/errors');
 const logger = require('../../shared/utils/logger');
-const { NotFoundError } = require('../../shared/errors');
 
 class PlayerManager {
     constructor() {
@@ -9,26 +9,20 @@ class PlayerManager {
     }
 
     /**
-     * Obtient ou crée un joueur
+     * Trouve ou crée un joueur
      */
-    async getOrCreatePlayer(userId, username) {
+    async findOrCreatePlayer(userId, username) {
         try {
-            let player = await this.playerRepository.findByUserId(userId);
-
-            if (!player) {
-                player = new Player(userId, username);
-                player = await this.playerRepository.createPlayer(player);
-                logger.info('New player created:', { userId, username });
-            } else if (player.username !== username) {
-                // Mise à jour du nom d'utilisateur si changé
-                player.username = username;
-                player = await this.playerRepository.updatePlayer(player);
-                logger.info('Player username updated:', { userId, oldName: player.username, newName: username });
+            if (!userId || !username) {
+                throw new ValidationError('User ID et username requis');
             }
+
+            const player = await this.playerRepository.findOrCreate(userId, username);
+            logger.debug('Player found or created:', { userId, username });
 
             return player;
         } catch (error) {
-            logger.error('Error getting or creating player:', { userId, username, error });
+            logger.error('Error finding or creating player:', { userId, username, error });
             throw error;
         }
     }
@@ -36,73 +30,73 @@ class PlayerManager {
     /**
      * Met à jour le score d'un joueur
      */
-    async updatePlayerScore(userId, username, basePoints, difficultyPoints, isFullSuccess) {
+    async updatePlayerScore(userId, username, basePoints, difficultyPoints, isComplete, gameStats = {}) {
         try {
-            const player = await this.playerRepository.updatePlayerScore(
-                userId,
-                username,
-                basePoints,
-                difficultyPoints,
-                isFullSuccess
-            );
+            // Récupérer ou créer le joueur
+            let player = await this.findOrCreatePlayer(userId, username);
+
+            // Créer les données de session de jeu
+            const gameSession = {
+                userId: userId,
+                carId: gameStats.carId || null,
+                startedAt: gameStats.startedAt || new Date(),
+                endedAt: new Date(),
+                durationSeconds: gameStats.duration || null,
+                attemptsMake: gameStats.attemptsMake || 0,
+                attemptsModel: gameStats.attemptsModel || 0,
+                makeFound: gameStats.makeFound || false,
+                modelFound: gameStats.modelFound || false,
+                completed: isComplete,
+                abandoned: gameStats.abandoned || false,
+                timeout: gameStats.timeout || false,
+                carChangesUsed: gameStats.carChangesUsed || 0,
+                hintsUsed: gameStats.hintsUsed || {},
+                pointsEarned: basePoints || 0,
+                difficultyPointsEarned: difficultyPoints || 0
+            };
+
+            // Enregistrer la session de jeu
+            if (gameSession.carId) {
+                await this.playerRepository.saveGameSession(gameSession);
+            }
+
+            // Mettre à jour les statistiques du joueur
+            player.updateGameStats(gameSession);
+
+            // Sauvegarder les changements
+            const updatedPlayer = await this.playerRepository.updatePlayerStats(userId, player.toDatabase());
 
             logger.info('Player score updated:', {
                 userId,
-                username,
                 basePoints,
                 difficultyPoints,
-                isFullSuccess,
-                totalPoints: player.totalDifficultyPoints
+                isComplete,
+                newTotal: updatedPlayer.totalDifficultyPoints
             });
 
-            return player;
+            return updatedPlayer;
+
         } catch (error) {
-            logger.error('Error updating player score:', { userId, username, error });
+            logger.error('Error updating player score:', { userId, error });
             throw error;
         }
     }
 
     /**
-     * Met à jour les statistiques de jeu d'un joueur
+     * Obtient les statistiques d'un joueur avec son classement
      */
-    async updatePlayerGameStats(userId, attempts, gameTime) {
+    async getPlayerWithRanking(userId) {
         try {
-            const player = await this.playerRepository.updatePlayerGameStats(userId, attempts, gameTime);
+            const playerStats = await this.playerRepository.getPlayerWithRanking(userId);
 
-            logger.info('Player game stats updated:', {
-                userId,
-                attempts,
-                gameTime,
-                totalAttempts: player.totalAttempts,
-                bestTime: player.bestTime
-            });
-
-            return player;
-        } catch (error) {
-            logger.error('Error updating player game stats:', { userId, attempts, gameTime, error });
-            throw error;
-        }
-    }
-
-    /**
-     * Obtient les statistiques d'un joueur
-     */
-    async getPlayerStats(userId) {
-        try {
-            const player = await this.playerRepository.findByUserId(userId);
-
-            if (!player) {
-                throw new NotFoundError(`Joueur avec l'ID ${userId} non trouvé`);
+            if (!playerStats) {
+                logger.debug('No player stats found for user:', { userId });
+                return null;
             }
 
-            // Ajouter le rang du joueur
-            const rank = await this.playerRepository.getPlayerRank(userId);
-            const stats = player.toJSON();
-            stats.rank = rank;
-
-            return stats;
+            return playerStats;
         } catch (error) {
-            logger.error('Error getting player stats:', { userId, error });
+            logger.error('Error getting player with ranking:', { userId, error });
             throw error;
         }
     }
@@ -112,27 +106,13 @@ class PlayerManager {
      */
     async getLeaderboard(limit = 10) {
         try {
-            const players = await this.playerRepository.getLeaderboard(limit);
+            const leaderboard = await this.playerRepository.getLeaderboard(limit);
 
-            return players.map((player, index) => ({
-                position: index + 1,
-                ...player.toJSON()
-            }));
+            logger.debug('Leaderboard retrieved:', { count: leaderboard.length, limit });
+
+            return leaderboard;
         } catch (error) {
             logger.error('Error getting leaderboard:', { limit, error });
-            throw error;
-        }
-    }
-
-    /**
-     * Recherche des joueurs par nom
-     */
-    async searchPlayers(username, limit = 10) {
-        try {
-            const players = await this.playerRepository.searchPlayersByUsername(username, limit);
-            return players.map(player => player.toJSON());
-        } catch (error) {
-            logger.error('Error searching players:', { username, error });
             throw error;
         }
     }
@@ -143,16 +123,7 @@ class PlayerManager {
     async getGlobalStats() {
         try {
             const stats = await this.playerRepository.getGlobalStats();
-            return {
-                totalPlayers: stats.totalPlayers || 0,
-                activePlayers: stats.activePlayers || 0,
-                totalCarsGuessed: stats.totalCarsGuessed || 0,
-                totalPartialGuesses: stats.totalPartialGuesses || 0,
-                totalPoints: Math.round((stats.totalPoints || 0) * 10) / 10,
-                averagePoints: Math.round((stats.avgPoints || 0) * 10) / 10,
-                bestGlobalTime: stats.bestGlobalTime ? `${(stats.bestGlobalTime / 1000).toFixed(1)}s` : 'N/A',
-                highestScore: Math.round((stats.highestScore || 0) * 10) / 10
-            };
+            return stats;
         } catch (error) {
             logger.error('Error getting global stats:', error);
             throw error;
@@ -160,80 +131,37 @@ class PlayerManager {
     }
 
     /**
-     * Obtient les joueurs actifs récemment
-     */
-    async getRecentlyActivePlayers(days = 7, limit = 20) {
-        try {
-            const players = await this.playerRepository.getRecentlyActivePlayers(days, limit);
-            return players.map(player => player.toJSON());
-        } catch (error) {
-            logger.error('Error getting recently active players:', { days, limit, error });
-            throw error;
-        }
-    }
-
-    /**
-     * Vérifie si un joueur existe
-     */
-    async playerExists(userId) {
-        try {
-            const player = await this.playerRepository.findByUserId(userId);
-            return !!player;
-        } catch (error) {
-            logger.error('Error checking if player exists:', { userId, error });
-            return false;
-        }
-    }
-
-    /**
-     * Migre les données depuis l'ancien système de scores
-     */
-    async migrateLegacyScores(legacyData) {
-        try {
-            let migratedCount = 0;
-            let errorCount = 0;
-
-            for (const [userId, userData] of Object.entries(legacyData)) {
-                try {
-                    const existingPlayer = await this.playerRepository.findByUserId(userId);
-
-                    if (!existingPlayer) {
-                        const player = Player.fromLegacyData(userId, userData);
-                        await this.playerRepository.createPlayer(player);
-                        migratedCount++;
-                        logger.info('Legacy player migrated:', { userId, username: userData.username });
-                    }
-                } catch (error) {
-                    errorCount++;
-                    logger.error('Error migrating legacy player:', { userId, error });
-                }
-            }
-
-            logger.info('Legacy migration completed:', { migratedCount, errorCount });
-            return { migratedCount, errorCount };
-        } catch (error) {
-            logger.error('Error during legacy migration:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Réinitialise les statistiques d'un joueur
+     * Remet à zéro les statistiques d'un joueur (admin uniquement)
      */
     async resetPlayerStats(userId) {
         try {
             const player = await this.playerRepository.findByUserId(userId);
 
             if (!player) {
-                throw new NotFoundError(`Joueur avec l'ID ${userId} non trouvé`);
+                throw new ValidationError('Joueur non trouvé');
             }
 
-            // Créer un nouveau joueur avec les mêmes identifiants mais stats à zéro
-            const resetPlayer = new Player(player.userId, player.username);
-            await this.playerRepository.updatePlayer(resetPlayer);
+            // Réinitialiser toutes les statistiques
+            const resetData = {
+                username: player.username,
+                totalPoints: 0,
+                totalDifficultyPoints: 0,
+                gamesPlayed: 0,
+                gamesWon: 0,
+                correctBrandGuesses: 0,
+                correctModelGuesses: 0,
+                totalBrandGuesses: 0,
+                totalModelGuesses: 0,
+                bestStreak: 0,
+                currentStreak: 0,
+                bestTime: null
+            };
 
-            logger.info('Player stats reset:', { userId, username: player.username });
-            return resetPlayer;
+            const updatedPlayer = await this.playerRepository.updatePlayerStats(userId, resetData);
+
+            logger.info('Player stats reset:', { userId });
+
+            return updatedPlayer;
         } catch (error) {
             logger.error('Error resetting player stats:', { userId, error });
             throw error;
@@ -241,36 +169,51 @@ class PlayerManager {
     }
 
     /**
-     * Supprime un joueur
+     * Obtient un joueur par ID
      */
-    async deletePlayer(userId) {
+    async getPlayerById(userId) {
         try {
             const player = await this.playerRepository.findByUserId(userId);
-
-            if (!player) {
-                throw new NotFoundError(`Joueur avec l'ID ${userId} non trouvé`);
-            }
-
-            await this.playerRepository.deleteWhere({ user_id: userId });
-
-            logger.info('Player deleted:', { userId, username: player.username });
-            return true;
+            return player;
         } catch (error) {
-            logger.error('Error deleting player:', { userId, error });
+            logger.error('Error getting player by ID:', { userId, error });
             throw error;
         }
     }
 
     /**
-     * Met à jour un joueur existant
+     * Met à jour le nom d'utilisateur d'un joueur
      */
-    async updatePlayer(player) {
+    async updatePlayerUsername(userId, newUsername) {
         try {
-            const updatedPlayer = await this.playerRepository.updatePlayer(player);
-            logger.info('Player updated:', { userId: player.userId, username: player.username });
+            const player = await this.playerRepository.findByUserId(userId);
+
+            if (!player) {
+                throw new ValidationError('Joueur non trouvé');
+            }
+
+            player.username = newUsername;
+            const updatedPlayer = await this.playerRepository.updatePlayerStats(userId, player.toDatabase());
+
+            logger.info('Player username updated:', { userId, newUsername });
+
             return updatedPlayer;
         } catch (error) {
-            logger.error('Error updating player:', { userId: player.userId, error });
+            logger.error('Error updating player username:', { userId, newUsername, error });
+            throw error;
+        }
+    }
+
+    /**
+     * Supprime un joueur (admin uniquement)
+     */
+    async deletePlayer(userId) {
+        try {
+            // Note: Cette méthode nécessiterait l'implémentation de delete dans PlayerRepository
+            logger.warn('Delete player requested but not implemented:', { userId });
+            throw new Error('Suppression de joueur non implémentée');
+        } catch (error) {
+            logger.error('Error deleting player:', { userId, error });
             throw error;
         }
     }

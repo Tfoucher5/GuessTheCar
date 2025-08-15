@@ -21,17 +21,17 @@ module.exports = {
 
             // Gérer les commandes spéciales pendant le jeu
             switch (userInput) {
-            case '!indice':
-                await handleHintCommand(message, activeGame);
-                return;
+                case '!indice':
+                    await handleHintCommand(message, activeGame);
+                    return;
 
-            case '!change':
-                await handleChangeCommand(message, activeGame);
-                return;
+                case '!change':
+                    await handleChangeCommand(message, activeGame);
+                    return;
 
-            case '!terminer':
-                await handleEndCommand(message, activeGame);
-                return;
+                case '!terminer':
+                    await handleEndCommand(message, activeGame);
+                    return;
             }
 
             // Traiter la réponse du joueur
@@ -102,31 +102,46 @@ async function handleChangeCommand(message, gameState) {
 }
 
 /**
- * Gère la commande de fin de partie
+ * Gère la commande de fin de partie (!terminer)
  */
 async function handleEndCommand(message, gameState) {
     try {
-        const result = await gameEngine.endGame(message.channelId);
+        // Utiliser abandonGame au lieu de endGame pour avoir le même comportement que /abandon
+        const result = await gameEngine.abandonGame(message.channelId);
 
-        const endEmbed = EmbedBuilder.createGameEmbed(gameState, {
-            color: '#4169E1',
-            title: '🏁 Fin de partie',
-            description: result.message
-        });
+        // Utiliser le même embed que /abandon
+        const abandonEmbed = EmbedBuilder.createAbandonEmbed(
+            gameState,
+            result.correctAnswer,
+            result.score
+        );
 
-        await message.reply({ embeds: [endEmbed] });
+        await message.reply({ embeds: [abandonEmbed] });
 
-        // Fermer le thread après un délai
-        setTimeout(async() => {
+        // Fermer le thread après un délai (même que /abandon)
+        setTimeout(async () => {
             try {
                 if (message.channel.isThread()) {
+                    const closeEmbed = EmbedBuilder.createInfoEmbed(
+                        '🔒 Fermeture du fil',
+                        'Ce fil va être supprimé dans 1 minute.'
+                    );
+
+                    await message.channel.send({ embeds: [closeEmbed] });
                     await message.channel.setLocked(true);
-                    await message.channel.delete();
+
+                    setTimeout(async () => {
+                        try {
+                            await message.channel.delete();
+                        } catch (error) {
+                            logger.error('Error deleting thread:', error);
+                        }
+                    }, 60000); // 1 minute
                 }
             } catch (error) {
                 logger.error('Error closing thread:', error);
             }
-        }, 60000); // 1 minute
+        }, 5000); // 5 secondes avant de commencer la fermeture
 
     } catch (error) {
         logger.error('Error handling end command:', error);
@@ -142,54 +157,54 @@ async function handleGameResult(message, result, gameState) {
     let shouldCloseThread = false;
 
     switch (result.type) {
-    case 'makeSuccess':
-        embed = EmbedBuilder.createGameEmbed(gameState, {
-            title: '✅ Marque trouvée !',
-            description: result.feedback
-        });
-        break;
+        case 'makeSuccess':
+            embed = EmbedBuilder.createGameEmbed(gameState, {
+                title: '✅ Marque trouvée !',
+                description: result.feedback
+            });
+            break;
 
-    case 'makeFailed':
-        embed = EmbedBuilder.createGameEmbed(gameState, {
-            color: '#FFA500',
-            title: '⌛ Plus d\'essais pour la marque',
-            description: result.feedback
-        });
-        break;
+        case 'makeFailed':
+            embed = EmbedBuilder.createGameEmbed(gameState, {
+                color: '#FFA500',
+                title: '⌛ Plus d\'essais pour la marque',
+                description: result.feedback
+            });
+            break;
 
-    case 'gameComplete':
-        embed = EmbedBuilder.createWinEmbed(
-            result.score,
-            result.timeSpent,
-            result.attempts
-        );
-        shouldCloseThread = true;
-        break;
+        case 'gameComplete':
+            embed = EmbedBuilder.createWinEmbed(
+                result.score,
+                result.timeSpent,
+                result.attempts
+            );
+            shouldCloseThread = true;
+            break;
 
-    case 'gameOver':
-        embed = EmbedBuilder.createGameEmbed(gameState, {
-            color: '#FFA500',
-            title: '⌛ Partie terminée',
-            description: result.feedback
-        });
-        shouldCloseThread = true;
-        break;
+        case 'gameOver':
+            embed = EmbedBuilder.createGameEmbed(gameState, {
+                color: '#FFA500',
+                title: '⌛ Partie terminée',
+                description: result.feedback
+            });
+            shouldCloseThread = true;
+            break;
 
-    case 'incorrect':
-    default:
-        embed = EmbedBuilder.createGameEmbed(gameState, {
-            color: '#FF0000',
-            title: '❌ Mauvaise réponse',
-            description: result.feedback
-        });
-        break;
+        case 'incorrect':
+        default:
+            embed = EmbedBuilder.createGameEmbed(gameState, {
+                color: '#FF0000',
+                title: '❌ Mauvaise réponse',
+                description: result.feedback
+            });
+            break;
     }
 
     await message.reply({ embeds: [embed] });
 
     // Fermer le thread si la partie est terminée
     if (shouldCloseThread) {
-        setTimeout(async() => {
+        setTimeout(async () => {
             try {
                 if (message.channel.isThread()) {
                     const closeEmbed = EmbedBuilder.createInfoEmbed(
@@ -200,7 +215,7 @@ async function handleGameResult(message, result, gameState) {
                     await message.channel.send({ embeds: [closeEmbed] });
                     await message.channel.setLocked(true);
 
-                    setTimeout(async() => {
+                    setTimeout(async () => {
                         try {
                             await message.channel.delete();
                         } catch (error) {

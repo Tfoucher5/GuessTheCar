@@ -26,7 +26,8 @@ class GameState {
             firstLetter: false,
             lastLetter: false,
             country: false,
-            length: false,
+            makeLength: false,
+            modelLength: false,
             year: false
         };
     }
@@ -128,6 +129,26 @@ class GameState {
     }
 
     /**
+     * Obtient le statut actuel du jeu (MÉTHODE MANQUANTE)
+     */
+    getStatus() {
+        return {
+            step: this.step,
+            attempts: this.attempts,
+            maxAttempts: gameConfig.MAX_ATTEMPTS,
+            makeFailed: this.makeFailed,
+            carChangesCount: this.carChangesCount,
+            timeSpent: this.getTimeSpent(),
+            car: {
+                id: this.car.id,
+                brand: this.car.brand,
+                model: this.car.model,
+                difficulty: this.car.difficulty
+            }
+        };
+    }
+
+    /**
      * Obtient le message d'indice approprié selon l'étape et les essais
      */
     getHintMessage() {
@@ -139,115 +160,110 @@ class GameState {
     }
 
     /**
-     * Obtient l'indice pour la recherche de marque
-     */
+ * Obtient l'indice pour la recherche de marque
+ */
     getMakeHintMessage() {
         let hints = [];
 
+        // Indice du pays (toujours disponible en premier)
         if (!this.hintsUsed.country) {
-            hints.push(`🌍 Pays d'origine: ${this.car.country}`);
+            hints.push(`🌍 Pays d'origine: ${this.car.country || 'Inconnu'}`);
             this.hintsUsed.country = true;
         }
 
-        if (!this.hintsUsed.length) {
+        // Indice de la longueur
+        if (!this.hintsUsed.makeLength) {
             hints.push(`📏 La marque contient ${this.car.makeLength} lettres`);
-            this.hintsUsed.length = true;
+            this.hintsUsed.makeLength = true;
         }
 
-        if (this.attempts >= gameConfig.HINTS.FIRST_LETTER_ATTEMPT && !this.hintsUsed.firstLetter) {
+        // Indice de la première lettre (après plusieurs tentatives)
+        if (this.attempts >= 3 && !this.hintsUsed.makeFirstLetter) {
             hints.push(`🔤 La marque commence par "${this.car.firstLetter}"`);
-            this.hintsUsed.firstLetter = true;
+            this.hintsUsed.makeFirstLetter = true;
         }
 
-        return hints.join('\n');
+        return hints.length > 0 ? hints.join('\n') : 'Aucun indice supplémentaire disponible.';
     }
 
     /**
-     * Obtient l'indice pour la recherche de modèle
-     */
+  * Obtient l'indice pour la recherche de modèle
+  */
     getModelHintMessage() {
         let hints = [];
 
-        if (!this.hintsUsed.length) {
+        // Indice de la longueur du modèle
+        if (!this.hintsUsed.modelLength) {
             hints.push(`📏 Le modèle contient ${this.car.modelLength} lettres/chiffres`);
-            this.hintsUsed.length = true;
+            this.hintsUsed.modelLength = true;
         }
 
+        // Indice de l'année
         if (!this.hintsUsed.year) {
             hints.push(`📆 Le modèle est de ${this.car.modelDate}`);
             this.hintsUsed.year = true;
         }
 
-        if (this.attempts >= gameConfig.HINTS.FIRST_LETTER_ATTEMPT && !this.hintsUsed.firstLetter) {
+        // Indice de la première lettre du modèle
+        if (this.attempts >= 3 && !this.hintsUsed.modelFirstLetter) {
             hints.push(`🔤 Le modèle commence par "${this.car.modelFirstLetter}"`);
-            this.hintsUsed.firstLetter = true;
+            this.hintsUsed.modelFirstLetter = true;
         }
 
-        if (this.attempts >= gameConfig.HINTS.LAST_LETTER_ATTEMPT && !this.hintsUsed.lastLetter) {
-            const lastLetter = this.car.model[this.car.model.length - 1];
-            hints.push(`🔤 Le modèle se termine par "${lastLetter}"`);
-            this.hintsUsed.lastLetter = true;
-        }
-
-        return hints.join('\n');
-    }
-
-    /**
-     * Obtient la progression du jeu en pourcentage
-     */
-    getProgress() {
-        if (this.isSearchingMake()) {
-            return (this.attempts / gameConfig.MAX_ATTEMPTS) * 50; // 50% pour la marque
-        } else {
-            return 50 + (this.attempts / gameConfig.MAX_ATTEMPTS) * 50; // 50% + 50% pour le modèle
-        }
-    }
-
-    /**
-     * Obtient le statut actuel du jeu
-     */
-    getStatus() {
-        return {
-            step: this.step,
-            attempts: this.attempts,
-            maxAttempts: gameConfig.MAX_ATTEMPTS,
-            carChangesUsed: this.carChangesCount,
-            maxCarChanges: gameConfig.MAX_CAR_CHANGES,
-            timeSpent: this.getTimeSpent(),
-            progress: this.getProgress(),
-            makeFailed: this.makeFailed,
-            canChangeCar: this.canChangeCar(),
-            hasReachedMaxAttempts: this.hasReachedMaxAttempts()
-        };
-    }
-
-    /**
-     * Vérifie si le jeu est terminé
-     */
-    isFinished() {
-        return this.hasReachedMaxAttempts() && this.isSearchingModel();
+        return hints.length > 0 ? hints.join('\n') : 'Aucun indice supplémentaire disponible.';
     }
 
     /**
      * Calcule le score final
      */
     calculateFinalScore() {
-        const isFullSuccess = !this.makeFailed;
-        const basePoints = isFullSuccess ? gameConfig.POINTS.FULL_SUCCESS : gameConfig.POINTS.PARTIAL_SUCCESS;
-        const multiplier = gameConfig.DIFFICULTY_MULTIPLIERS[this.car.difficulty] || 1;
-        const difficultyPoints = basePoints * multiplier;
+        const basePoints = this.car.getBasePoints();
+        const difficultyMultiplier = this.car.getDifficultyPoints();
+
+        let finalPoints = 0;
+        let difficultyPoints = 0;
+
+        if (this.isSearchingModel() || this.makeFailed) {
+            // Marque trouvée, modèle en cours ou échoué
+            if (this.isSearchingModel()) {
+                // Partie complète (marque + modèle trouvés)
+                finalPoints = basePoints;
+                difficultyPoints = difficultyMultiplier;
+            } else {
+                // Seulement la marque trouvée
+                finalPoints = basePoints * 0.5;
+                difficultyPoints = difficultyMultiplier * 0.5;
+            }
+        }
 
         return {
-            basePoints,
-            difficultyPoints,
-            isFullSuccess,
-            difficulty: this.car.difficulty,
-            difficultyText: this.car.getDifficultyText()
+            basePoints: Math.round(finalPoints * 10) / 10,
+            difficultyPoints: Math.round(difficultyPoints * 10) / 10,
+            isComplete: this.isSearchingModel() && !this.makeFailed
         };
     }
 
     /**
-     * Convertit en objet simple pour sérialisation
+     * Obtient les statistiques de la partie pour la base de données
+     */
+    getGameStats() {
+        const timeSpent = this.getTimeSpent();
+
+        return {
+            carId: this.car.id,
+            startedAt: new Date(this.startTime),
+            duration: Math.round(timeSpent / 1000), // en secondes
+            attemptsMake: this.step === 'model' ? this.attempts : this.attempts,
+            attemptsModel: this.step === 'model' ? this.attempts : 0,
+            makeFound: this.step === 'model' || this.isSearchingModel(),
+            modelFound: false, // À définir lors de la victoire
+            carChangesUsed: this.carChangesCount,
+            hintsUsed: { ...this.hintsUsed }
+        };
+    }
+
+    /**
+     * Convertit en JSON pour la transmission
      */
     toJSON() {
         return {
@@ -260,11 +276,25 @@ class GameState {
             makeFailed: this.makeFailed,
             carChangesCount: this.carChangesCount,
             startTime: this.startTime,
-            timeSpent: this.getTimeSpent(),
             hintsUsed: this.hintsUsed,
-            status: this.getStatus(),
-            isFinished: this.isFinished()
+            timeSpent: this.getTimeSpent()
         };
+    }
+
+    /**
+     * Recrée un GameState depuis JSON
+     */
+    static fromJSON(data) {
+        const gameState = new GameState(data.car, data.userId, data.username, data.threadId);
+
+        gameState.step = data.step;
+        gameState.attempts = data.attempts;
+        gameState.makeFailed = data.makeFailed;
+        gameState.carChangesCount = data.carChangesCount;
+        gameState.startTime = data.startTime;
+        gameState.hintsUsed = data.hintsUsed || {};
+
+        return gameState;
     }
 }
 

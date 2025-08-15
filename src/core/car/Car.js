@@ -1,11 +1,13 @@
 class Car {
-    constructor(id, model, brand, difficulty = 1, imageUrl = null, brandId = null) {
+    constructor(id, model, brand, difficulty = 1, imageUrl = null, brandId = null, country = null, modelDate = null) {
         this.id = id;
         this.model = model;
         this.brand = brand;
         this.difficulty = difficulty;
         this.imageUrl = imageUrl;
         this.brandId = brandId;
+        this.country = country || 'Inconnu';
+        this.modelDate = modelDate || new Date().getFullYear();
     }
 
     /**
@@ -18,7 +20,9 @@ class Car {
             data.brand,
             data.difficulty || data.difficulty_level || 1,
             data.imageUrl || data.image_url || null,
-            data.brandId || data.brand_id || null
+            data.brandId || data.brand_id || null,
+            data.country || 'Inconnu',
+            data.modelDate || data.year || new Date().getFullYear()
         );
     }
 
@@ -52,7 +56,7 @@ class Car {
     }
 
     /**
-     * Propriétés utilisées dans GameState
+     * Propriétés utilisées dans GameState pour les indices
      */
     get makeLength() {
         return this.brand ? this.brand.length : 0;
@@ -78,16 +82,6 @@ class Car {
         return this.brandId; // Alias pour compatibilité
     }
 
-    get country() {
-        // Pour l'instant, retourner une valeur par défaut
-        return 'Inconnu';
-    }
-
-    get modelDate() {
-        // Pour l'instant, retourner une valeur par défaut
-        return new Date().getFullYear();
-    }
-
     /**
      * Convertit en format base de données
      */
@@ -97,7 +91,8 @@ class Car {
             name: this.model,
             brand_id: this.brandId,
             difficulty_level: this.difficulty,
-            image_url: this.imageUrl
+            image_url: this.imageUrl,
+            year: this.modelDate
         };
     }
 
@@ -187,6 +182,8 @@ class Car {
             id: this.id,
             model: this.model,
             brand: this.brand,
+            country: this.country,
+            modelDate: this.modelDate,
             difficulty: this.difficulty,
             difficultyName: this.getDifficultyName(),
             basePoints: this.getBasePoints(),

@@ -226,3 +226,16 @@
 {"error":{},"level":"error","message":"Error handling game timeout:","threadId":"1406018219881529345","timestamp":"2025-08-15 22:59:27"}
 {"error":"EmbedBuilder.createSuccessEmbed is not a function","level":"error","message":"Error in guesscar command:","timestamp":"2025-08-15 23:05:01","userId":"573543227525824516"}
 {"error":"Received one or more errors","level":"error","message":"Error in stats command:","timestamp":"2025-08-15 23:11:49","userId":"573543227525824516"}
+{"error":{},"guess":"fiat","level":"error","message":"Error processing guess:","threadId":"1406041518053130252","timestamp":"2025-08-16 00:27:10"}
+{"channelId":"1406041518053130252","error":"gameState.getStatus is not a function","level":"error","message":"Error processing message in game:","timestamp":"2025-08-16 00:27:10","userId":"573543227525824516"}
+{"error":{},"guess":"abarth","level":"error","message":"Error processing guess:","threadId":"1406041518053130252","timestamp":"2025-08-16 00:27:14"}
+{"channelId":"1406041518053130252","error":"gameState.getStatus is not a function","level":"error","message":"Error processing message in game:","timestamp":"2025-08-16 00:27:14","userId":"573543227525824516"}
+{"error":{},"guess":"fiat","level":"error","message":"Error processing guess:","threadId":"1406041518053130252","timestamp":"2025-08-16 00:28:47"}
+{"channelId":"1406041518053130252","error":"gameState.getStatus is not a function","level":"error","message":"Error processing message in game:","timestamp":"2025-08-16 00:28:47","userId":"573543227525824516"}
+{"error":{"code":"VALIDATION_ERROR","isOperational":true,"name":"ValidationError","statusCode":400},"guess":"!indic","level":"error","message":"Error processing guess:","threadId":"1406043770125942804","timestamp":"2025-08-16 00:36:04"}
+{"channelId":"1406043770125942804","error":"La réponse ne peut contenir que des lettres, chiffres, espaces et tirets","level":"error","message":"Error processing message in game:","timestamp":"2025-08-16 00:36:04","userId":"573543227525824516"}
+{"error":"Cannot read properties of null (reading 'execute')","level":"error","message":"Database query error:","params":["573543227525824516"],"query":"SELECT * FROM user_scores WHERE user_id = ?","timestamp":"2025-08-16 00:51:35"}
+{"error":{"code":"DATABASE_ERROR","isOperational":true,"name":"DatabaseError","originalError":{},"statusCode":500},"level":"error","message":"Error finding or creating player:","timestamp":"2025-08-16 00:51:35","userId":"573543227525824516","username":"t3sk0"}
+{"error":{"code":"DATABASE_ERROR","isOperational":true,"name":"DatabaseError","originalError":{},"statusCode":500},"level":"error","message":"Error updating player score:","timestamp":"2025-08-16 00:51:35","userId":"573543227525824516"}
+{"error":{},"guess":"A290","level":"error","message":"Error processing guess:","threadId":"1406048792968695929","timestamp":"2025-08-16 00:57:17"}
+{"channelId":"1406048792968695929","error":"this.playerManager.updatePlayerGameStats is not a function","level":"error","message":"Error processing message in game:","timestamp":"2025-08-16 00:57:17","userId":"573543227525824516"}

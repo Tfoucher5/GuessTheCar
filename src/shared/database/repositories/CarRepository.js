@@ -4,7 +4,7 @@ const Car = require('../../../core/car/Car');
 
 class CarRepository extends BaseRepository {
     constructor() {
-        super('models'); // Table anglaise
+        super('models');
     }
 
     /**
@@ -20,7 +20,7 @@ class CarRepository extends BaseRepository {
      */
     async getModelsByMakeId(brandId) {
         const query = `
-            SELECT m.*, b.name as brand_name
+            SELECT m.*, b.name as brand_name, b.country
             FROM models m 
             JOIN brands b ON m.brand_id = b.id 
             WHERE m.brand_id = ?
@@ -37,10 +37,12 @@ class CarRepository extends BaseRepository {
             SELECT 
                 m.id,
                 m.name as model,
+                m.year as modelDate,
                 m.difficulty_level as difficulty,
                 m.image_url as imageUrl,
                 b.id as brandId,
-                b.name as brand
+                b.name as brand,
+                b.country
             FROM models m
             JOIN brands b ON m.brand_id = b.id
             ORDER BY RAND()
@@ -64,10 +66,12 @@ class CarRepository extends BaseRepository {
             SELECT 
                 m.id,
                 m.name as model,
+                m.year as modelDate,
                 m.difficulty_level as difficulty,
                 m.image_url as imageUrl,
                 b.id as brandId,
-                b.name as brand
+                b.name as brand,
+                b.country
             FROM models m
             JOIN brands b ON m.brand_id = b.id
             WHERE m.id = ?
@@ -90,10 +94,12 @@ class CarRepository extends BaseRepository {
             SELECT 
                 m.id,
                 m.name as model,
+                m.year as modelDate,
                 m.difficulty_level as difficulty,
                 m.image_url as imageUrl,
                 b.id as brandId,
-                b.name as brand
+                b.name as brand,
+                b.country
             FROM models m
             JOIN brands b ON m.brand_id = b.id
             WHERE 1=1
@@ -111,10 +117,20 @@ class CarRepository extends BaseRepository {
             params.push(filters.difficulty);
         }
 
+        if (filters.country) {
+            query += ' AND b.country = ?';
+            params.push(filters.country);
+        }
+
+        if (filters.year) {
+            query += ' AND m.year = ?';
+            params.push(filters.year);
+        }
+
         query += ' ORDER BY b.name ASC, m.name ASC';
 
         if (filters.limit) {
-            query += ` LIMIT ${filters.limit}`;
+            query += ` LIMIT ${parseInt(filters.limit)}`;
         }
 
         const results = await executeQuery(query, params);
@@ -139,6 +155,24 @@ class CarRepository extends BaseRepository {
 
         const results = await executeQuery(query);
         return results[0];
+    }
+
+    /**
+     * Obtient les pays disponibles
+     */
+    async getAvailableCountries() {
+        const query = 'SELECT DISTINCT country FROM brands WHERE country IS NOT NULL ORDER BY country ASC';
+        const results = await executeQuery(query);
+        return results.map(row => row.country);
+    }
+
+    /**
+     * Obtient les années disponibles
+     */
+    async getAvailableYears() {
+        const query = 'SELECT DISTINCT year FROM models WHERE year IS NOT NULL ORDER BY year DESC';
+        const results = await executeQuery(query);
+        return results.map(row => row.year);
     }
 
     /**
