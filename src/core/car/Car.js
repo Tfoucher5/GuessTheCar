@@ -23,6 +23,72 @@ class Car {
     }
 
     /**
+     * Vérifie si la voiture est valide pour le jeu
+     */
+    isValid() {
+        return !!(
+            this.id &&
+            this.model &&
+            this.brand &&
+            this.model.length > 0 &&
+            this.brand.length > 1 &&
+            this.difficulty >= 1 &&
+            this.difficulty <= 3
+        );
+    }
+
+    /**
+     * Obtient le nom complet de la voiture
+     */
+    getFullName() {
+        return `${this.brand} ${this.model}`;
+    }
+
+    /**
+     * Obtient le texte de difficulté
+     */
+    getDifficultyText() {
+        return this.getDifficultyName();
+    }
+
+    /**
+     * Propriétés utilisées dans GameState
+     */
+    get makeLength() {
+        return this.brand ? this.brand.length : 0;
+    }
+
+    get modelLength() {
+        return this.model ? this.model.length : 0;
+    }
+
+    get firstLetter() {
+        return this.brand ? this.brand.charAt(0).toUpperCase() : '';
+    }
+
+    get modelFirstLetter() {
+        return this.model ? this.model.charAt(0).toUpperCase() : '';
+    }
+
+    get make() {
+        return this.brand; // Alias pour compatibilité
+    }
+
+    get makeId() {
+        return this.brandId; // Alias pour compatibilité
+    }
+
+    get country() {
+        // Pour l'instant, retourner une valeur par défaut
+        return 'Inconnu';
+    }
+
+    get modelDate() {
+        // Pour l'instant, retourner une valeur par défaut
+        return new Date().getFullYear();
+    }
+
+    /**
      * Convertit en format base de données
      */
     toDatabase() {
@@ -40,12 +106,9 @@ class Car {
      */
     checkBrand(guess) {
         if (!guess || typeof guess !== 'string') return false;
-
         const normalizedGuess = this.normalizeString(guess);
         const normalizedBrand = this.normalizeString(this.brand);
-
-        return normalizedBrand.includes(normalizedGuess) ||
-            normalizedGuess.includes(normalizedBrand);
+        return normalizedBrand.includes(normalizedGuess) || normalizedGuess.includes(normalizedBrand);
     }
 
     /**
@@ -53,12 +116,9 @@ class Car {
      */
     checkModel(guess) {
         if (!guess || typeof guess !== 'string') return false;
-
         const normalizedGuess = this.normalizeString(guess);
         const normalizedModel = this.normalizeString(this.model);
-
-        return normalizedModel.includes(normalizedGuess) ||
-            normalizedGuess.includes(normalizedModel);
+        return normalizedModel.includes(normalizedGuess) || normalizedGuess.includes(normalizedModel);
     }
 
     /**
@@ -66,12 +126,9 @@ class Car {
      */
     checkFullCar(guess) {
         if (!guess || typeof guess !== 'string') return false;
-
         const normalizedGuess = this.normalizeString(guess);
         const fullCar = this.normalizeString(`${this.brand} ${this.model}`);
-
-        return fullCar.includes(normalizedGuess) ||
-            (this.checkBrand(guess) && this.checkModel(guess));
+        return fullCar.includes(normalizedGuess) || (this.checkBrand(guess) && this.checkModel(guess));
     }
 
     /**
@@ -136,7 +193,11 @@ class Car {
             difficultyPoints: this.getDifficultyPoints(),
             imageUrl: this.imageUrl,
             brandId: this.brandId,
-            fullName: `${this.brand} ${this.model}`
+            fullName: this.getFullName(),
+            makeLength: this.makeLength,
+            modelLength: this.modelLength,
+            firstLetter: this.firstLetter,
+            modelFirstLetter: this.modelFirstLetter
         };
     }
 

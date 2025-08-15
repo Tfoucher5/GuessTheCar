@@ -1,3 +1,5 @@
+// src/core/player/Player.js - VERSION COMPLÈTE CORRIGÉE
+
 class Player {
     constructor(userId, username) {
         this.id = null;
@@ -28,21 +30,51 @@ class Player {
         const player = new Player(data.user_id, data.username);
 
         player.id = data.id;
-        player.totalPoints = data.total_points || 0;
-        player.totalDifficultyPoints = data.total_difficulty_points || 0;
-        player.gamesPlayed = data.games_played || 0;
-        player.gamesWon = data.games_won || 0;
-        player.correctBrandGuesses = data.correct_brand_guesses || 0;
-        player.correctModelGuesses = data.correct_model_guesses || 0;
-        player.totalBrandGuesses = data.total_brand_guesses || 0;
-        player.totalModelGuesses = data.total_model_guesses || 0;
-        player.bestStreak = data.best_streak || 0;
-        player.currentStreak = data.current_streak || 0;
-        player.averageResponseTime = parseFloat(data.average_response_time) || 0;
+
+        // Assurer que toutes les valeurs numériques sont définies
+        player.totalPoints = Number(data.total_points) || 0;
+        player.totalDifficultyPoints = Number(data.total_difficulty_points) || 0;
+        player.gamesPlayed = Number(data.games_played) || 0;
+        player.gamesWon = Number(data.games_won) || 0;
+        player.correctBrandGuesses = Number(data.correct_brand_guesses) || 0;
+        player.correctModelGuesses = Number(data.correct_model_guesses) || 0;
+        player.totalBrandGuesses = Number(data.total_brand_guesses) || 0;
+        player.totalModelGuesses = Number(data.total_model_guesses) || 0;
+        player.bestStreak = Number(data.best_streak) || 0;
+        player.currentStreak = Number(data.current_streak) || 0;
+        player.averageResponseTime = Number(data.average_response_time) || 0;
         player.createdAt = data.created_at;
         player.updatedAt = data.updated_at;
 
         return player;
+    }
+
+    /**
+     * Propriétés calculées pour compatibilité avec embedBuilder
+     */
+    get carsGuessed() {
+        return this.gamesWon;
+    }
+
+    get partialGuesses() {
+        return this.gamesPlayed - this.gamesWon;
+    }
+
+    get totalGames() {
+        return this.gamesPlayed;
+    }
+
+    get averageAttempts() {
+        if (this.gamesPlayed === 0) return 0;
+        // Estimation basée sur les tentatives de marques
+        return this.totalBrandGuesses > 0 ? this.totalBrandGuesses / this.gamesPlayed : 0;
+    }
+
+    get bestTimeFormatted() {
+        if (!this.averageResponseTime || this.averageResponseTime === 0) {
+            return 'N/A';
+        }
+        return `${Number(this.averageResponseTime).toFixed(1)}s`;
     }
 
     /**
@@ -117,7 +149,7 @@ class Player {
     }
 
     /**
-     * Calcule le taux de réussite global
+     * Calcule le taux de réussite global avec protection
      */
     getSuccessRate() {
         if (this.gamesPlayed === 0) return 0;
@@ -125,7 +157,7 @@ class Player {
     }
 
     /**
-     * Calcule le taux de réussite pour les marques
+     * Calcule le taux de réussite pour les marques avec protection
      */
     getBrandSuccessRate() {
         if (this.totalBrandGuesses === 0) return 0;
@@ -133,7 +165,7 @@ class Player {
     }
 
     /**
-     * Calcule le taux de réussite pour les modèles
+     * Calcule le taux de réussite pour les modèles avec protection
      */
     getModelSuccessRate() {
         if (this.totalModelGuesses === 0) return 0;
@@ -154,7 +186,7 @@ class Player {
     }
 
     /**
-     * Convertit en JSON pour l'affichage
+     * Convertit en JSON avec toutes les protections
      */
     toJSON() {
         return {
@@ -170,13 +202,20 @@ class Player {
             totalModelGuesses: this.totalModelGuesses,
             bestStreak: this.bestStreak,
             currentStreak: this.currentStreak,
-            averageResponseTime: Math.round(this.averageResponseTime * 100) / 100,
-            successRate: Math.round(this.getSuccessRate() * 100) / 100,
-            brandSuccessRate: Math.round(this.getBrandSuccessRate() * 100) / 100,
-            modelSuccessRate: Math.round(this.getModelSuccessRate() * 100) / 100,
+            // Protection toFixed() avec Number()
+            averageResponseTime: Number(this.averageResponseTime || 0).toFixed(2),
+            successRate: Number(this.getSuccessRate()).toFixed(2),
+            brandSuccessRate: Number(this.getBrandSuccessRate()).toFixed(2),
+            modelSuccessRate: Number(this.getModelSuccessRate()).toFixed(2),
             skillLevel: this.getSkillLevel(),
             createdAt: this.createdAt,
-            updatedAt: this.updatedAt
+            updatedAt: this.updatedAt,
+            // Propriétés supplémentaires pour embedBuilder
+            carsGuessed: this.carsGuessed,
+            partialGuesses: this.partialGuesses,
+            totalGames: this.totalGames,
+            averageAttempts: Number(this.averageAttempts).toFixed(1),
+            bestTimeFormatted: this.bestTimeFormatted
         };
     }
 }

@@ -60,7 +60,7 @@ class GameEmbedBuilder {
                 },
                 {
                     name: '🏆 Points gagnés',
-                    value: `${score.difficultyPoints.toFixed(1)} points (difficulté: ${score.difficultyText})`,
+                    value: `${Number(score.difficultyPoints || 0).toFixed(1)} points (difficulté: ${score.difficultyText})`,
                     inline: false
                 }
             )
@@ -92,7 +92,7 @@ class GameEmbedBuilder {
     }
 
     /**
-     * Crée un embed de classement
+     * Crée un embed de classement avec protection complète
      */
     static createLeaderboardEmbed(players) {
         if (players.length === 0) {
@@ -105,12 +105,17 @@ class GameEmbedBuilder {
 
         const leaderboardText = players.map((player, index) => {
             const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🎮';
-            const avgAttempts = player.averageAttempts.toFixed(1);
-            const bestTime = player.bestTimeFormatted;
+
+            // Protection complète avec Number() pour tous les calculs
+            const avgAttempts = Number(player.averageAttempts || 0).toFixed(1);
+            const bestTime = player.bestTimeFormatted || 'N/A';
+            const totalDifficultyPoints = Number(player.totalDifficultyPoints || 0).toFixed(1);
+            const carsGuessed = player.carsGuessed || 0;
+            const partialGuesses = player.partialGuesses || 0;
 
             return `${medal} **${index + 1}.** ${player.username}\n` +
-                `Points: ${player.totalDifficultyPoints.toFixed(1)} ` +
-                `(${player.carsGuessed} complètes + ${player.partialGuesses} partielles)\n` +
+                `Points: ${totalDifficultyPoints} ` +
+                `(${carsGuessed} complètes + ${partialGuesses} partielles)\n` +
                 `Moyenne: ${avgAttempts} essais | Meilleur temps: ${bestTime}\n`;
         }).join('\n');
 
@@ -122,7 +127,7 @@ class GameEmbedBuilder {
     }
 
     /**
-     * Crée un embed de statistiques personnelles
+     * Crée un embed de statistiques personnelles avec protection complète
      */
     static createStatsEmbed(player) {
         const embed = new EmbedBuilder()
@@ -131,12 +136,12 @@ class GameEmbedBuilder {
             .addFields(
                 {
                     name: '🏆 Score total',
-                    value: `${player.totalDifficultyPoints.toFixed(1)} points`,
+                    value: `${Number(player.totalDifficultyPoints || 0).toFixed(1)} points`,
                     inline: true
                 },
                 {
                     name: '✨ Points de base',
-                    value: `${player.totalPoints.toFixed(1)} points`,
+                    value: `${Number(player.totalPoints || 0).toFixed(1)} points`,
                     inline: true
                 },
                 {
@@ -146,32 +151,32 @@ class GameEmbedBuilder {
                 },
                 {
                     name: '🌟 Réussites complètes',
-                    value: `${player.carsGuessed}`,
+                    value: `${player.carsGuessed || 0}`,
                     inline: true
                 },
                 {
                     name: '⭐ Réussites partielles',
-                    value: `${player.partialGuesses}`,
+                    value: `${player.partialGuesses || 0}`,
                     inline: true
                 },
                 {
                     name: '📈 Taux de réussite',
-                    value: `${player.successRate.toFixed(1)}%`,
+                    value: `${Number(player.successRate || 0).toFixed(1)}%`,
                     inline: true
                 },
                 {
                     name: '🎯 Moyenne d\'essais',
-                    value: `${player.averageAttempts.toFixed(1)}`,
+                    value: `${Number(player.averageAttempts || 0).toFixed(1)}`,
                     inline: true
                 },
                 {
                     name: '⚡ Meilleur temps',
-                    value: player.bestTimeFormatted,
+                    value: player.bestTimeFormatted || 'N/A',
                     inline: true
                 },
                 {
                     name: '🎮 Total parties',
-                    value: `${player.totalGames}`,
+                    value: `${player.totalGames || 0}`,
                     inline: true
                 }
             )
@@ -237,7 +242,7 @@ class GameEmbedBuilder {
      * Crée un embed d'abandon de partie
      */
     static createAbandonEmbed(gameState, correctAnswer, score = null) {
-        const pointsMessage = score ? `\nVous gagnez ${score.difficultyPoints.toFixed(1)} points pour avoir trouvé la marque.` : '';
+        const pointsMessage = score ? `\nVous gagnez ${Number(score.difficultyPoints || 0).toFixed(1)} points pour avoir trouvé la marque.` : '';
 
         return this.createGameEmbed(gameState, {
             color: '#FFA500',
@@ -250,47 +255,13 @@ class GameEmbedBuilder {
      * Crée un embed de timeout
      */
     static createTimeoutEmbed(gameState, correctAnswer, score = null) {
-        const pointsMessage = score ? `\nVous gagnez ${score.difficultyPoints.toFixed(1)} points pour avoir trouvé la marque.` : '';
+        const pointsMessage = score ? `\nVous gagnez ${Number(score.difficultyPoints || 0).toFixed(1)} points pour avoir trouvé la marque.` : '';
 
         return this.createGameEmbed(gameState, {
-            color: '#FF0000',
+            color: '#FF8C00',
             title: '⏰ Temps écoulé',
-            description: 'La partie a été abandonnée après 5 minutes d\'inactivité.\n' +
-                `La voiture était: ${correctAnswer}${pointsMessage}`
+            description: `La partie a été abandonnée après 5 minutes d'inactivité.\nLa voiture était: ${correctAnswer}${pointsMessage}`
         });
-    }
-
-    /**
-     * Crée un embed de changement de voiture
-     */
-    static createCarChangeEmbed(gameState, changesRemaining) {
-        return this.createGameEmbed(gameState, {
-            title: '🔄 Nouvelle voiture',
-            description: 'Voiture changée ! Devine la **marque** de la nouvelle voiture.\n\n' +
-                `*Changements restants: ${changesRemaining}*`
-        });
-    }
-
-    /**
-     * Crée un embed d'indice
-     */
-    static createHintEmbed(gameState, hintMessage) {
-        return this.createGameEmbed(gameState, {
-            color: '#FFA500',
-            title: '💡 Indice',
-            description: hintMessage
-        });
-    }
-
-    /**
-     * Crée un embed de limite atteinte
-     */
-    static createLimitEmbed(title, description) {
-        return new EmbedBuilder()
-            .setColor('#FF0000')
-            .setTitle(`❌ ${title}`)
-            .setDescription(description)
-            .setTimestamp();
     }
 
     /**
@@ -316,14 +287,20 @@ class GameEmbedBuilder {
     }
 
     /**
-     * Crée un embed de chargement
+     * Crée un embed de démarrage de partie
      */
-    static createLoadingEmbed(title = 'Chargement...', description = 'Veuillez patienter...') {
-        return new EmbedBuilder()
-            .setColor('#4169E1')
-            .setTitle(`⏳ ${title}`)
-            .setDescription(description)
-            .setTimestamp();
+    static createGameStartEmbed(car, gameState) {
+        const difficultyText = car.getDifficultyText();
+
+        return this.createGameEmbed(gameState, {
+            title: `🚗 Nouvelle partie - Difficulté: **${difficultyText}**`,
+            description: 'C\'est parti ! Devine la **marque** de la voiture.\n\n' +
+                '• Tape `!indice` pour obtenir des indices\n' +
+                '• Tape `!change` pour changer de voiture (3 fois max)\n' +
+                '• Tape `!terminer` pour mettre fin à la partie\n' +
+                '• Tu as 10 essais maximum !\n\n' +
+                'La partie se termine automatiquement après 5 minutes d\'inactivité'
+        });
     }
 }
 

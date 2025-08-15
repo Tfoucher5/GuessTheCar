@@ -4,14 +4,20 @@ const Car = require('../../../core/car/Car');
 
 class CarRepository extends BaseRepository {
     constructor() {
-        super('models'); // Table anglaise !
+        super('models'); // Table anglaise
     }
 
+    /**
+     * Récupère toutes les marques
+     */
     async getAllMakes() {
         const query = 'SELECT * FROM brands ORDER BY name ASC';
         return await executeQuery(query);
     }
 
+    /**
+     * Récupère les modèles d'une marque
+     */
     async getModelsByMakeId(brandId) {
         const query = `
             SELECT m.*, b.name as brand_name
@@ -23,6 +29,9 @@ class CarRepository extends BaseRepository {
         return await executeQuery(query, [brandId]);
     }
 
+    /**
+     * Récupère une voiture aléatoire avec ses informations complètes
+     */
     async getRandomCar() {
         const query = `
             SELECT 
@@ -37,11 +46,19 @@ class CarRepository extends BaseRepository {
             ORDER BY RAND()
             LIMIT 1
         `;
+
         const results = await executeQuery(query);
-        if (results.length === 0) return null;
+
+        if (results.length === 0) {
+            return null;
+        }
+
         return Car.fromDatabase(results[0]);
     }
 
+    /**
+     * Récupère une voiture par ID avec informations complètes
+     */
     async getCarById(id) {
         const query = `
             SELECT 
@@ -55,11 +72,19 @@ class CarRepository extends BaseRepository {
             JOIN brands b ON m.brand_id = b.id
             WHERE m.id = ?
         `;
+
         const results = await executeQuery(query, [id]);
-        if (results.length === 0) return null;
+
+        if (results.length === 0) {
+            return null;
+        }
+
         return Car.fromDatabase(results[0]);
     }
 
+    /**
+     * Recherche des voitures par critères
+     */
     async searchCars(filters = {}) {
         let query = `
             SELECT 
@@ -73,24 +98,32 @@ class CarRepository extends BaseRepository {
             JOIN brands b ON m.brand_id = b.id
             WHERE 1=1
         `;
+
         const params = [];
 
         if (filters.brandId) {
             query += ' AND b.id = ?';
             params.push(filters.brandId);
         }
+
         if (filters.difficulty) {
             query += ' AND m.difficulty_level = ?';
             params.push(filters.difficulty);
         }
 
         query += ' ORDER BY b.name ASC, m.name ASC';
-        if (filters.limit) query += ` LIMIT ${filters.limit}`;
+
+        if (filters.limit) {
+            query += ` LIMIT ${filters.limit}`;
+        }
 
         const results = await executeQuery(query, params);
         return results.map(row => Car.fromDatabase(row));
     }
 
+    /**
+     * Obtient les statistiques des voitures
+     */
     async getCarStats() {
         const query = `
             SELECT 
@@ -103,10 +136,14 @@ class CarRepository extends BaseRepository {
             FROM models m
             JOIN brands b ON m.brand_id = b.id
         `;
+
         const results = await executeQuery(query);
         return results[0];
     }
 
+    /**
+     * Obtient les marques disponibles
+     */
     async getAvailableBrands() {
         const query = 'SELECT DISTINCT name as brand FROM brands ORDER BY name ASC';
         const results = await executeQuery(query);
