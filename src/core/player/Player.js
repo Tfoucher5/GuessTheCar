@@ -1,22 +1,69 @@
-const { validateUserId, validateUsername } = require('../../shared/utils/validation');
-
 class Player {
     constructor(userId, username) {
-        this.userId = validateUserId(userId);
-        this.username = validateUsername(username);
+        this.id = null;
+        this.userId = userId;
+        this.username = username;
 
-        // Statistiques de jeu
-        this.carsGuessed = 0;
-        this.partialGuesses = 0;
+        // Correspondance avec les colonnes de user_scores
         this.totalPoints = 0;
         this.totalDifficultyPoints = 0;
-        this.totalAttempts = 0;
-        this.bestTime = null;
-        this.lastGameTime = null;
+        this.gamesPlayed = 0;
+        this.gamesWon = 0;
+        this.correctBrandGuesses = 0;
+        this.correctModelGuesses = 0;
+        this.totalBrandGuesses = 0;
+        this.totalModelGuesses = 0;
+        this.bestStreak = 0;
+        this.currentStreak = 0;
+        this.averageResponseTime = 0;
 
-        // Métadonnées
-        this.createdAt = new Date();
-        this.updatedAt = new Date();
+        this.createdAt = null;
+        this.updatedAt = null;
+    }
+
+    /**
+     * Crée une instance Player depuis les données de base
+     */
+    static fromDatabase(data) {
+        const player = new Player(data.user_id, data.username);
+
+        player.id = data.id;
+        player.totalPoints = data.total_points || 0;
+        player.totalDifficultyPoints = data.total_difficulty_points || 0;
+        player.gamesPlayed = data.games_played || 0;
+        player.gamesWon = data.games_won || 0;
+        player.correctBrandGuesses = data.correct_brand_guesses || 0;
+        player.correctModelGuesses = data.correct_model_guesses || 0;
+        player.totalBrandGuesses = data.total_brand_guesses || 0;
+        player.totalModelGuesses = data.total_model_guesses || 0;
+        player.bestStreak = data.best_streak || 0;
+        player.currentStreak = data.current_streak || 0;
+        player.averageResponseTime = parseFloat(data.average_response_time) || 0;
+        player.createdAt = data.created_at;
+        player.updatedAt = data.updated_at;
+
+        return player;
+    }
+
+    /**
+     * Convertit en format base de données
+     */
+    toDatabase() {
+        return {
+            user_id: this.userId,
+            username: this.username,
+            total_points: this.totalPoints,
+            total_difficulty_points: this.totalDifficultyPoints,
+            games_played: this.gamesPlayed,
+            games_won: this.gamesWon,
+            correct_brand_guesses: this.correctBrandGuesses,
+            correct_model_guesses: this.correctModelGuesses,
+            total_brand_guesses: this.totalBrandGuesses,
+            total_model_guesses: this.totalModelGuesses,
+            best_streak: this.bestStreak,
+            current_streak: this.currentStreak,
+            average_response_time: this.averageResponseTime
+        };
     }
 
     /**
@@ -25,157 +72,112 @@ class Player {
     addPoints(basePoints, difficultyPoints, isFullSuccess) {
         this.totalPoints += basePoints;
         this.totalDifficultyPoints += difficultyPoints;
+        this.gamesPlayed += 1;
 
         if (isFullSuccess) {
-            this.carsGuessed++;
+            this.gamesWon += 1;
+            this.currentStreak += 1;
+            this.bestStreak = Math.max(this.bestStreak, this.currentStreak);
         } else {
-            this.partialGuesses++;
+            this.currentStreak = 0;
         }
-
-        this.updatedAt = new Date();
     }
 
     /**
-     * Met à jour les statistiques de jeu
+     * Ajoute une tentative de marque
      */
-    updateGameStats(attempts, gameTime) {
-        this.totalAttempts += attempts;
-        this.lastGameTime = gameTime;
-
-        if (!this.bestTime || gameTime < this.bestTime) {
-            this.bestTime = gameTime;
+    addBrandGuess(isCorrect) {
+        this.totalBrandGuesses += 1;
+        if (isCorrect) {
+            this.correctBrandGuesses += 1;
         }
-
-        this.updatedAt = new Date();
     }
 
     /**
-     * Calcule la moyenne d'essais par partie
+     * Ajoute une tentative de modèle
      */
-    get averageAttempts() {
-        const totalGames = this.carsGuessed + this.partialGuesses;
-        return totalGames > 0 ? this.totalAttempts / totalGames : 0;
+    addModelGuess(isCorrect) {
+        this.totalModelGuesses += 1;
+        if (isCorrect) {
+            this.correctModelGuesses += 1;
+        }
     }
 
     /**
-     * Calcule le nombre total de parties
+     * Met à jour le temps de réponse moyen
      */
-    get totalGames() {
-        return this.carsGuessed + this.partialGuesses;
+    updateResponseTime(newTime) {
+        if (this.gamesPlayed === 0) {
+            this.averageResponseTime = newTime;
+        } else {
+            this.averageResponseTime = (
+                (this.averageResponseTime * (this.gamesPlayed - 1) + newTime) / this.gamesPlayed
+            );
+        }
     }
 
     /**
-     * Calcule le taux de réussite
+     * Calcule le taux de réussite global
      */
-    get successRate() {
-        const totalGames = this.totalGames;
-        return totalGames > 0 ? (this.carsGuessed / totalGames) * 100 : 0;
+    getSuccessRate() {
+        if (this.gamesPlayed === 0) return 0;
+        return (this.gamesWon / this.gamesPlayed) * 100;
     }
 
     /**
-     * Obtient le meilleur temps formaté
+     * Calcule le taux de réussite pour les marques
      */
-    get bestTimeFormatted() {
-        return this.bestTime ? `${(this.bestTime / 1000).toFixed(1)}s` : 'N/A';
+    getBrandSuccessRate() {
+        if (this.totalBrandGuesses === 0) return 0;
+        return (this.correctBrandGuesses / this.totalBrandGuesses) * 100;
     }
 
     /**
-     * Obtient le rang approximatif du joueur
+     * Calcule le taux de réussite pour les modèles
      */
-    getRank(totalPoints) {
-        if (totalPoints >= 50) return '🏆 Maître';
-        if (totalPoints >= 25) return '🥇 Expert';
-        if (totalPoints >= 15) return '🥈 Avancé';
-        if (totalPoints >= 8) return '🥉 Intermédiaire';
-        if (totalPoints >= 3) return '📚 Apprenti';
-        return '🌱 Débutant';
+    getModelSuccessRate() {
+        if (this.totalModelGuesses === 0) return 0;
+        return (this.correctModelGuesses / this.totalModelGuesses) * 100;
     }
 
     /**
-     * Vérifie si le joueur a des statistiques
+     * Obtient le niveau de compétence
      */
-    hasStats() {
-        return this.totalGames > 0;
+    getSkillLevel() {
+        if (this.totalDifficultyPoints >= 100) return 'Légende';
+        if (this.totalDifficultyPoints >= 50) return 'Maître';
+        if (this.totalDifficultyPoints >= 25) return 'Expert';
+        if (this.totalDifficultyPoints >= 15) return 'Avancé';
+        if (this.totalDifficultyPoints >= 8) return 'Intermédiaire';
+        if (this.totalDifficultyPoints >= 3) return 'Apprenti';
+        return 'Débutant';
     }
 
     /**
-     * Convertit en objet pour la base de données
-     */
-    toDatabase() {
-        return {
-            user_id: this.userId,
-            username: this.username,
-            cars_guessed: this.carsGuessed,
-            partial_guesses: this.partialGuesses,
-            total_points: this.totalPoints,
-            total_difficulty_points: this.totalDifficultyPoints,
-            total_attempts: this.totalAttempts,
-            best_time: this.bestTime,
-            last_game_time: this.lastGameTime,
-            created_at: this.createdAt,
-            updated_at: this.updatedAt
-        };
-    }
-
-    /**
-     * Convertit en objet simple
+     * Convertit en JSON pour l'affichage
      */
     toJSON() {
         return {
             userId: this.userId,
             username: this.username,
-            carsGuessed: this.carsGuessed,
-            partialGuesses: this.partialGuesses,
             totalPoints: this.totalPoints,
             totalDifficultyPoints: this.totalDifficultyPoints,
-            totalAttempts: this.totalAttempts,
-            averageAttempts: this.averageAttempts,
-            bestTime: this.bestTime,
-            bestTimeFormatted: this.bestTimeFormatted,
-            lastGameTime: this.lastGameTime,
-            totalGames: this.totalGames,
-            successRate: this.successRate,
-            rank: this.getRank(this.totalDifficultyPoints),
-            hasStats: this.hasStats(),
+            gamesPlayed: this.gamesPlayed,
+            gamesWon: this.gamesWon,
+            correctBrandGuesses: this.correctBrandGuesses,
+            correctModelGuesses: this.correctModelGuesses,
+            totalBrandGuesses: this.totalBrandGuesses,
+            totalModelGuesses: this.totalModelGuesses,
+            bestStreak: this.bestStreak,
+            currentStreak: this.currentStreak,
+            averageResponseTime: Math.round(this.averageResponseTime * 100) / 100,
+            successRate: Math.round(this.getSuccessRate() * 100) / 100,
+            brandSuccessRate: Math.round(this.getBrandSuccessRate() * 100) / 100,
+            modelSuccessRate: Math.round(this.getModelSuccessRate() * 100) / 100,
+            skillLevel: this.getSkillLevel(),
             createdAt: this.createdAt,
             updatedAt: this.updatedAt
         };
-    }
-
-    /**
-     * Crée une instance depuis les données de base
-     */
-    static fromDatabase(dbData) {
-        const player = new Player(dbData.user_id, dbData.username);
-
-        player.carsGuessed = dbData.cars_guessed || 0;
-        player.partialGuesses = dbData.partial_guesses || 0;
-        player.totalPoints = dbData.total_points || 0;
-        player.totalDifficultyPoints = dbData.total_difficulty_points || 0;
-        player.totalAttempts = dbData.total_attempts || 0;
-        player.bestTime = dbData.best_time;
-        player.lastGameTime = dbData.last_game_time;
-        player.createdAt = dbData.created_at || new Date();
-        player.updatedAt = dbData.updated_at || new Date();
-
-        return player;
-    }
-
-    /**
-     * Crée une instance depuis les anciennes données de scores.json
-     */
-    static fromLegacyData(userId, data) {
-        const player = new Player(userId, data.username);
-
-        player.carsGuessed = data.carsGuessed || 0;
-        player.partialGuesses = data.partialGuesses || 0;
-        player.totalPoints = data.totalPoints || 0;
-        player.totalDifficultyPoints = data.totalDifficultyPoints || 0;
-        player.totalAttempts = data.totalAttempts || 0;
-        player.bestTime = data.bestTime;
-        player.lastGameTime = data.lastGameTime;
-
-        return player;
     }
 }
 

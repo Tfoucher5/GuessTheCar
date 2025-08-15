@@ -1268,3 +1268,164 @@
 {"level":"info","message":"Refreshing application (/) commands...","timestamp":"2025-08-15 18:16:53"}
 {"level":"info","message":"Successfully reloaded application (/) commands.","timestamp":"2025-08-15 18:16:54"}
 {"level":"info","message":"Commandes Slash enregistrées avec succès","timestamp":"2025-08-15 18:16:54"}
+{"error":"Table 'guessthecar.players' doesn't exist","level":"error","message":"Database query error:","params":["573543227525824516"],"query":"SELECT * FROM players WHERE user_id = ? ORDER BY id ASC","timestamp":"2025-08-15 18:22:59"}
+{"error":{"code":"DATABASE_ERROR","isOperational":true,"name":"DatabaseError","originalError":{"code":"ER_NO_SUCH_TABLE","errno":1146,"message":"Table 'guessthecar.players' doesn't exist","sql":"SELECT * FROM players WHERE user_id = ? ORDER BY id ASC","sqlMessage":"Table 'guessthecar.players' doesn't exist","sqlState":"42S02"},"statusCode":500},"level":"error","message":"Error getting player stats:","timestamp":"2025-08-15 18:22:59","userId":"573543227525824516"}
+{"error":"Query execution failed: Table 'guessthecar.players' doesn't exist","level":"error","message":"Error in stats command:","timestamp":"2025-08-15 18:22:59","userId":"573543227525824516"}
+{"command":"stats","guild":"Shyish","level":"info","message":"Command executed:","timestamp":"2025-08-15 18:23:00","user":"t3sk0"}
+{"error":"Table 'guessthecar.players' doesn't exist","level":"error","message":"Database query error:","params":[10],"query":"\n            SELECT * FROM players\n            WHERE total_difficulty_points > 0\n            ORDER BY total_difficulty_points DESC, cars_guessed DESC, best_time ASC\n            LIMIT ?\n        ","timestamp":"2025-08-15 18:23:18"}
+{"error":{"code":"DATABASE_ERROR","isOperational":true,"name":"DatabaseError","originalError":{"code":"ER_NO_SUCH_TABLE","errno":1146,"message":"Table 'guessthecar.players' doesn't exist","sql":"\n            SELECT * FROM players\n            WHERE total_difficulty_points > 0\n            ORDER BY total_difficulty_points DESC, cars_guessed DESC, best_time ASC\n            LIMIT ?\n        ","sqlMessage":"Table 'guessthecar.players' doesn't exist","sqlState":"42S02"},"statusCode":500},"level":"error","limit":10,"message":"Error getting leaderboard:","timestamp":"2025-08-15 18:23:18"}
+{"error":"Query execution failed: Table 'guessthecar.players' doesn't exist","level":"error","message":"Error in classement command:","timestamp":"2025-08-15 18:23:18","userId":"573543227525824516"}
+{"command":"classement","guild":"Shyish","level":"info","message":"Command executed:","timestamp":"2025-08-15 18:23:18","user":"t3sk0"}
+{"level":"info","message":"🚀 Starting Guess The Car Bot Application...","timestamp":"2025-08-15 22:28:22"}
+{"level":"info","message":"Database connection pool created successfully","timestamp":"2025-08-15 22:28:22"}
+{"level":"info","message":"✅ Database connected","timestamp":"2025-08-15 22:28:22"}
+{"level":"info","message":"Loaded 3 events","timestamp":"2025-08-15 22:28:23"}
+{"level":"info","message":"Command loaded: abandon","timestamp":"2025-08-15 22:28:23"}
+{"level":"info","message":"Command loaded: guesscar","timestamp":"2025-08-15 22:28:23"}
+{"level":"info","message":"Command loaded: aide","timestamp":"2025-08-15 22:28:23"}
+{"level":"info","message":"Command loaded: classement","timestamp":"2025-08-15 22:28:23"}
+{"level":"info","message":"Command loaded: stats","timestamp":"2025-08-15 22:28:23"}
+{"level":"info","message":"Loaded 5 commands","timestamp":"2025-08-15 22:28:23"}
+{"level":"info","message":"✅ API Server running on port 3001","timestamp":"2025-08-15 22:28:23"}
+{"level":"info","message":"✅ Discord Bot connected","timestamp":"2025-08-15 22:28:23"}
+{"level":"info","message":"🎉 Application started successfully!","timestamp":"2025-08-15 22:28:23"}
+{"level":"info","message":"Bot Discord prêt! Connecté en tant que GuessTheCar#6976","timestamp":"2025-08-15 22:28:23"}
+{"level":"info","message":"Bot présent sur 1 serveurs","timestamp":"2025-08-15 22:28:23"}
+{"level":"info","message":"Bot connecté à 16 canaux","timestamp":"2025-08-15 22:28:23"}
+{"level":"info","message":"Bot peut voir 1 utilisateurs","timestamp":"2025-08-15 22:28:23"}
+{"level":"info","message":"Discord Bot connecté: GuessTheCar#6976","timestamp":"2025-08-15 22:28:23"}
+{"level":"info","message":"Bot présent sur 1 serveurs","timestamp":"2025-08-15 22:28:23"}
+{"level":"info","message":"Refreshing application (/) commands...","timestamp":"2025-08-15 22:28:23"}
+{"level":"info","message":"Successfully reloaded application (/) commands.","timestamp":"2025-08-15 22:28:24"}
+{"level":"info","message":"Commandes Slash enregistrées avec succès","timestamp":"2025-08-15 22:28:24"}
+{"level":"info","message":"🚀 Starting Guess The Car Bot Application...","timestamp":"2025-08-15 22:28:57"}
+{"level":"info","message":"Database connection pool created successfully","timestamp":"2025-08-15 22:28:57"}
+{"level":"info","message":"✅ Database connected","timestamp":"2025-08-15 22:28:57"}
+{"level":"info","message":"Loaded 3 events","timestamp":"2025-08-15 22:28:57"}
+{"level":"info","message":"Command loaded: abandon","timestamp":"2025-08-15 22:28:57"}
+{"level":"info","message":"Command loaded: guesscar","timestamp":"2025-08-15 22:28:57"}
+{"level":"info","message":"Command loaded: aide","timestamp":"2025-08-15 22:28:57"}
+{"level":"info","message":"Command loaded: classement","timestamp":"2025-08-15 22:28:57"}
+{"level":"info","message":"Command loaded: stats","timestamp":"2025-08-15 22:28:57"}
+{"level":"info","message":"Loaded 5 commands","timestamp":"2025-08-15 22:28:57"}
+{"level":"info","message":"✅ API Server running on port 3001","timestamp":"2025-08-15 22:28:57"}
+{"level":"info","message":"✅ Discord Bot connected","timestamp":"2025-08-15 22:28:58"}
+{"level":"info","message":"🎉 Application started successfully!","timestamp":"2025-08-15 22:28:58"}
+{"level":"info","message":"Bot Discord prêt! Connecté en tant que GuessTheCar#6976","timestamp":"2025-08-15 22:28:58"}
+{"level":"info","message":"Bot présent sur 1 serveurs","timestamp":"2025-08-15 22:28:58"}
+{"level":"info","message":"Bot connecté à 16 canaux","timestamp":"2025-08-15 22:28:58"}
+{"level":"info","message":"Bot peut voir 1 utilisateurs","timestamp":"2025-08-15 22:28:58"}
+{"level":"info","message":"Discord Bot connecté: GuessTheCar#6976","timestamp":"2025-08-15 22:28:58"}
+{"level":"info","message":"Bot présent sur 1 serveurs","timestamp":"2025-08-15 22:28:58"}
+{"level":"info","message":"Refreshing application (/) commands...","timestamp":"2025-08-15 22:28:58"}
+{"level":"info","message":"Successfully reloaded application (/) commands.","timestamp":"2025-08-15 22:28:58"}
+{"level":"info","message":"Commandes Slash enregistrées avec succès","timestamp":"2025-08-15 22:28:58"}
+{"level":"info","message":"🚀 Starting Guess The Car Bot Application...","timestamp":"2025-08-15 22:29:00"}
+{"level":"info","message":"Database connection pool created successfully","timestamp":"2025-08-15 22:29:00"}
+{"level":"info","message":"✅ Database connected","timestamp":"2025-08-15 22:29:00"}
+{"level":"info","message":"Loaded 3 events","timestamp":"2025-08-15 22:29:00"}
+{"level":"info","message":"Command loaded: abandon","timestamp":"2025-08-15 22:29:00"}
+{"level":"info","message":"Command loaded: guesscar","timestamp":"2025-08-15 22:29:00"}
+{"level":"info","message":"Command loaded: aide","timestamp":"2025-08-15 22:29:00"}
+{"level":"info","message":"Command loaded: classement","timestamp":"2025-08-15 22:29:00"}
+{"level":"info","message":"Command loaded: stats","timestamp":"2025-08-15 22:29:00"}
+{"level":"info","message":"Loaded 5 commands","timestamp":"2025-08-15 22:29:00"}
+{"level":"info","message":"✅ API Server running on port 3001","timestamp":"2025-08-15 22:29:00"}
+{"level":"info","message":"✅ Discord Bot connected","timestamp":"2025-08-15 22:29:01"}
+{"level":"info","message":"🎉 Application started successfully!","timestamp":"2025-08-15 22:29:01"}
+{"level":"info","message":"Bot Discord prêt! Connecté en tant que GuessTheCar#6976","timestamp":"2025-08-15 22:29:01"}
+{"level":"info","message":"Bot présent sur 1 serveurs","timestamp":"2025-08-15 22:29:01"}
+{"level":"info","message":"Bot connecté à 16 canaux","timestamp":"2025-08-15 22:29:01"}
+{"level":"info","message":"Bot peut voir 1 utilisateurs","timestamp":"2025-08-15 22:29:01"}
+{"level":"info","message":"Discord Bot connecté: GuessTheCar#6976","timestamp":"2025-08-15 22:29:01"}
+{"level":"info","message":"Bot présent sur 1 serveurs","timestamp":"2025-08-15 22:29:01"}
+{"level":"info","message":"Refreshing application (/) commands...","timestamp":"2025-08-15 22:29:01"}
+{"level":"info","message":"Successfully reloaded application (/) commands.","timestamp":"2025-08-15 22:29:01"}
+{"level":"info","message":"Commandes Slash enregistrées avec succès","timestamp":"2025-08-15 22:29:01"}
+{"level":"info","message":"🚀 Starting Guess The Car Bot Application...","timestamp":"2025-08-15 22:29:16"}
+{"level":"info","message":"Database connection pool created successfully","timestamp":"2025-08-15 22:29:16"}
+{"level":"info","message":"✅ Database connected","timestamp":"2025-08-15 22:29:16"}
+{"level":"info","message":"Loaded 3 events","timestamp":"2025-08-15 22:29:17"}
+{"level":"info","message":"Command loaded: abandon","timestamp":"2025-08-15 22:29:17"}
+{"level":"info","message":"Command loaded: guesscar","timestamp":"2025-08-15 22:29:17"}
+{"level":"info","message":"Command loaded: aide","timestamp":"2025-08-15 22:29:17"}
+{"level":"info","message":"Command loaded: classement","timestamp":"2025-08-15 22:29:17"}
+{"level":"info","message":"Command loaded: stats","timestamp":"2025-08-15 22:29:17"}
+{"level":"info","message":"Loaded 5 commands","timestamp":"2025-08-15 22:29:17"}
+{"level":"info","message":"✅ API Server running on port 3001","timestamp":"2025-08-15 22:29:17"}
+{"level":"info","message":"✅ Discord Bot connected","timestamp":"2025-08-15 22:29:17"}
+{"level":"info","message":"🎉 Application started successfully!","timestamp":"2025-08-15 22:29:17"}
+{"level":"info","message":"Bot Discord prêt! Connecté en tant que GuessTheCar#6976","timestamp":"2025-08-15 22:29:17"}
+{"level":"info","message":"Bot présent sur 1 serveurs","timestamp":"2025-08-15 22:29:17"}
+{"level":"info","message":"Bot connecté à 16 canaux","timestamp":"2025-08-15 22:29:17"}
+{"level":"info","message":"Bot peut voir 1 utilisateurs","timestamp":"2025-08-15 22:29:17"}
+{"level":"info","message":"Discord Bot connecté: GuessTheCar#6976","timestamp":"2025-08-15 22:29:17"}
+{"level":"info","message":"Bot présent sur 1 serveurs","timestamp":"2025-08-15 22:29:17"}
+{"level":"info","message":"Refreshing application (/) commands...","timestamp":"2025-08-15 22:29:17"}
+{"level":"info","message":"🚀 Starting Guess The Car Bot Application...","timestamp":"2025-08-15 22:29:18"}
+{"level":"info","message":"🚀 Starting Guess The Car Bot Application...","timestamp":"2025-08-15 22:29:19"}
+{"level":"info","message":"Database connection pool created successfully","timestamp":"2025-08-15 22:29:19"}
+{"level":"info","message":"✅ Database connected","timestamp":"2025-08-15 22:29:19"}
+{"level":"info","message":"Loaded 3 events","timestamp":"2025-08-15 22:29:19"}
+{"level":"info","message":"Command loaded: abandon","timestamp":"2025-08-15 22:29:19"}
+{"level":"info","message":"Command loaded: guesscar","timestamp":"2025-08-15 22:29:19"}
+{"level":"info","message":"Command loaded: aide","timestamp":"2025-08-15 22:29:19"}
+{"level":"info","message":"Command loaded: classement","timestamp":"2025-08-15 22:29:19"}
+{"level":"info","message":"Command loaded: stats","timestamp":"2025-08-15 22:29:19"}
+{"level":"info","message":"Loaded 5 commands","timestamp":"2025-08-15 22:29:19"}
+{"level":"info","message":"✅ API Server running on port 3001","timestamp":"2025-08-15 22:29:19"}
+{"level":"info","message":"✅ Discord Bot connected","timestamp":"2025-08-15 22:29:20"}
+{"level":"info","message":"🎉 Application started successfully!","timestamp":"2025-08-15 22:29:20"}
+{"level":"info","message":"Bot Discord prêt! Connecté en tant que GuessTheCar#6976","timestamp":"2025-08-15 22:29:20"}
+{"level":"info","message":"Bot présent sur 1 serveurs","timestamp":"2025-08-15 22:29:20"}
+{"level":"info","message":"Bot connecté à 16 canaux","timestamp":"2025-08-15 22:29:20"}
+{"level":"info","message":"Bot peut voir 1 utilisateurs","timestamp":"2025-08-15 22:29:20"}
+{"level":"info","message":"Discord Bot connecté: GuessTheCar#6976","timestamp":"2025-08-15 22:29:20"}
+{"level":"info","message":"Bot présent sur 1 serveurs","timestamp":"2025-08-15 22:29:20"}
+{"level":"info","message":"Refreshing application (/) commands...","timestamp":"2025-08-15 22:29:20"}
+{"level":"info","message":"🚀 Starting Guess The Car Bot Application...","timestamp":"2025-08-15 22:29:20"}
+{"level":"info","message":"Database connection pool created successfully","timestamp":"2025-08-15 22:29:20"}
+{"level":"info","message":"✅ Database connected","timestamp":"2025-08-15 22:29:20"}
+{"level":"info","message":"Loaded 3 events","timestamp":"2025-08-15 22:29:21"}
+{"level":"info","message":"Command loaded: abandon","timestamp":"2025-08-15 22:29:21"}
+{"level":"info","message":"Command loaded: guesscar","timestamp":"2025-08-15 22:29:21"}
+{"level":"info","message":"Command loaded: aide","timestamp":"2025-08-15 22:29:21"}
+{"level":"info","message":"Command loaded: classement","timestamp":"2025-08-15 22:29:21"}
+{"level":"info","message":"Command loaded: stats","timestamp":"2025-08-15 22:29:21"}
+{"level":"info","message":"Loaded 5 commands","timestamp":"2025-08-15 22:29:21"}
+{"level":"info","message":"✅ API Server running on port 3001","timestamp":"2025-08-15 22:29:21"}
+{"level":"info","message":"✅ Discord Bot connected","timestamp":"2025-08-15 22:29:23"}
+{"level":"info","message":"🎉 Application started successfully!","timestamp":"2025-08-15 22:29:23"}
+{"level":"info","message":"Bot Discord prêt! Connecté en tant que GuessTheCar#6976","timestamp":"2025-08-15 22:29:23"}
+{"level":"info","message":"Bot présent sur 1 serveurs","timestamp":"2025-08-15 22:29:23"}
+{"level":"info","message":"Bot connecté à 16 canaux","timestamp":"2025-08-15 22:29:23"}
+{"level":"info","message":"Bot peut voir 1 utilisateurs","timestamp":"2025-08-15 22:29:23"}
+{"level":"info","message":"Discord Bot connecté: GuessTheCar#6976","timestamp":"2025-08-15 22:29:23"}
+{"level":"info","message":"Bot présent sur 1 serveurs","timestamp":"2025-08-15 22:29:23"}
+{"level":"info","message":"Refreshing application (/) commands...","timestamp":"2025-08-15 22:29:23"}
+{"level":"info","message":"Successfully reloaded application (/) commands.","timestamp":"2025-08-15 22:29:59"}
+{"level":"info","message":"Commandes Slash enregistrées avec succès","timestamp":"2025-08-15 22:29:59"}
+{"level":"info","message":"🚀 Starting Guess The Car Bot Application...","timestamp":"2025-08-15 22:30:23"}
+{"level":"info","message":"Database connection pool created successfully","timestamp":"2025-08-15 22:30:23"}
+{"level":"info","message":"✅ Database connected","timestamp":"2025-08-15 22:30:23"}
+{"level":"info","message":"Loaded 3 events","timestamp":"2025-08-15 22:30:24"}
+{"level":"info","message":"Command loaded: abandon","timestamp":"2025-08-15 22:30:24"}
+{"level":"info","message":"Command loaded: guesscar","timestamp":"2025-08-15 22:30:24"}
+{"level":"info","message":"Command loaded: aide","timestamp":"2025-08-15 22:30:24"}
+{"level":"info","message":"Command loaded: classement","timestamp":"2025-08-15 22:30:24"}
+{"level":"info","message":"Command loaded: stats","timestamp":"2025-08-15 22:30:24"}
+{"level":"info","message":"Loaded 5 commands","timestamp":"2025-08-15 22:30:24"}
+{"level":"info","message":"✅ API Server running on port 3001","timestamp":"2025-08-15 22:30:24"}
+{"level":"info","message":"✅ Discord Bot connected","timestamp":"2025-08-15 22:30:24"}
+{"level":"info","message":"🎉 Application started successfully!","timestamp":"2025-08-15 22:30:24"}
+{"level":"info","message":"Bot Discord prêt! Connecté en tant que GuessTheCar#6976","timestamp":"2025-08-15 22:30:24"}
+{"level":"info","message":"Bot présent sur 1 serveurs","timestamp":"2025-08-15 22:30:24"}
+{"level":"info","message":"Bot connecté à 16 canaux","timestamp":"2025-08-15 22:30:24"}
+{"level":"info","message":"Bot peut voir 1 utilisateurs","timestamp":"2025-08-15 22:30:24"}
+{"level":"info","message":"Discord Bot connecté: GuessTheCar#6976","timestamp":"2025-08-15 22:30:24"}
+{"level":"info","message":"Bot présent sur 1 serveurs","timestamp":"2025-08-15 22:30:24"}
+{"level":"info","message":"Refreshing application (/) commands...","timestamp":"2025-08-15 22:30:24"}
+{"level":"info","message":"Successfully reloaded application (/) commands.","timestamp":"2025-08-15 22:30:25"}
+{"level":"info","message":"Commandes Slash enregistrées avec succès","timestamp":"2025-08-15 22:30:25"}
+{"level":"info","message":"🚀 Starting Guess The Car Bot Application...","timestamp":"2025-08-15 22:31:38"}
+{"level":"info","message":"🚀 Starting Guess The Car Bot Application...","timestamp":"2025-08-15 22:31:39"}

@@ -1,81 +1,150 @@
-const { validateDifficulty } = require('../../shared/utils/validation');
-
 class Car {
-    constructor(data) {
-        this.id = data.id || null;
-        this.make = data.make;
-        this.model = data.model;
-        this.makeId = data.makeId || data.marque_id;
-        this.country = data.country || data.pays;
-        this.modelDate = data.modelDate || data.annee;
-        this.difficulty = validateDifficulty(data.difficulty || data.difficulte);
-
-        // Propriétés calculées
-        this.makeLength = this.make ? this.make.length : 0;
-        this.modelLength = this.model ? this.model.length : 0;
-        this.firstLetter = this.make ? this.make[0].toUpperCase() : '';
-        this.modelFirstLetter = this.model ? this.model[0].toUpperCase() : '';
+    constructor(id, model, brand, difficulty = 1, imageUrl = null, brandId = null) {
+        this.id = id;
+        this.model = model;
+        this.brand = brand;
+        this.difficulty = difficulty;
+        this.imageUrl = imageUrl;
+        this.brandId = brandId;
     }
 
     /**
-     * Obtient le texte de difficulté
+     * Crée une instance Car depuis les données de base
      */
-    getDifficultyText() {
-        switch (this.difficulty) {
-        case 1: return 'facile';
-        case 2: return 'moyen';
-        case 3: return 'difficile';
-        default: return 'inconnue';
-        }
+    static fromDatabase(data) {
+        return new Car(
+            data.id,
+            data.model,
+            data.brand,
+            data.difficulty || data.difficulty_level || 1,
+            data.imageUrl || data.image_url || null,
+            data.brandId || data.brand_id || null
+        );
     }
 
     /**
-     * Obtient la réponse complète
+     * Convertit en format base de données
      */
-    getFullName() {
-        return `${this.make} ${this.model}`;
-    }
-
-    /**
-     * Vérifie si la voiture est valide
-     */
-    isValid() {
-        return !!(this.make && this.model && this.country && this.difficulty);
-    }
-
-    /**
-     * Convertit en objet simple
-     */
-    toJSON() {
+    toDatabase() {
         return {
             id: this.id,
-            make: this.make,
-            model: this.model,
-            makeId: this.makeId,
-            country: this.country,
-            modelDate: this.modelDate,
-            difficulty: this.difficulty,
-            difficultyText: this.getDifficultyText(),
-            makeLength: this.makeLength,
-            modelLength: this.modelLength,
-            firstLetter: this.firstLetter,
-            modelFirstLetter: this.modelFirstLetter
+            name: this.model,
+            brand_id: this.brandId,
+            difficulty_level: this.difficulty,
+            image_url: this.imageUrl
         };
     }
 
     /**
-     * Crée une instance depuis des données de base
+     * Vérifie si une réponse correspond à la marque
      */
-    static fromDatabase(dbData) {
-        return new Car({
-            id: dbData.id,
-            make: dbData.marque_nom || dbData.make,
-            model: dbData.nom || dbData.model,
-            makeId: dbData.marque_id || dbData.makeId,
-            country: dbData.pays || dbData.country,
-            modelDate: dbData.annee || dbData.modelDate,
-            difficulty: dbData.difficulte || dbData.difficulty
-        });
+    checkBrand(guess) {
+        if (!guess || typeof guess !== 'string') return false;
+
+        const normalizedGuess = this.normalizeString(guess);
+        const normalizedBrand = this.normalizeString(this.brand);
+
+        return normalizedBrand.includes(normalizedGuess) ||
+            normalizedGuess.includes(normalizedBrand);
+    }
+
+    /**
+     * Vérifie si une réponse correspond au modèle
+     */
+    checkModel(guess) {
+        if (!guess || typeof guess !== 'string') return false;
+
+        const normalizedGuess = this.normalizeString(guess);
+        const normalizedModel = this.normalizeString(this.model);
+
+        return normalizedModel.includes(normalizedGuess) ||
+            normalizedGuess.includes(normalizedModel);
+    }
+
+    /**
+     * Vérifie si une réponse correspond à la marque ET au modèle
+     */
+    checkFullCar(guess) {
+        if (!guess || typeof guess !== 'string') return false;
+
+        const normalizedGuess = this.normalizeString(guess);
+        const fullCar = this.normalizeString(`${this.brand} ${this.model}`);
+
+        return fullCar.includes(normalizedGuess) ||
+            (this.checkBrand(guess) && this.checkModel(guess));
+    }
+
+    /**
+     * Normalise une chaîne pour la comparaison
+     */
+    normalizeString(str) {
+        return str.toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '') // Retire les accents
+            .replace(/[^a-z0-9\s]/g, '') // Garde seulement lettres, chiffres, espaces
+            .replace(/\s+/g, ' ') // Normalise les espaces
+            .trim();
+    }
+
+    /**
+     * Obtient les points de base selon la difficulté
+     */
+    getBasePoints() {
+        switch (this.difficulty) {
+            case 1: return 10; // Facile
+            case 2: return 15; // Moyen
+            case 3: return 25; // Difficile
+            default: return 10;
+        }
+    }
+
+    /**
+     * Obtient les points de difficulté
+     */
+    getDifficultyPoints() {
+        switch (this.difficulty) {
+            case 1: return 1;
+            case 2: return 2;
+            case 3: return 4;
+            default: return 1;
+        }
+    }
+
+    /**
+     * Obtient le nom de la difficulté
+     */
+    getDifficultyName() {
+        switch (this.difficulty) {
+            case 1: return 'Facile';
+            case 2: return 'Moyen';
+            case 3: return 'Difficile';
+            default: return 'Inconnu';
+        }
+    }
+
+    /**
+     * Convertit en JSON pour l'affichage
+     */
+    toJSON() {
+        return {
+            id: this.id,
+            model: this.model,
+            brand: this.brand,
+            difficulty: this.difficulty,
+            difficultyName: this.getDifficultyName(),
+            basePoints: this.getBasePoints(),
+            difficultyPoints: this.getDifficultyPoints(),
+            imageUrl: this.imageUrl,
+            brandId: this.brandId,
+            fullName: `${this.brand} ${this.model}`
+        };
+    }
+
+    /**
+     * Obtient une représentation textuelle
+     */
+    toString() {
+        return `${this.brand} ${this.model} (Difficulté: ${this.getDifficultyName()})`;
     }
 }
 
