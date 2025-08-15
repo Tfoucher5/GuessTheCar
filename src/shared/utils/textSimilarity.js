@@ -2,8 +2,8 @@ const gameConfig = require('../config/game');
 
 /**
  * Calcule la distance de Levenshtein entre deux chaînes
- * @param {string} str1 
- * @param {string} str2 
+ * @param {string} str1
+ * @param {string} str2
  * @returns {number}
  */
 function levenshteinDistance(str1, str2) {
@@ -39,23 +39,23 @@ function levenshteinDistance(str1, str2) {
 
 /**
  * Calcule le pourcentage de similarité entre deux chaînes
- * @param {string} str1 
- * @param {string} str2 
+ * @param {string} str1
+ * @param {string} str2
  * @returns {number} - Pourcentage de 0 à 100
  */
 function calculateSimilarity(str1, str2) {
     if (!str1 || !str2) return 0;
-    
+
     const maxLength = Math.max(str1.length, str2.length);
     if (maxLength === 0) return 100;
-    
+
     const distance = levenshteinDistance(str1, str2);
     return ((maxLength - distance) / maxLength) * 100;
 }
 
 /**
  * Normalise une chaîne pour la comparaison
- * @param {string} str 
+ * @param {string} str
  * @returns {string}
  */
 function normalizeString(str) {
@@ -68,8 +68,8 @@ function normalizeString(str) {
 
 /**
  * Vérifie si une réponse est correcte
- * @param {string} userAnswer 
- * @param {string} correctAnswer 
+ * @param {string} userAnswer
+ * @param {string} correctAnswer
  * @returns {Object}
  */
 function checkAnswer(userAnswer, correctAnswer) {
@@ -77,55 +77,55 @@ function checkAnswer(userAnswer, correctAnswer) {
         return {
             isCorrect: false,
             similarity: 0,
-            feedback: "Réponse invalide"
+            feedback: 'Réponse invalide'
         };
     }
-    
+
     const normalizedUser = normalizeString(userAnswer);
     const normalizedCorrect = normalizeString(correctAnswer);
-    
+
     // Vérification exacte
     if (normalizedUser === normalizedCorrect) {
         return {
             isCorrect: true,
             similarity: 100,
-            feedback: "Parfait ! Réponse exacte."
+            feedback: 'Parfait ! Réponse exacte.'
         };
     }
-    
+
     const similarity = calculateSimilarity(normalizedUser, normalizedCorrect);
-    
+
     if (similarity >= gameConfig.SIMILARITY_THRESHOLDS.CORRECT) {
         return {
             isCorrect: true,
             similarity,
-            feedback: "Correct ! La réponse était légèrement différente mais suffisamment proche."
+            feedback: 'Correct ! La réponse était légèrement différente mais suffisamment proche.'
         };
     } else if (similarity >= gameConfig.SIMILARITY_THRESHOLDS.CLOSE) {
         return {
             isCorrect: false,
             similarity,
-            feedback: "Presque ! Tu es sur la bonne voie."
+            feedback: 'Presque ! Tu es sur la bonne voie.'
         };
     } else {
         return {
             isCorrect: false,
             similarity,
-            feedback: "Pas tout à fait, continue à chercher !"
+            feedback: 'Pas tout à fait, continue à chercher !'
         };
     }
 }
 
 /**
  * Vérifie si deux chaînes sont similaires selon un seuil
- * @param {string} str1 
- * @param {string} str2 
+ * @param {string} str1
+ * @param {string} str2
  * @param {number} threshold - Seuil de similarité (0-100)
  * @returns {boolean}
  */
 function areSimilar(str1, str2, threshold = 75) {
     const similarity = calculateSimilarity(
-        normalizeString(str1), 
+        normalizeString(str1),
         normalizeString(str2)
     );
     return similarity >= threshold;

@@ -1,6 +1,6 @@
 const BaseRepository = require('./BaseRepository');
 const { executeQuery } = require('../connection');
-const Player = require('../../core/player/Player');
+const Player = require('../../../core/player/Player');
 
 class PlayerRepository extends BaseRepository {
     constructor() {

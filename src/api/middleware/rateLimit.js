@@ -6,7 +6,7 @@ const rateLimiter = new RateLimiterMemory({
     keyStoragePrefix: 'api_global',
     points: 100, // Nombre de requêtes
     duration: 60, // Par minute
-    blockDuration: 60, // Bloquer pendant 1 minute
+    blockDuration: 60 // Bloquer pendant 1 minute
 });
 
 // Rate limiter strict pour certaines routes
@@ -14,13 +14,13 @@ const strictRateLimiter = new RateLimiterMemory({
     keyStoragePrefix: 'api_strict',
     points: 10, // Moins de requêtes
     duration: 60,
-    blockDuration: 300, // Bloquer pendant 5 minutes
+    blockDuration: 300 // Bloquer pendant 5 minutes
 });
 
 /**
  * Middleware de rate limiting
  */
-const rateLimitMiddleware = async (req, res, next) => {
+const rateLimitMiddleware = async(req, res, next) => {
     try {
         const key = req.ip;
 

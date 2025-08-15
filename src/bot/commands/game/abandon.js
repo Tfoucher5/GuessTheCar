@@ -42,7 +42,7 @@ module.exports = {
                     await thread.send({ embeds: [abandonEmbed] });
 
                     // Programmer la fermeture du thread
-                    setTimeout(async () => {
+                    setTimeout(async() => {
                         try {
                             await thread.setLocked(true);
 
@@ -52,7 +52,7 @@ module.exports = {
                             );
                             await thread.send({ embeds: [closeEmbed] });
 
-                            setTimeout(async () => {
+                            setTimeout(async() => {
                                 try {
                                     await thread.delete();
                                 } catch (error) {

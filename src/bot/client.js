@@ -18,7 +18,7 @@ eventHandler.loadEvents(client);
 commandHandler.loadCommands();
 
 // Événement de connexion
-client.once('ready', async () => {
+client.once('ready', async() => {
     logger.info(`Discord Bot connecté: ${client.user.tag}`);
     logger.info(`Bot présent sur ${client.guilds.cache.size} serveurs`);
 
@@ -51,12 +51,12 @@ client.on('reconnecting', () => {
 });
 
 // Gestion gracieuse de l'arrêt
-process.on('SIGINT', async () => {
+process.on('SIGINT', async() => {
     logger.info('Arrêt du bot Discord...');
     client.destroy();
 });
 
-process.on('SIGTERM', async () => {
+process.on('SIGTERM', async() => {
     logger.info('Arrêt du bot Discord...');
     client.destroy();
 });

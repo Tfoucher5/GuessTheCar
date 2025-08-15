@@ -255,7 +255,7 @@ class GameEmbedBuilder {
         return this.createGameEmbed(gameState, {
             color: '#FF0000',
             title: '⏰ Temps écoulé',
-            description: `La partie a été abandonnée après 5 minutes d'inactivité.\n` +
+            description: 'La partie a été abandonnée après 5 minutes d\'inactivité.\n' +
                 `La voiture était: ${correctAnswer}${pointsMessage}`
         });
     }
@@ -266,7 +266,7 @@ class GameEmbedBuilder {
     static createCarChangeEmbed(gameState, changesRemaining) {
         return this.createGameEmbed(gameState, {
             title: '🔄 Nouvelle voiture',
-            description: `Voiture changée ! Devine la **marque** de la nouvelle voiture.\n\n` +
+            description: 'Voiture changée ! Devine la **marque** de la nouvelle voiture.\n\n' +
                 `*Changements restants: ${changesRemaining}*`
         });
     }

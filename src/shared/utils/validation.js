@@ -6,7 +6,7 @@ const schemas = {
         .trim()
         .min(1)
         .max(50)
-        .pattern(/^[a-zA-Z0-9\s\-]+$/)
+        .pattern(/^[a-zA-Z0-9\s-]+$/)
         .required()
         .messages({
             'string.pattern.base': 'La réponse ne peut contenir que des lettres, chiffres, espaces et tirets',

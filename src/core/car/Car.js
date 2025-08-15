@@ -22,10 +22,10 @@ class Car {
      */
     getDifficultyText() {
         switch (this.difficulty) {
-            case 1: return 'facile';
-            case 2: return 'moyen';
-            case 3: return 'difficile';
-            default: return 'inconnue';
+        case 1: return 'facile';
+        case 2: return 'moyen';
+        case 3: return 'difficile';
+        default: return 'inconnue';
         }
     }
 

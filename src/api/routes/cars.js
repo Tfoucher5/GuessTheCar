@@ -21,7 +21,7 @@ const sendResponse = (res, data, message = 'Success') => {
  * GET /api/cars/random
  * Récupère une voiture aléatoire
  */
-router.get('/random', async (req, res, next) => {
+router.get('/random', async(req, res, next) => {
     try {
         const car = await carService.getRandomCar();
 
@@ -40,7 +40,7 @@ router.get('/random', async (req, res, next) => {
  * GET /api/cars/:id
  * Récupère une voiture par ID
  */
-router.get('/:id', async (req, res, next) => {
+router.get('/:id', async(req, res, next) => {
     try {
         const { id } = req.params;
 
@@ -59,7 +59,7 @@ router.get('/:id', async (req, res, next) => {
  * GET /api/cars
  * Recherche des voitures avec filtres
  */
-router.get('/', async (req, res, next) => {
+router.get('/', async(req, res, next) => {
     try {
         const filters = {};
 
@@ -96,7 +96,7 @@ router.get('/', async (req, res, next) => {
  * GET /api/cars/makes
  * Récupère toutes les marques
  */
-router.get('/meta/makes', async (req, res, next) => {
+router.get('/meta/makes', async(req, res, next) => {
     try {
         const makes = await carService.getAllMakes();
         sendResponse(res, makes, 'Marques récupérées');
@@ -109,7 +109,7 @@ router.get('/meta/makes', async (req, res, next) => {
  * GET /api/cars/makes/:makeId/models
  * Récupère les modèles d'une marque
  */
-router.get('/makes/:makeId/models', async (req, res, next) => {
+router.get('/makes/:makeId/models', async(req, res, next) => {
     try {
         const { makeId } = req.params;
 
@@ -128,7 +128,7 @@ router.get('/makes/:makeId/models', async (req, res, next) => {
  * GET /api/cars/meta/stats
  * Récupère les statistiques des voitures
  */
-router.get('/meta/stats', async (req, res, next) => {
+router.get('/meta/stats', async(req, res, next) => {
     try {
         const stats = await carService.getCarStats();
         sendResponse(res, stats, 'Statistiques récupérées');
@@ -141,7 +141,7 @@ router.get('/meta/stats', async (req, res, next) => {
  * GET /api/cars/meta/countries
  * Récupère les pays disponibles
  */
-router.get('/meta/countries', async (req, res, next) => {
+router.get('/meta/countries', async(req, res, next) => {
     try {
         const countries = await carService.getAvailableCountries();
         sendResponse(res, countries, 'Pays récupérés');
@@ -154,7 +154,7 @@ router.get('/meta/countries', async (req, res, next) => {
  * GET /api/cars/meta/years
  * Récupère les années disponibles
  */
-router.get('/meta/years', async (req, res, next) => {
+router.get('/meta/years', async(req, res, next) => {
     try {
         const years = await carService.getAvailableYears();
         sendResponse(res, years, 'Années récupérées');
@@ -167,7 +167,7 @@ router.get('/meta/years', async (req, res, next) => {
  * GET /api/cars/:id/similar
  * Récupère des voitures similaires
  */
-router.get('/:id/similar', async (req, res, next) => {
+router.get('/:id/similar', async(req, res, next) => {
     try {
         const { id } = req.params;
         const limit = Math.min(parseInt(req.query.limit) || 5, 20);
@@ -193,7 +193,7 @@ router.get('/:id/similar', async (req, res, next) => {
  * POST /api/cars/validate
  * Valide qu'une voiture est appropriée pour un jeu
  */
-router.post('/validate', validationMiddleware(schemas.difficulty), async (req, res, next) => {
+router.post('/validate', validationMiddleware(schemas.difficulty), async(req, res, next) => {
     try {
         const { carId } = req.body;
 

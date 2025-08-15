@@ -12,7 +12,7 @@ module.exports = {
 
     DIFFICULTY_MULTIPLIERS: {
         1: 1,     // Facile
-        2: 1.5,   // Moyen  
+        2: 1.5,   // Moyen
         3: 2      // Difficile
     },
 

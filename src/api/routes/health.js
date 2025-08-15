@@ -23,7 +23,7 @@ router.get('/', (req, res) => {
  * GET /api/health/detailed
  * Check de santé détaillé
  */
-router.get('/detailed', async (req, res) => {
+router.get('/detailed', async(req, res) => {
     const health = {
         status: 'healthy',
         timestamp: new Date().toISOString(),
@@ -91,7 +91,7 @@ router.get('/detailed', async (req, res) => {
  * GET /api/health/database
  * Check spécifique de la base de données
  */
-router.get('/database', async (req, res) => {
+router.get('/database', async(req, res) => {
     try {
         const pool = getPool();
         const connection = await pool.getConnection();
@@ -135,7 +135,7 @@ router.get('/database', async (req, res) => {
  * GET /api/health/ready
  * Check de préparation (readiness probe)
  */
-router.get('/ready', async (req, res) => {
+router.get('/ready', async(req, res) => {
     try {
         // Vérifier que tous les services critiques sont prêts
         const pool = getPool();

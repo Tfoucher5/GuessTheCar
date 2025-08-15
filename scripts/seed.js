@@ -1,130 +1,187 @@
 #!/usr/bin/env node
 
 require('dotenv').config();
+const mysql = require('mysql2/promise');
 const fs = require('fs').promises;
 const path = require('path');
-const { initializeDatabase, executeQuery, closeDatabase } = require('../src/shared/database/connection');
 
 async function seedDatabase() {
-    console.log('🌱 Initialisation des données de base...\n');
+    console.log('🌱 Initialisation des données depuis data.sql...\n');
+
+    // Configuration simple
+    const connectionConfig = {
+        host: process.env.DB_HOST || 'localhost',
+        port: process.env.DB_PORT || 3306,
+        user: process.env.DB_USER || 'root',
+        database: process.env.DB_NAME || 'guessthecar',
+        multipleStatements: true
+    };
+
+    if (process.env.DB_PASSWORD && process.env.DB_PASSWORD !== '') {
+        connectionConfig.password = process.env.DB_PASSWORD;
+    }
+
+    console.log('📡 Connexion à la base de données...');
+    const connection = await mysql.createConnection(connectionConfig);
 
     try {
-        await initializeDatabase();
-        console.log('✅ Connexion établie');
-
-        // Vérifier si des données existent déjà
-        const [makeCount] = await executeQuery('SELECT COUNT(*) as count FROM marques');
-        const [modelCount] = await executeQuery('SELECT COUNT(*) as count FROM modeles');
-
-        if (makeCount.count > 0 || modelCount.count > 0) {
-            console.log(`ℹ️  Données existantes trouvées: ${makeCount.count} marques, ${modelCount.count} modèles`);
-
-            const readline = require('readline').createInterface({
-                input: process.stdin,
-                output: process.stdout
-            });
-
-            const answer = await new Promise(resolve => {
-                readline.question('Voulez-vous réinitialiser les données? (y/N): ', resolve);
-            });
-            readline.close();
-
-            if (answer.toLowerCase() !== 'y' && answer.toLowerCase() !== 'yes') {
-                console.log('⏹️  Seeding annulé');
-                return;
-            }
-
-            // Nettoyer les données existantes
-            await executeQuery('DELETE FROM modeles');
-            await executeQuery('DELETE FROM marques');
-            await executeQuery('ALTER TABLE marques AUTO_INCREMENT = 1');
-            await executeQuery('ALTER TABLE modeles AUTO_INCREMENT = 1');
-            console.log('🗑️  Données existantes supprimées');
-        }
-
-        // Lire et exécuter le fichier de données
+        console.log('📂 Lecture du fichier data.sql...');
         const dataPath = path.join(process.cwd(), 'database', 'data.sql');
+        let dataContent = await fs.readFile(dataPath, 'utf8');
 
-        try {
-            const dataContent = await fs.readFile(dataPath, 'utf8');
+        console.log(`✅ Fichier lu: ${dataContent.length} caractères`);
 
-            // Diviser en requêtes et exécuter
-            const queries = dataContent
-                .split(';')
-                .map(query => query.trim())
-                .filter(query => query.length > 0 && !query.startsWith('--'));
+        console.log('🔧 Traitement du SQL...');
 
-            console.log(`📥 Exécution de ${queries.length} requêtes...`);
+        // Exécuter directement le fichier SQL complet
+        // Diviser uniquement sur les vrais points-virgules de fin d'instruction
+        const statements = dataContent
+            .split('\n')
+            .filter(line => line.trim() && !line.trim().startsWith('--'))
+            .join(' ')
+            .split(';')
+            .map(stmt => stmt.trim())
+            .filter(stmt => stmt.length > 0);
 
-            let executedCount = 0;
-            for (const query of queries) {
-                if (query.trim()) {
-                    await executeQuery(query);
-                    executedCount++;
+        console.log(`📋 ${statements.length} instructions SQL trouvées`);
 
-                    if (executedCount % 50 === 0) {
-                        console.log(`⏳ ${executedCount}/${queries.length} requêtes exécutées...`);
+        console.log('⚡ Exécution des instructions...');
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const [index, statement] of statements.entries()) {
+            try {
+                if (statement.trim()) {
+                    await connection.execute(statement);
+                    successCount++;
+
+                    // Afficher le progrès
+                    if (index % 10 === 0) {
+                        console.log(`⏳ ${index + 1}/${statements.length} instructions exécutées...`);
+                    }
+
+                    // Messages spéciaux pour les grandes opérations
+                    if (statement.toUpperCase().includes('DELETE FROM MODELS')) {
+                        console.log('🗑️  Modèles supprimés');
+                    } else if (statement.toUpperCase().includes('DELETE FROM BRANDS')) {
+                        console.log('🗑️  Marques supprimées');
+                    } else if (statement.toUpperCase().includes('INSERT INTO BRANDS')) {
+                        console.log('🏭 Insertion des marques...');
+                    } else if (statement.toUpperCase().includes('INSERT INTO MODELS')) {
+                        console.log('🚗 Insertion des modèles...');
                     }
                 }
+            } catch (error) {
+                errorCount++;
+                console.error(`❌ Erreur instruction ${index + 1}:`, error.message);
+
+                if (statement.length < 200) {
+                    console.error(`   SQL: ${statement}`);
+                }
             }
-
-            console.log('✅ Données importées avec succès');
-
-        } catch (error) {
-            console.error('❌ Erreur lors de l\'import des données:', error.message);
-            throw error;
         }
 
-        // Vérifier les données importées
-        const [finalMakeCount] = await executeQuery('SELECT COUNT(*) as count FROM marques');
-        const [finalModelCount] = await executeQuery('SELECT COUNT(*) as count FROM modeles');
+        console.log(`\n📊 Exécution terminée: ${successCount} succès, ${errorCount} erreurs`);
 
-        console.log('\n📊 Données importées:');
-        console.log(`   🏭 Marques: ${finalMakeCount.count}`);
-        console.log(`   🚗 Modèles: ${finalModelCount.count}`);
+        // Ajouter un utilisateur de test
+        console.log('\n👤 Ajout d\'un utilisateur de test...');
+        try {
+            await connection.execute(
+                `INSERT IGNORE INTO user_scores (
+                    user_id, username, total_points, total_difficulty_points,
+                    games_played, games_won, correct_brand_guesses, correct_model_guesses,
+                    total_brand_guesses, total_model_guesses, best_streak, current_streak
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                ['123456789012345678', 'TestUser', 150, 200, 10, 7, 15, 8, 20, 15, 5, 2]
+            );
+            console.log('✅ Utilisateur de test ajouté');
+        } catch (error) {
+            console.log('ℹ️  Erreur utilisateur test:', error.message);
+        }
 
-        // Afficher quelques statistiques
-        const [difficultyStats] = await executeQuery(`
-            SELECT 
-                difficulte,
-                COUNT(*) as count,
-                ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM modeles), 1) as percentage
-            FROM modeles 
-            GROUP BY difficulte 
-            ORDER BY difficulte
-        `);
+        // Vérification finale et statistiques
+        console.log('\n📊 Vérification finale...');
 
-        console.log('\n📈 Répartition par difficulté:');
-        const difficultyNames = { 1: 'Facile', 2: 'Moyen', 3: 'Difficile' };
-        difficultyStats.forEach(stat => {
-            console.log(`   ${difficultyNames[stat.difficulte]}: ${stat.count} (${stat.percentage}%)`);
-        });
+        const [brandCount] = await connection.execute('SELECT COUNT(*) as count FROM brands');
+        const [modelCount] = await connection.execute('SELECT COUNT(*) as count FROM models');
+        const [userCount] = await connection.execute('SELECT COUNT(*) as count FROM user_scores');
 
-        const [countryStats] = await executeQuery(`
-            SELECT pays, COUNT(*) as count 
-            FROM marques 
-            GROUP BY pays 
-            ORDER BY count DESC 
-            LIMIT 10
-        `);
+        console.log(`\n🎯 Résultats finaux:`);
+        console.log(`- ${brandCount[0].count} marques`);
+        console.log(`- ${modelCount[0].count} modèles`);
+        console.log(`- ${userCount[0].count} utilisateurs`);
 
-        console.log('\n🌍 Top 10 pays:');
-        countryStats.forEach(stat => {
-            console.log(`   ${stat.pays}: ${stat.count} marques`);
-        });
+        if (brandCount[0].count === 0) {
+            console.log('\n❌ PROBLÈME: Aucune marque insérée !');
+            console.log('💡 Solutions possibles:');
+            console.log('1. Vérifier que database/data.sql existe');
+            console.log('2. Vérifier que les noms de tables correspondent (brands/models)');
+            console.log('3. Vérifier les permissions MySQL');
 
-        console.log('\n🎉 Seeding terminé avec succès!');
+            // Debug: afficher les premières lignes du fichier
+            const debugLines = dataContent.split('\n').slice(0, 20);
+            console.log('\n🔍 Premières lignes du fichier:');
+            debugLines.forEach((line, i) => {
+                if (line.trim()) {
+                    console.log(`${i + 1}: ${line.substring(0, 100)}...`);
+                }
+            });
+
+        } else {
+            // Statistiques détaillées
+            try {
+                console.log('\n🎮 Répartition par difficulté:');
+                const [diffStats] = await connection.execute(`
+                    SELECT difficulty_level, COUNT(*) as count 
+                    FROM models 
+                    WHERE difficulty_level IS NOT NULL
+                    GROUP BY difficulty_level 
+                    ORDER BY difficulty_level
+                `);
+
+                diffStats.forEach(stat => {
+                    const level = stat.difficulty_level === 1 ? 'Facile' :
+                        stat.difficulty_level === 2 ? 'Moyen' : 'Difficile';
+                    console.log(`  - ${level}: ${stat.count} modèles`);
+                });
+
+                // Exemples de marques
+                const [sampleBrands] = await connection.execute('SELECT name FROM brands ORDER BY name LIMIT 10');
+                console.log('\n🏭 Exemples de marques:');
+                sampleBrands.forEach(brand => console.log(`  - ${brand.name}`));
+
+                // Exemples de modèles
+                const [sampleModels] = await connection.execute(`
+                    SELECT m.name, b.name as brand_name, m.difficulty_level
+                    FROM models m 
+                    JOIN brands b ON m.brand_id = b.id 
+                    ORDER BY m.difficulty_level, b.name
+                    LIMIT 10
+                `);
+                console.log('\n🚗 Exemples de modèles:');
+                sampleModels.forEach(model => {
+                    console.log(`  - ${model.brand_name} ${model.name} (difficulté ${model.difficulty_level})`);
+                });
+
+            } catch (error) {
+                console.log('ℹ️  Impossible d\'afficher les statistiques détaillées');
+            }
+
+            console.log('\n🎉 Base de données initialisée avec succès!');
+            console.log('🚀 Ton bot est prêt à être testé avec npm run dev');
+        }
 
     } catch (error) {
-        console.error('❌ Erreur durant le seeding:', error.message);
-        process.exit(1);
+        console.error('❌ Erreur fatale:', error.message);
+        console.error('Stack:', error.stack);
+        throw error;
     } finally {
-        await closeDatabase();
+        await connection.end();
     }
 }
 
 if (require.main === module) {
-    seedDatabase();
+    seedDatabase().catch(console.error);
 }
 
 module.exports = seedDatabase;
