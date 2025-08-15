@@ -1246,3 +1246,25 @@
 {"level":"info","message":"Discord Bot connecté: GuessTheCar#6976","timestamp":"2025-08-15 18:16:45"}
 {"level":"info","message":"Bot présent sur 1 serveurs","timestamp":"2025-08-15 18:16:45"}
 {"level":"info","message":"Refreshing application (/) commands...","timestamp":"2025-08-15 18:16:45"}
+{"level":"info","message":"🚀 Starting Guess The Car Bot Application...","timestamp":"2025-08-15 18:16:46"}
+{"level":"info","message":"Database connection pool created successfully","timestamp":"2025-08-15 18:16:46"}
+{"level":"info","message":"✅ Database connected","timestamp":"2025-08-15 18:16:46"}
+{"level":"info","message":"Loaded 3 events","timestamp":"2025-08-15 18:16:46"}
+{"level":"info","message":"Command loaded: abandon","timestamp":"2025-08-15 18:16:46"}
+{"level":"info","message":"Command loaded: guesscar","timestamp":"2025-08-15 18:16:46"}
+{"level":"info","message":"Command loaded: aide","timestamp":"2025-08-15 18:16:46"}
+{"level":"info","message":"Command loaded: classement","timestamp":"2025-08-15 18:16:46"}
+{"level":"info","message":"Command loaded: stats","timestamp":"2025-08-15 18:16:46"}
+{"level":"info","message":"Loaded 5 commands","timestamp":"2025-08-15 18:16:46"}
+{"level":"info","message":"✅ API Server running on port 3001","timestamp":"2025-08-15 18:16:46"}
+{"level":"info","message":"✅ Discord Bot connected","timestamp":"2025-08-15 18:16:53"}
+{"level":"info","message":"🎉 Application started successfully!","timestamp":"2025-08-15 18:16:53"}
+{"level":"info","message":"Bot Discord prêt! Connecté en tant que GuessTheCar#6976","timestamp":"2025-08-15 18:16:53"}
+{"level":"info","message":"Bot présent sur 1 serveurs","timestamp":"2025-08-15 18:16:53"}
+{"level":"info","message":"Bot connecté à 16 canaux","timestamp":"2025-08-15 18:16:53"}
+{"level":"info","message":"Bot peut voir 1 utilisateurs","timestamp":"2025-08-15 18:16:53"}
+{"level":"info","message":"Discord Bot connecté: GuessTheCar#6976","timestamp":"2025-08-15 18:16:53"}
+{"level":"info","message":"Bot présent sur 1 serveurs","timestamp":"2025-08-15 18:16:53"}
+{"level":"info","message":"Refreshing application (/) commands...","timestamp":"2025-08-15 18:16:53"}
+{"level":"info","message":"Successfully reloaded application (/) commands.","timestamp":"2025-08-15 18:16:54"}
+{"level":"info","message":"Commandes Slash enregistrées avec succès","timestamp":"2025-08-15 18:16:54"}
