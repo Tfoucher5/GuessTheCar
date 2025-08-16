@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Guess The Car Bot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/admin.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#1e293b',
+                        accent: '#f59e0b',
+                        success: '#10b981',
+                        danger: '#ef4444'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation fixe -->
+    <nav class="bg-white shadow-lg border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <i class="fas fa-car text-primary text-2xl mr-3"></i>
+                    <h1 class="text-xl font-bold text-gray-900">Guess The Car - Admin</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <!-- Indicateur de statut serveur -->
+                    <div id="server-status" class="flex items-center px-3 py-2 rounded-full text-sm bg-gray-100">
+                        <div class="w-2 h-2 bg-gray-400 rounded-full mr-2 animate-pulse"></div>
+                        <span>Vérification...</span>
+                    </div>
+                    <!-- Boutons d'actions -->
+                    <button onclick="window.app.refreshAll()"
+                        class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center">
+                        <i class="fas fa-sync-alt mr-2"></i>Actualiser
+                    </button>
+                    <button onclick="window.app.toggleTheme()"
+                        class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Layout principal -->
+    <div class="flex pt-16">
+        <!-- Sidebar Navigation -->
+        <div class="w-64 bg-white shadow-lg min-h-screen fixed left-0 z-40">
+            <div class="p-4">
+                <nav class="space-y-2">
+                    <!-- Dashboard -->
+                    <a href="#" onclick="window.app.showTab('dashboard')"
+                        class="nav-item flex items-center px-4 py-3 rounded-lg transition-colors text-white bg-primary"
+                        data-tab="dashboard">
+                        <i class="fas fa-chart-line mr-3"></i>
+                        <span>Dashboard</span>
+                    </a>
+
+                    <!-- Gestion des données -->
+                    <div class="pt-4">
+                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Gestion des
+                            données</h3>
+
+                        <a href="#" onclick="window.app.showTab('brands')"
+                            class="nav-item flex items-center px-4 py-3 rounded-lg transition-colors text-gray-700 hover:bg-gray-100"
+                            data-tab="brands">
+                            <i class="fas fa-industry mr-3"></i>
+                            <span>Marques</span>
+                            <span id="brands-count"
+                                class="ml-auto text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-full">0</span>
+                        </a>
+
+                        <a href="#" onclick="window.app.showTab('models')"
+                            class="nav-item flex items-center px-4 py-3 rounded-lg transition-colors text-gray-700 hover:bg-gray-100"
+                            data-tab="models">
+                            <i class="fas fa-car mr-3"></i>
+                            <span>Modèles</span>
+                            <span id="models-count"
+                                class="ml-auto text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-full">0</span>
+                        </a>
+                    </div>
+
+                    <!-- Gestion des utilisateurs -->
+                    <div class="pt-4">
+                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Utilisateurs</h3>
+
+                        <a href="#" onclick="window.app.showTab('players')"
+                            class="nav-item flex items-center px-4 py-3 rounded-lg transition-colors text-gray-700 hover:bg-gray-100"
+                            data-tab="players">
+                            <i class="fas fa-users mr-3"></i>
+                            <span>Joueurs</span>
+                            <span id="players-count"
+                                class="ml-auto text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-full">0</span>
+                        </a>
+
+                        <a href="#" onclick="window.app.showTab('games')"
+                            class="nav-item flex items-center px-4 py-3 rounded-lg transition-colors text-gray-700 hover:bg-gray-100"
+                            data-tab="games">
+                            <i class="fas fa-gamepad mr-3"></i>
+                            <span>Parties</span>
+                            <span id="games-count"
+                                class="ml-auto text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-full">0</span>
+                        </a>
+                    </div>
+
+                    <!-- Analytics & Outils -->
+                    <div class="pt-4">
+                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Analytics & Outils
+                        </h3>
+
+                        <a href="#" onclick="window.app.showTab('analytics')"
+                            class="nav-item flex items-center px-4 py-3 rounded-lg transition-colors text-gray-700 hover:bg-gray-100"
+                            data-tab="analytics">
+                            <i class="fas fa-chart-bar mr-3"></i>
+                            <span>Analytics</span>
+                        </a>
+
+                        <a href="#" onclick="window.app.showTab('maintenance')"
+                            class="nav-item flex items-center px-4 py-3 rounded-lg transition-colors text-gray-700 hover:bg-gray-100"
+                            data-tab="maintenance">
+                            <i class="fas fa-tools mr-3"></i>
+                            <span>Maintenance</span>
+                        </a>
+
+                        <a href="#" onclick="window.app.showTab('logs')"
+                            class="nav-item flex items-center px-4 py-3 rounded-lg transition-colors text-gray-700 hover:bg-gray-100"
+                            data-tab="logs">
+                            <i class="fas fa-file-alt mr-3"></i>
+                            <span>Logs</span>
+                        </a>
+                    </div>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Contenu principal -->
+        <div class="ml-64 flex-1 p-6">
+            <!-- Container pour les onglets -->
+            <div id="tab-container">
+                <!-- Les onglets seront chargés dynamiquement ici -->
+                <div class="text-center py-20">
+                    <i class="fas fa-spinner fa-spin text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-500 text-lg">Initialisation de l'interface...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Toast -->
+    <div id="notifications-container" class="fixed top-20 right-4 z-50 space-y-2"></div>
+
+    <!-- Modal Container -->
+    <div id="modal-container"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg p-6 text-center">
+            <i class="fas fa-spinner fa-spin text-3xl text-blue-500 mb-4"></i>
+            <p class="text-gray-700">Chargement en cours...</p>
+        </div>
+    </div>
+
+    <!-- Scripts principaux -->
+    <script src="js/core/config.js"></script>
+    <script src="js/core/api.js"></script>
+    <script src="js/core/utils.js"></script>
+    <script src="js/core/notifications.js"></script>
+    <script src="js/core/app.js"></script>
+
+    <!-- Scripts des modules -->
+    <script src="js/modules/dashboard.js"></script>
+    <script src="js/modules/brands.js"></script>
+    <script src="js/modules/models.js"></script>
+    <script src="js/modules/players.js"></script>
+    <script src="js/modules/games.js"></script>
+    <script src="js/modules/analytics.js"></script>
+    <script src="js/modules/maintenance.js"></script>
+    <script src="js/modules/logs.js"></script>
+
+    <!-- Initialisation -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            window.app.init();
+        });
+    </script>
+</body>
+
+</html>
