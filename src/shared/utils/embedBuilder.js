@@ -33,9 +33,12 @@ class GameEmbedBuilder {
     }
 
     /**
-     * Crée un embed de victoire
-     */
-    static createWinEmbed(score, timeSpent, attempts) {
+ * Crée un embed de victoire
+ */
+    static createWinEmbed(score, timeSpent, attempts, car = null) {
+        const difficultyText = car ? car.getDifficultyText() :
+            (score.difficultyName || score.difficulty || 'Inconnue');
+
         const embed = new EmbedBuilder()
             .setColor('#00FF00')
             .setTitle('🎉 Félicitations !')
@@ -52,15 +55,20 @@ class GameEmbedBuilder {
                     inline: true
                 },
                 {
-                    name: score.isFullSuccess ? '🌟 Réussite complète' : '⭐ Réussite partielle',
-                    value: score.isFullSuccess
-                        ? 'Point complet obtenu !'
-                        : 'Demi-point obtenu (marque trouvée avec aide)',
+                    name: '📊 Difficulté',
+                    value: difficultyText,
                     inline: true
                 },
                 {
+                    name: score.isFullSuccess ? '🌟 Réussite complète' : '⭐ Réussite partielle',
+                    value: score.isFullSuccess
+                        ? 'Point complet obtenu !'
+                        : 'Marque trouvée seulement',
+                    inline: false
+                },
+                {
                     name: '🏆 Points gagnés',
-                    value: `${Number(score.difficultyPoints || 0).toFixed(1)} points (difficulté: ${score.difficultyText})`,
+                    value: `${Number(score.difficultyPoints || 0).toFixed(1)} points`,
                     inline: false
                 }
             )

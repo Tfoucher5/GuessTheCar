@@ -173,10 +173,12 @@ async function handleGameResult(message, result, gameState) {
         break;
 
     case 'gameComplete':
+        // CORRECTION: Passer l'objet car en 4ème paramètre
         embed = EmbedBuilder.createWinEmbed(
             result.score,
             result.timeSpent,
-            result.attempts
+            result.attempts,
+            result.car  // AJOUT de l'objet car
         );
         shouldCloseThread = true;
         break;
@@ -226,7 +228,7 @@ async function handleGameResult(message, result, gameState) {
             } catch (error) {
                 logger.error('Error closing thread:', error);
             }
-        }, 5000); // 5 secondes avant de commencer la fermeture
+        }, 5000);
     }
 }
 

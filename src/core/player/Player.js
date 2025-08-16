@@ -80,18 +80,21 @@ class Player {
         return Math.round((this.gamesWon / this.gamesPlayed) * 100 * 10) / 10;
     }
 
-    /**
-     * Met à jour les statistiques après une partie
-    */
+
     updateGameStats(gameResult) {
+        // TOUJOURS incrementer les parties jouées
         this.gamesPlayed++;
+
+        // Compter les tentatives
         this.totalBrandGuesses += gameResult.attemptsMake || 0;
         this.totalModelGuesses += gameResult.attemptsModel || 0;
 
+        // Marque trouvée ?
         if (gameResult.makeFound) {
             this.correctBrandGuesses++;
         }
 
+        // Modèle trouvé (partie complète) ?
         if (gameResult.modelFound) {
             this.correctModelGuesses++;
             this.gamesWon++;
@@ -101,17 +104,31 @@ class Player {
                 this.bestStreak = this.currentStreak;
             }
         } else {
+            // Réinitialiser la série si pas de victoire complète
             this.currentStreak = 0;
         }
 
-        // Ajouter les points
+        // Ajouter les points (même si 0)
         this.totalPoints += gameResult.pointsEarned || 0;
         this.totalDifficultyPoints += gameResult.difficultyPointsEarned || 0;
 
-        // Mettre à jour le meilleur temps
-        if (gameResult.durationSeconds && (this.bestTime === null || gameResult.durationSeconds < this.bestTime)) {
+        // Mettre à jour le meilleur temps (seulement si partie complétée)
+        if (gameResult.modelFound && gameResult.durationSeconds &&
+            (this.bestTime === null || gameResult.durationSeconds < this.bestTime)) {
             this.bestTime = gameResult.durationSeconds;
         }
+
+        // Log pour debug
+        console.log(`[DEBUG] Player ${this.username} stats updated:`, {
+            gamesPlayed: this.gamesPlayed,
+            gamesWon: this.gamesWon,
+            pointsEarned: gameResult.pointsEarned || 0,
+            totalPoints: this.totalDifficultyPoints,
+            makeFound: gameResult.makeFound,
+            modelFound: gameResult.modelFound,
+            abandoned: gameResult.abandoned,
+            timeout: gameResult.timeout
+        });
     }
 
     /**

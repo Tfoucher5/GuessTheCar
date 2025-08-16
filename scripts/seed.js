@@ -83,22 +83,6 @@ async function seedDatabase() {
 
         console.log(`\n📊 Exécution terminée: ${successCount} succès, ${errorCount} erreurs`);
 
-        // Ajouter un utilisateur de test
-        console.log('\n👤 Ajout d\'un utilisateur de test...');
-        try {
-            await connection.execute(
-                `INSERT IGNORE INTO user_scores (
-                    user_id, username, total_points, total_difficulty_points,
-                    games_played, games_won, correct_brand_guesses, correct_model_guesses,
-                    total_brand_guesses, total_model_guesses, best_streak, current_streak
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                ['123456789012345678', 'TestUser', 150, 200, 10, 7, 15, 8, 20, 15, 5, 2]
-            );
-            console.log('✅ Utilisateur de test ajouté');
-        } catch (error) {
-            console.log('ℹ️  Erreur utilisateur test:', error.message);
-        }
-
         // Vérification finale et statistiques
         console.log('\n📊 Vérification finale...');
 

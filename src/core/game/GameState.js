@@ -90,16 +90,17 @@ class GameState {
     nextStep() {
         if (this.step === 'make') {
             this.step = 'model';
-            this.resetAttempts();
+            this.attempts = 0;  // IMPORTANT: Remettre à zéro pour le modèle
         }
     }
 
     /**
-     * Marque l'échec de la recherche de marque
+     * Marque l'échec de la recherche de marque ET remet les essais à zéro pour le modèle
      */
     setMakeFailed() {
         this.makeFailed = true;
-        this.nextStep();
+        this.step = 'model';        // Changer l'étape
+        this.attempts = 0;          // IMPORTANT: Remettre à zéro pour le modèle
     }
 
     /**
@@ -217,7 +218,7 @@ class GameState {
     }
 
     /**
-     * Calcule le score final
+     * Calcule le score final (succès partiel)
      */
     calculateFinalScore() {
         const basePoints = this.car.getBasePoints();
@@ -225,28 +226,30 @@ class GameState {
 
         let finalPoints = 0;
         let difficultyPoints = 0;
-        let isFullSuccess = false;
 
         // Vérifier si la marque a été trouvée
         const makeFound = this.isSearchingModel() && !this.makeFailed;
 
         if (makeFound) {
-            // Marque trouvée, on peut donner des points
-            finalPoints = basePoints * 0.5; // Points partiels pour la marque
+            // Marque trouvée, points partiels
+            finalPoints = basePoints * 0.5;
             difficultyPoints = difficultyMultiplier * 0.5;
         }
 
         return {
             basePoints: Math.round(finalPoints * 10) / 10,
             difficultyPoints: Math.round(difficultyPoints * 10) / 10,
-            isFullSuccess: false, // Sera mis à true seulement pour une victoire complète
-            makeFound: makeFound
+            isFullSuccess: false,
+            makeFound: makeFound,
+            // AJOUT: Inclure les infos de difficulté
+            difficultyName: this.car.getDifficultyText(),
+            difficulty: this.car.difficulty
         };
     }
 
     /**
-     * Calcule le score pour une victoire complète (marque + modèle)
-     */
+ * Calcule le score pour une victoire complète (marque + modèle)
+ */
     calculateFullSuccessScore() {
         const basePoints = this.car.getBasePoints();
         const difficultyMultiplier = this.car.getDifficultyPoints();
@@ -256,7 +259,10 @@ class GameState {
             difficultyPoints: Math.round(difficultyMultiplier * 10) / 10,
             isFullSuccess: true,
             makeFound: true,
-            modelFound: true
+            modelFound: true,
+            // AJOUT: Inclure les infos de difficulté
+            difficultyName: this.car.getDifficultyText(),
+            difficulty: this.car.difficulty
         };
     }
 

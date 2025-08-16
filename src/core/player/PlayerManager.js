@@ -55,12 +55,13 @@ class PlayerManager {
                 difficultyPointsEarned: difficultyPoints || 0
             };
 
-            // Enregistrer la session de jeu
+            // IMPORTANT: Toujours enregistrer la session si on a un carId (partie commencée)
             if (gameSession.carId) {
                 await this.playerRepository.saveGameSession(gameSession);
             }
 
-            // Mettre à jour les statistiques du joueur
+            // CORRECTION CRITIQUE: Toujours mettre à jour les stats du joueur
+            // Même sans points, la partie doit compter comme jouée
             player.updateGameStats(gameSession);
 
             // Sauvegarder les changements
@@ -71,6 +72,10 @@ class PlayerManager {
                 basePoints,
                 difficultyPoints,
                 isComplete,
+                abandoned: gameStats.abandoned || false,
+                timeout: gameStats.timeout || false,
+                gamesPlayed: updatedPlayer.gamesPlayed,
+                gamesWon: updatedPlayer.gamesWon,
                 newTotal: updatedPlayer.totalDifficultyPoints
             });
 

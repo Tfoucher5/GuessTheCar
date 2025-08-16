@@ -104,34 +104,34 @@ class GameEngine extends EventEmitter {
 
     /**
      * Traite une réponse pour la marque
-     */
+    */
     async processMakeGuess(gameState, guess) {
         const result = checkAnswer(guess, gameState.car.make);
 
         if (result.isCorrect) {
             // Marque trouvée, sauvegarder le nombre d'essais et passer au modèle
             gameState.attemptsMake = gameState.attempts;
-            gameState.nextStep();
+            gameState.nextStep(); // Utilise nextStep qui remet attempts à 0
 
             return {
                 type: 'makeSuccess',
                 isCorrect: true,
                 feedback: `${result.feedback}\nC'est bien ${gameState.car.make} !\nMaintenant, devine le **modèle** de cette voiture.`,
                 nextStep: 'model',
-                attempts: gameState.attempts,
+                attempts: gameState.attempts, // Maintenant 0
                 gameState: gameState.getStatus()
             };
         } else if (gameState.hasReachedMaxAttempts()) {
-            // Échec de la marque, passer au modèle
+            // Échec de la marque, sauvegarder les essais et passer au modèle
             gameState.attemptsMake = gameState.attempts;
-            gameState.setMakeFailed();
+            gameState.setMakeFailed(); // Maintenant remet attempts à 0
 
             return {
                 type: 'makeFailed',
                 isCorrect: false,
-                feedback: `La marque était: **${gameState.car.make}**\nOn passe au modèle !`,
+                feedback: `La marque était: **${gameState.car.make}**\nMaintenant, essayez de deviner le **modèle** !\n\n🎯 Vous avez ${gameConfig.MAX_ATTEMPTS} nouveaux essais pour le modèle.`,
                 nextStep: 'model',
-                attempts: gameState.attempts,
+                attempts: gameState.attempts, // Maintenant 0
                 gameState: gameState.getStatus()
             };
         } else {
@@ -190,20 +190,24 @@ class GameEngine extends EventEmitter {
         const timeSpent = gameState.getTimeSpent();
 
         // Calculer les statistiques correctes
-        const attemptsMake = gameState.attemptsMake || 1; // Nombre d'essais pour la marque
-        const attemptsModel = gameState.attempts; // Essais actuels pour le modèle
+        const attemptsMake = gameState.attemptsMake || 1;
+        const attemptsModel = gameState.attempts;
         const totalAttempts = attemptsMake + attemptsModel;
 
-        // Calculer le score
+        // Calculer le score AVEC les infos de difficulté
         const score = gameState.calculateFullSuccessScore();
 
-        // Mettre à jour les scores du joueur avec les bonnes données
+        // AJOUT: Inclure les infos de difficulté dans le score
+        score.difficultyName = gameState.car.getDifficultyText();
+        score.carName = gameState.car.getFullName();
+
+        // Mettre à jour les scores du joueur
         await this.playerManager.updatePlayerScore(
             gameState.userId,
             gameState.username,
             score.basePoints,
             score.difficultyPoints,
-            true, // isComplete = true pour victoire totale
+            true,
             {
                 carId: gameState.car.id,
                 startedAt: new Date(gameState.startTime),
@@ -219,33 +223,26 @@ class GameEngine extends EventEmitter {
         // Nettoyer la partie
         this.cleanupGame(gameState.threadId);
 
-        // Émettre l'événement de fin de partie
-        this.emit('gameEnded', {
-            type: 'success',
-            gameState: gameState.toJSON(),
-            score,
-            timeSpent
-        });
-
         return {
             type: 'gameComplete',
             isCorrect: true,
             success: true,
-            feedback: `🎉 Félicitations ! Vous avez trouvé ${gameState.car.getFullName()} !`,
+            feedback: `🎉 Félicitations !\nVous avez trouvé ${gameState.car.getFullName()} !`,
             score,
             timeSpent,
-            attempts: totalAttempts
+            attempts: totalAttempts,
+            car: gameState.car // AJOUT: Passer l'objet car
         };
     }
 
     /**
-     * Termine le jeu avec succès partiel (marque trouvée seulement)
-     */
+ * Termine le jeu avec succès partiel (marque trouvée seulement) OU échec total modèle
+ */
     async endGameWithPartialSuccess(gameState) {
         const timeSpent = gameState.getTimeSpent();
 
-        // Seulement si la marque a été trouvée
         if (gameState.isSearchingModel() && !gameState.makeFailed) {
+            // CAS 1: Marque trouvée, modèle échoué - Succès partiel avec points
             const attemptsMake = gameState.attemptsMake || 1;
             const attemptsModel = gameState.attempts;
             const score = gameState.calculateFinalScore();
@@ -277,25 +274,42 @@ class GameEngine extends EventEmitter {
                 type: 'gameOver',
                 isCorrect: false,
                 success: false,
-                feedback: `⌛ Plus d'essais !\nLe modèle était: **${gameState.car.model}**${pointsMessage}`,
-                score: score,
-                timeSpent,
-                attempts: attemptsMake + attemptsModel,
-                correctAnswer: gameState.car.getFullName()
+                feedback: `😔 Plus d'essais disponibles !\nLa voiture était : ${gameState.car.getFullName()}${pointsMessage}`,
+                correctAnswer: gameState.car.getFullName(),
+                score,
+                timeSpent
             };
         } else {
-            // Aucun point si marque pas trouvée
+            // CAS 2: Marque échouée OU autre cas - Échec total sans points
+            await this.playerManager.updatePlayerScore(
+                gameState.userId,
+                gameState.username,
+                0, // pas de points
+                0, // pas de points de difficulté
+                false,
+                {
+                    carId: gameState.car.id,
+                    startedAt: new Date(gameState.startTime),
+                    duration: Math.floor(timeSpent / 1000),
+                    attemptsMake: gameState.attemptsMake || gameState.attempts,
+                    attemptsModel: gameState.isSearchingModel() ? gameState.attempts : 0,
+                    makeFound: gameState.isSearchingModel() && !gameState.makeFailed,
+                    modelFound: false,
+                    completed: false
+                }
+            );
+
+            // Nettoyer la partie
             this.cleanupGame(gameState.threadId);
 
             return {
                 type: 'gameOver',
                 isCorrect: false,
                 success: false,
-                feedback: `⌛ Plus d'essais !\nLa voiture était: **${gameState.car.getFullName()}**`,
-                score: null,
-                timeSpent,
-                attempts: gameState.attempts,
-                correctAnswer: gameState.car.getFullName()
+                feedback: `😔 Partie terminée !\nLa voiture était : ${gameState.car.getFullName()}\nAucun point gagné.`,
+                correctAnswer: gameState.car.getFullName(),
+                score: { basePoints: 0, difficultyPoints: 0 },
+                timeSpent
             };
         }
     }
@@ -377,8 +391,8 @@ class GameEngine extends EventEmitter {
     }
 
     /**
-     * Abandonne une partie
-     */
+ * Correction pour abandonGame - Toujours compter la partie
+ */
     async abandonGame(threadId) {
         try {
             const gameState = this.activeGames.get(threadId);
@@ -386,9 +400,11 @@ class GameEngine extends EventEmitter {
                 throw new GameError('Aucune partie active trouvée');
             }
 
-            // Donner des points SEULEMENT si la marque a été trouvée ET qu'on est en phase modèle
+            // TOUJOURS compter la partie comme jouée, peu importe le niveau de progression
             let score = null;
+
             if (gameState.isSearchingModel() && !gameState.makeFailed) {
+                // Joueur a trouvé la marque mais abandonne le modèle
                 score = gameState.calculateFinalScore();
                 await this.playerManager.updatePlayerScore(
                     gameState.userId,
@@ -398,11 +414,30 @@ class GameEngine extends EventEmitter {
                     false,
                     {
                         carId: gameState.car.id,
-                        startedAt: gameState.startTime,
+                        startedAt: new Date(gameState.startTime),
+                        duration: Math.floor(gameState.getTimeSpent() / 1000),
+                        attemptsMake: gameState.attemptsMake || 1,
+                        attemptsModel: gameState.attempts,
+                        makeFound: true,
+                        modelFound: false,
+                        abandoned: true
+                    }
+                );
+            } else {
+                // Joueur abandonne sans avoir trouvé la marque
+                await this.playerManager.updatePlayerScore(
+                    gameState.userId,
+                    gameState.username,
+                    0,
+                    0,
+                    false,
+                    {
+                        carId: gameState.car.id,
+                        startedAt: new Date(gameState.startTime),
                         duration: Math.floor(gameState.getTimeSpent() / 1000),
                         attemptsMake: gameState.attempts,
                         attemptsModel: 0,
-                        makeFound: true,
+                        makeFound: false,
                         modelFound: false,
                         abandoned: true
                     }
@@ -412,23 +447,9 @@ class GameEngine extends EventEmitter {
             // Nettoyer la partie
             this.cleanupGame(threadId);
 
-            // Émettre l'événement d'abandon
-            this.emit('gameAbandoned', {
-                threadId,
-                gameState: gameState.toJSON(),
-                score
-            });
-
-            logger.info('Game abandoned:', {
-                threadId,
-                userId: gameState.userId,
-                step: gameState.step,
-                attempts: gameState.attempts
-            });
-
             const pointsMessage = score
                 ? `\nVous gagnez ${score.difficultyPoints} points pour avoir trouvé la marque.`
-                : '';
+                : '\nAucun point gagné.';
 
             return {
                 type: 'abandoned',
@@ -450,18 +471,20 @@ class GameEngine extends EventEmitter {
     }
 
     /**
-     * Gère le timeout d'une partie
-    */
+ * Gère le timeout d'une partie - Toujours compter
+ */
     async handleGameTimeout(threadId) {
         try {
             const gameState = this.activeGames.get(threadId);
             if (!gameState) {
-                return; // Partie déjà nettoyée
+                return;
             }
 
-            // Donner des points SEULEMENT si la marque a été trouvée ET qu'on est en phase modèle
+            // TOUJOURS compter la partie comme jouée en cas de timeout
             let score = null;
+
             if (gameState.isSearchingModel() && !gameState.makeFailed) {
+                // Timeout après avoir trouvé la marque
                 score = gameState.calculateFinalScore();
                 await this.playerManager.updatePlayerScore(
                     gameState.userId,
@@ -471,11 +494,30 @@ class GameEngine extends EventEmitter {
                     false,
                     {
                         carId: gameState.car.id,
-                        startedAt: gameState.startTime,
+                        startedAt: new Date(gameState.startTime),
+                        duration: Math.floor(gameState.getTimeSpent() / 1000),
+                        attemptsMake: gameState.attemptsMake || 1,
+                        attemptsModel: gameState.attempts,
+                        makeFound: true,
+                        modelFound: false,
+                        timeout: true
+                    }
+                );
+            } else {
+                // Timeout sans avoir trouvé la marque
+                await this.playerManager.updatePlayerScore(
+                    gameState.userId,
+                    gameState.username,
+                    0,
+                    0,
+                    false,
+                    {
+                        carId: gameState.car.id,
+                        startedAt: new Date(gameState.startTime),
                         duration: Math.floor(gameState.getTimeSpent() / 1000),
                         attemptsMake: gameState.attempts,
                         attemptsModel: 0,
-                        makeFound: true,
+                        makeFound: false,
                         modelFound: false,
                         timeout: true
                     }
@@ -485,34 +527,14 @@ class GameEngine extends EventEmitter {
             // Nettoyer la partie
             this.cleanupGame(threadId);
 
-            // Émettre l'événement de timeout
-            this.emit('gameTimeout', {
-                threadId,
-                gameState: gameState.toJSON(),
-                score
-            });
-
-            logger.info('Game timeout:', {
-                threadId,
-                userId: gameState.userId,
-                step: gameState.step,
-                attempts: gameState.attempts
-            });
-
-            const pointsMessage = score
-                ? `\nVous gagnez ${score.difficultyPoints} points pour avoir trouvé la marque.`
-                : '';
-
             return {
                 type: 'timeout',
                 correctAnswer: gameState.car.getFullName(),
-                score,
-                message: `⏰ Temps écoulé\nLa partie a été abandonnée après 5 minutes d'inactivité.\nLa voiture était: ${gameState.car.getFullName()}${pointsMessage}`
+                score
             };
         } catch (error) {
             logger.error('Error handling game timeout:', { threadId, error });
-            // Nettoyer la partie même en cas d'erreur
-            this.cleanupGame(threadId);
+            throw error;
         }
     }
 
