@@ -2247,3 +2247,4 @@
 {"guildId":"1223242015249141800","level":"info","message":"New game started via command:","service":"guess-the-car-bot","threadId":"1406240194360774788","timestamp":"2025-08-16T11:36:32.290Z","userId":"573543227525824516","username":"t3sk0"}
 {"command":"guesscar","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-16T11:36:32.291Z","user":"t3sk0"}
 {"abandoned":false,"basePoints":10,"difficultyPoints":1,"gamesPlayed":2,"gamesWon":2,"isComplete":true,"level":"info","message":"Player score updated:","newTotal":5,"service":"guess-the-car-bot","timeout":false,"timestamp":"2025-08-16T11:37:08.682Z","userId":"573543227525824516"}
+{"level":"info","message":"SIGINT received, shutting down gracefully","service":"guess-the-car-bot","timestamp":"2025-08-16T11:46:33.650Z"}
