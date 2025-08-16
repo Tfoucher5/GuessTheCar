@@ -3,7 +3,7 @@ const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
-const rateLimit = require('express-rate-limit');
+const { RateLimiterMemory } = require('rate-limiter-flexible');
 
 const logger = require('../shared/utils/logger');
 const { AppError } = require('../shared/errors');
@@ -27,15 +27,30 @@ app.use(cors({
     credentials: true
 }));
 
-// Rate limiting
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: process.env.NODE_ENV === 'production' ? 100 : 1000,
-    message: 'Trop de requêtes, veuillez réessayer plus tard.',
-    standardHeaders: true,
-    legacyHeaders: false
+// Rate limiting avec rate-limiter-flexible
+const rateLimiter = new RateLimiterMemory({
+    keyGenerator: (req) => req.ip,
+    points: process.env.NODE_ENV === 'production' ? 100 : 1000, // Nombre de requêtes
+    duration: 15 * 60 // 15 minutes en secondes
 });
-app.use('/api/', limiter);
+
+// Middleware pour appliquer le rate limiting
+const rateLimiterMiddleware = async(req, res, next) => {
+    try {
+        await rateLimiter.consume(req.ip);
+        next();
+    } catch (rejRes) {
+        const secs = Math.round(rejRes.msBeforeNext / 1000) || 1;
+        res.set('Retry-After', String(secs));
+        res.status(429).json({
+            success: false,
+            error: 'Trop de requêtes, veuillez réessayer plus tard.',
+            retryAfter: secs
+        });
+    }
+};
+
+app.use('/api/', rateLimiterMiddleware);
 
 // Parsing JSON avec limite de taille
 app.use(express.json({ limit: '10mb' }));
@@ -122,131 +137,56 @@ app.get('/api/docs', (req, res) => {
             adminDashboard: {
                 path: '/api/admin/dashboard',
                 methods: ['GET'],
-                description: 'Données du dashboard administrateur'
+                description: 'Tableau de bord administrateur'
+            },
+            adminModels: {
+                path: '/api/admin/models',
+                methods: ['GET', 'POST', 'PUT', 'DELETE'],
+                description: 'Gestion des modèles de voitures'
             },
             adminBrands: {
                 path: '/api/admin/brands',
                 methods: ['GET', 'POST', 'PUT', 'DELETE'],
                 description: 'Gestion des marques'
             },
-            adminModels: {
-                path: '/api/admin/models',
-                methods: ['GET', 'POST', 'PUT', 'DELETE'],
-                description: 'Gestion des modèles'
-            },
             adminPlayers: {
                 path: '/api/admin/players',
-                methods: ['GET', 'POST', 'PUT', 'DELETE'],
+                methods: ['GET'],
                 description: 'Gestion des joueurs'
-            },
-            adminGames: {
-                path: '/api/admin/games',
-                methods: ['GET', 'DELETE'],
-                description: 'Consultation et suppression des parties'
             }
         }
     });
 });
 
-// Middleware de gestion des erreurs 404
-app.use('*', (req, res, next) => {
-    const error = new AppError(`Route ${req.originalUrl} non trouvée`, 404);
-    next(error);
+// Middleware de gestion d'erreurs 404
+app.use('*', (req, res) => {
+    res.status(404).json({
+        success: false,
+        error: 'Route non trouvée',
+        path: req.originalUrl
+    });
 });
 
 // Middleware de gestion d'erreurs global
 app.use((error, req, res, next) => {
-    let err = { ...error };
-    err.message = error.message;
+    logger.error('Unhandled error:', error);
 
-    // Log de l'erreur
-    logger.error('API Error:', {
-        error: err.message,
-        stack: error.stack,
-        url: req.url,
-        method: req.method,
-        ip: req.ip,
-        userAgent: req.get('User-Agent'),
-        body: req.body,
-        timestamp: new Date().toISOString()
-    });
-
-    // Erreurs de validation Mongoose
-    if (error.name === 'ValidationError') {
-        const message = Object.values(error.errors).map(val => val.message).join(', ');
-        err = new AppError(message, 400);
+    if (error instanceof AppError) {
+        return res.status(error.statusCode).json({
+            success: false,
+            error: error.message,
+            ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
+        });
     }
 
-    // Erreurs de cast Mongoose
-    if (error.name === 'CastError') {
-        const message = 'Ressource non trouvée';
-        err = new AppError(message, 404);
-    }
-
-    // Erreurs de clé dupliquée
-    if (error.code === 11000) {
-        const field = Object.keys(error.keyValue)[0];
-        const message = `${field} existe déjà`;
-        err = new AppError(message, 400);
-    }
-
-    // Erreurs JWT
-    if (error.name === 'JsonWebTokenError') {
-        const message = 'Token invalide';
-        err = new AppError(message, 401);
-    }
-
-    if (error.name === 'TokenExpiredError') {
-        const message = 'Token expiré';
-        err = new AppError(message, 401);
-    }
-
-    // Erreurs MySQL spécifiques
-    if (error.code === 'ER_NO_SUCH_TABLE') {
-        err = new AppError('Table de base de données non trouvée', 500);
-    }
-
-    if (error.code === 'ECONNREFUSED') {
-        err = new AppError('Service de base de données indisponible', 503);
-    }
-
-    if (error.code === 'ER_DUP_ENTRY') {
-        err = new AppError('Entrée dupliquée', 400);
-    }
-
-    // Erreurs de limite de taille
-    if (error.type === 'entity.too.large') {
-        err = new AppError('Fichier trop volumineux', 413);
-    }
-
-    // Réponse d'erreur
-    const statusCode = err.statusCode || 500;
-    const message = err.message || 'Erreur serveur interne';
-
-    res.status(statusCode).json({
+    res.status(500).json({
         success: false,
-        error: {
-            message,
-            ...(process.env.NODE_ENV === 'development' && {
-                stack: error.stack,
-                original: error
-            })
-        },
-        timestamp: new Date().toISOString(),
-        path: req.path,
-        method: req.method
+        error: 'Erreur interne du serveur',
+        ...(process.env.NODE_ENV === 'development' && {
+            message: error.message,
+            stack: error.stack
+        })
     });
-});
-
-// Gestion gracieuse de l'arrêt
-process.on('SIGTERM', () => {
-    logger.info('SIGTERM received, shutting down gracefully');
-    process.exit(0);
-});
-
-process.on('SIGINT', () => {
-    logger.info('SIGINT received, shutting down gracefully');
-    process.exit(0);
 });
 
 module.exports = app;
