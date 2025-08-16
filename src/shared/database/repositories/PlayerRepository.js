@@ -22,23 +22,8 @@ class PlayerRepository extends BaseRepository {
     }
 
     /**
-     * Crée un nouveau joueur
+     * Met à jour les statistiques d'un joueur
      */
-    async create(userId, username) {
-        const query = `
-            INSERT INTO user_scores (user_id, username) 
-            VALUES (?, ?)
-        `;
-
-        const result = await executeQuery(query, [userId, username]);
-
-        // Récupérer le joueur créé
-        return await this.findByUserId(userId);
-    }
-
-    /**
- * Met à jour les statistiques d'un joueur
- */
     async updatePlayerStats(userId, stats) {
         const query = `
         UPDATE user_scores SET

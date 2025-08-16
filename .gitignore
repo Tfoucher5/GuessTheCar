@@ -26,3 +26,6 @@ build/
 
 # Ignorer les fichiers de cache (optionnel)
 .cache/
+
+# Ignorer les fichiers de log
+.log

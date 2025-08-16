@@ -240,5 +240,5 @@ INSERT INTO models (brand_id, name, year, difficulty_level) VALUES (74, 'ES8', 2
 INSERT INTO models (brand_id, name, year, difficulty_level) VALUES (75, 'One', 2019, 2), (75, 'L9', 2022, 2), (75, 'L8', 2022, 2), (75, 'L7', 2023, 2), (75, 'L6', 2024, 2), (75, 'MEGA', 2024, 3), (75, 'Air', 2025, 3), (75, 'Pro', 2023, 2), (75, 'Max', 2022, 2), (75, 'Ultra', 2024, 3);
 
 -- Insertion des modèles Rimac (ID: 76)
-INSERT INTO models (brand_id, name, year, difficulty_level) VALUES (76, 'Nevera', 2021, 3), (76, 'Concept One', 2016, 3), (76, 'Concept Two', 2018, 3), (76, 'C_Two', 2019, 3), (76, 'All-Wheel Torque Vectoring', 2020, 3), (76, 'Time Attack', 2021, 3), (76, 'Signature', 2021, 3), (76, 'Timeless', 2022, 3), (76, 'Bespoke', 2022, 3), (76, 'Green Hell', 2023, 3);
+INSERT INTO models (brand_id, name, year, difficulty_level) VALUES (76, 'Nevera', 2021, 3), (76, 'Concept One', 2016, 3), (76, 'Concept Two', 2018, 3);
 

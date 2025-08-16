@@ -1,5 +1,4 @@
 const PlayerRepository = require('../../shared/database/repositories/PlayerRepository');
-const Player = require('./Player');
 const { ValidationError } = require('../../shared/errors');
 const logger = require('../../shared/utils/logger');
 

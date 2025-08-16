@@ -608,7 +608,7 @@ class GameEngine extends EventEmitter {
      * Nettoie toutes les parties actives
      */
     cleanupAllGames() {
-        for (const [threadId, gameState] of this.activeGames) {
+        for (const [gameState] of this.activeGames) {
             if (gameState.timeoutId) {
                 clearTimeout(gameState.timeoutId);
             }
