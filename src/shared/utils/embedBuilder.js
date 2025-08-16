@@ -33,17 +33,26 @@ class GameEmbedBuilder {
     }
 
     /**
- * Crée un embed de victoire
- */
+     * Crée un embed de victoire
+     */
     static createWinEmbed(score, timeSpent, attempts, car = null) {
         const difficultyText = car ? car.getDifficultyText() :
             (score.difficultyName || score.difficulty || 'Inconnue');
 
+        // Afficher le nom complet de la voiture (marque + modèle)
+        const carName = car ? car.getFullName() :
+            (score.carName || 'Voiture inconnue');
+
         const embed = new EmbedBuilder()
             .setColor('#00FF00')
             .setTitle('🎉 Félicitations !')
-            .setDescription('Vous avez trouvé la voiture !')
+            .setDescription(`Vous avez trouvé la **${carName}** !`) // Changé ici
             .addFields(
+                {
+                    name: '🚗 Voiture',
+                    value: `**${carName}**`, // Ajouté ce champ
+                    inline: false
+                },
                 {
                     name: '⏱️ Temps',
                     value: `${(timeSpent / 1000).toFixed(1)} secondes`,
@@ -63,12 +72,12 @@ class GameEmbedBuilder {
                     name: score.isFullSuccess ? '🌟 Réussite complète' : '⭐ Réussite partielle',
                     value: score.isFullSuccess
                         ? 'Point complet obtenu !'
-                        : 'Marque trouvée seulement',
+                        : 'Demi-point obtenu',
                     inline: false
                 },
                 {
                     name: '🏆 Points gagnés',
-                    value: `${Number(score.difficultyPoints || 0).toFixed(1)} points`,
+                    value: `**${score.difficultyPoints.toFixed(1)} points**`,
                     inline: false
                 }
             )
@@ -238,20 +247,20 @@ class GameEmbedBuilder {
         return this.createGameEmbed(gameState, {
             color: '#FFA500',
             title: '🏳️ Partie abandonnée',
-            description: `La voiture était : ${correctAnswer}${pointsMessage}`
+            description: `La voiture était la **${correctAnswer}**${pointsMessage}` // Changé ici
         });
     }
 
     /**
-     * Crée un embed de timeout
-     */
+ * Crée un embed de timeout
+ */
     static createTimeoutEmbed(gameState, correctAnswer, score = null) {
         const pointsMessage = score ? `\nVous gagnez ${Number(score.difficultyPoints || 0).toFixed(1)} points pour avoir trouvé la marque.` : '';
 
         return this.createGameEmbed(gameState, {
             color: '#FF8C00',
             title: '⏰ Temps écoulé',
-            description: `La partie a été abandonnée après 5 minutes d'inactivité.\nLa voiture était: ${correctAnswer}${pointsMessage}`
+            description: `La partie a été abandonnée après 5 minutes d'inactivité.\nLa voiture était la **${correctAnswer}**${pointsMessage}` // Changé ici
         });
     }
 
@@ -278,8 +287,8 @@ class GameEmbedBuilder {
     }
 
     /**
-     * Crée un embed de démarrage de partie
-     */
+ * Crée un embed de démarrage de partie
+ */
     static createGameStartEmbed(car, gameState) {
         const difficultyText = car.getDifficultyText();
 
@@ -292,6 +301,44 @@ class GameEmbedBuilder {
                 '• Tu as 10 essais maximum !\n\n' +
                 'La partie se termine automatiquement après 5 minutes d\'inactivité'
         });
+    }
+
+    /**
+     * Crée un embed pour les résultats de game over
+     */
+    static createGameOverEmbed(gameState, carName, score = null, timeSpent = 0, attempts = 0) {
+        let description = `😞 Dommage !\nLa voiture était la **${carName}**.`;
+
+        if (score && score.difficultyPoints > 0) {
+            description += `\n\nVous avez trouvé la marque, vous gagnez ${score.difficultyPoints.toFixed(1)} points !`;
+        } else {
+            description += '\n\nAucun point cette fois, mais essayez encore !';
+        }
+
+        const embed = this.createGameEmbed(gameState, {
+            color: '#FFA500',
+            title: '⌛ Partie terminée',
+            description: description
+        });
+
+        // Ajouter des champs supplémentaires si disponibles
+        if (timeSpent > 0) {
+            embed.addFields({
+                name: '⏱️ Temps de jeu',
+                value: `${(timeSpent / 1000).toFixed(1)} secondes`,
+                inline: true
+            });
+        }
+
+        if (attempts > 0) {
+            embed.addFields({
+                name: '🎯 Essais utilisés',
+                value: `${attempts}`,
+                inline: true
+            });
+        }
+
+        return embed;
     }
 }
 

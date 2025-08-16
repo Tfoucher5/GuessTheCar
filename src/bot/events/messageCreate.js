@@ -109,10 +109,10 @@ async function handleEndCommand(message, gameState) {
         // Utiliser abandonGame au lieu de endGame pour avoir le même comportement que /abandon
         const result = await gameEngine.abandonGame(message.channelId);
 
-        // Utiliser le même embed que /abandon
+        // Utiliser le même embed que /abandon avec le nom complet
         const abandonEmbed = EmbedBuilder.createAbandonEmbed(
             gameState,
-            result.correctAnswer,
+            result.correctAnswer, // Maintenant contient marque + modèle
             result.score
         );
 
@@ -173,22 +173,34 @@ async function handleGameResult(message, result, gameState) {
         break;
 
     case 'gameComplete':
-        // CORRECTION: Passer l'objet car en 4ème paramètre
+        // Utiliser l'embed de victoire amélioré
         embed = EmbedBuilder.createWinEmbed(
             result.score,
             result.timeSpent,
             result.attempts,
-            result.car  // AJOUT de l'objet car
+            result.car  // L'objet car avec marque et modèle
         );
         shouldCloseThread = true;
         break;
 
     case 'gameOver':
-        embed = EmbedBuilder.createGameEmbed(gameState, {
-            color: '#FFA500',
-            title: '⌛ Partie terminée',
-            description: result.feedback
-        });
+        // Utiliser le nouvel embed de game over qui affiche marque + modèle
+        if (result.car) {
+            embed = EmbedBuilder.createGameOverEmbed(
+                gameState,
+                result.car.getFullName(), // Nom complet de la voiture
+                result.score,
+                result.timeSpent,
+                result.attempts
+            );
+        } else {
+            // Fallback si pas d'objet car disponible
+            embed = EmbedBuilder.createGameEmbed(gameState, {
+                color: '#FFA500',
+                title: '⌛ Partie terminée',
+                description: result.feedback
+            });
+        }
         shouldCloseThread = true;
         break;
 
