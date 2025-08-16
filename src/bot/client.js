@@ -1,33 +1,35 @@
+// src/bot/client.js
 const { Client } = require('discord.js');
 const discordConfig = require('../shared/config/discord');
 const logger = require('../shared/utils/logger');
 
 // Handlers
 const eventHandler = require('./handlers/eventHandler');
-const commandHandler = require('./handlers/commandHandler');
+const CommandHandler = require('./handlers/commandHandler');
 
 // Créer le client Discord
 const client = new Client({
     intents: discordConfig.intents
 });
 
+// Créer une instance du CommandHandler
+const commandHandler = new CommandHandler(client);
+
 // Charger les gestionnaires d'événements
 eventHandler.loadEvents(client);
-
-// Charger et enregistrer les commandes
-commandHandler.loadCommands();
 
 // Événement de connexion
 client.once('ready', async() => {
     logger.info(`Discord Bot connecté: ${client.user.tag}`);
     logger.info(`Bot présent sur ${client.guilds.cache.size} serveurs`);
 
-    // Enregistrer les commandes slash
     try {
-        await commandHandler.registerCommands(client);
-        logger.info('Commandes Slash enregistrées avec succès');
+        // Charger et enregistrer les commandes
+        await commandHandler.loadCommands();
+        await commandHandler.registerCommands();
+        logger.info('Commandes Discord chargées et enregistrées avec succès');
     } catch (error) {
-        logger.error('Erreur lors de l\'enregistrement des commandes:', error);
+        logger.error('Erreur lors du chargement des commandes:', error);
     }
 });
 
@@ -61,4 +63,6 @@ process.on('SIGTERM', async() => {
     client.destroy();
 });
 
+// Exporter les deux pour compatibilité
 module.exports = client;
+module.exports.commandHandler = commandHandler;

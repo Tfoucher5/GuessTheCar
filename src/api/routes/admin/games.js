@@ -1,102 +1,68 @@
+// src/api/routes/admin/games.js
 const express = require('express');
-const router = express.Router();
 const { executeQuery } = require('../../../shared/database/connection');
 const logger = require('../../../shared/utils/logger');
 
+const router = express.Router();
+
 /**
- * GET /api/admin/games - Liste des parties
+ * GET /api/admin/games - Liste des sessions de jeu
  */
 router.get('/', async(req, res) => {
     try {
-        const {
-            page = 1,
-            limit = 25,
-            user_id = '',
-            status = '',
-            date_from = '',
-            date_to = '',
-            sortBy = 'started_at',
-            sortOrder = 'desc'
-        } = req.query;
+        const { page = 1, limit = 20, user_id = '', completed = '', difficulty = '' } = req.query;
+        const offset = (page - 1) * limit;
 
-        let whereClause = '';
-        let params = [];
-        const conditions = [];
-
-        if (user_id) {
-            conditions.push('g.user_id = ?');
-            params.push(user_id);
-        }
-
-        if (status) {
-            switch (status) {
-            case 'completed':
-                conditions.push('g.completed = 1');
-                break;
-            case 'abandoned':
-                conditions.push('g.abandoned = 1');
-                break;
-            case 'timeout':
-                conditions.push('g.timeout = 1');
-                break;
-            case 'in_progress':
-                conditions.push('g.completed = 0 AND g.abandoned = 0 AND g.timeout = 0');
-                break;
-            }
-        }
-
-        if (date_from) {
-            conditions.push('g.started_at >= ?');
-            params.push(date_from);
-        }
-
-        if (date_to) {
-            conditions.push('g.started_at <= ?');
-            params.push(date_to + ' 23:59:59');
-        }
-
-        if (conditions.length > 0) {
-            whereClause = 'WHERE ' + conditions.join(' AND ');
-        }
-
-        const validSortFields = ['started_at', 'ended_at', 'duration_seconds', 'points_earned', 'user_id'];
-        const sortField = validSortFields.includes(sortBy) ? sortBy : 'started_at';
-        const sortDir = sortOrder.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
-
-        const offset = (parseInt(page) - 1) * parseInt(limit);
-        const query = `
+        let query = `
             SELECT 
                 g.*,
                 u.username,
                 CONCAT(b.name, ' ', m.name) as car_name,
                 b.name as brand_name,
                 m.name as model_name,
-                m.difficulty_level,
-                CASE 
-                    WHEN g.completed = 1 THEN 'completed'
-                    WHEN g.abandoned = 1 THEN 'abandoned'
-                    WHEN g.timeout = 1 THEN 'timeout'
-                    ELSE 'in_progress'
-                END as status_label
+                m.difficulty_level
             FROM game_sessions g
             LEFT JOIN user_scores u ON g.user_id = u.user_id
             LEFT JOIN models m ON g.car_id = m.id
             LEFT JOIN brands b ON m.brand_id = b.id
-            ${whereClause}
-            ORDER BY g.${sortField} ${sortDir}
-            LIMIT ? OFFSET ?
         `;
 
-        params.push(parseInt(limit), offset);
+        let params = [];
+        const whereConditions = [];
+
+        if (user_id) {
+            whereConditions.push('g.user_id = ?');
+            params.push(user_id);
+        }
+
+        if (completed !== '') {
+            whereConditions.push('g.completed = ?');
+            params.push(completed === 'true' ? 1 : 0);
+        }
+
+        if (difficulty) {
+            whereConditions.push('m.difficulty_level = ?');
+            params.push(parseInt(difficulty));
+        }
+
+        if (whereConditions.length > 0) {
+            query += ` WHERE ${whereConditions.join(' AND ')}`;
+        }
+
+        query += ' ORDER BY g.started_at DESC LIMIT ? OFFSET ?';
+        params.push(parseInt(limit), parseInt(offset));
+
         const games = await executeQuery(query, params);
 
-        // Comptage total
-        const countQuery = `
-            SELECT COUNT(*) as total
-            FROM game_sessions g
-            ${whereClause}
-        `;
-        const countParams = params.slice(0, -2);
+        // Compter le total
+        let countQuery = 'SELECT COUNT(*) as total FROM game_sessions g LEFT JOIN models m ON g.car_id = m.id';
+        let countParams = [];
+
+        if (whereConditions.length > 0) {
+            countQuery += ` WHERE ${whereConditions.join(' AND ')}`;
+            countParams = params.slice(0, -2);
+        }
+
         const [{ total }] = await executeQuery(countQuery, countParams);
 
         res.json({
@@ -106,8 +72,8 @@ router.get('/', async(req, res) => {
                 pagination: {
                     page: parseInt(page),
                     limit: parseInt(limit),
-                    total: parseInt(total),
-                    totalPages: Math.ceil(total / limit)
+                    total,
+                    pages: Math.ceil(total / limit)
                 }
             }
         });
@@ -135,13 +101,7 @@ router.get('/:id', async(req, res) => {
                 b.name as brand_name,
                 m.name as model_name,
                 m.difficulty_level,
-                m.image_url,
-                CASE 
-                    WHEN g.completed = 1 THEN 'completed'
-                    WHEN g.abandoned = 1 THEN 'abandoned'
-                    WHEN g.timeout = 1 THEN 'timeout'
-                    ELSE 'in_progress'
-                END as status_label
+                m.image_url
             FROM game_sessions g
             LEFT JOIN user_scores u ON g.user_id = u.user_id
             LEFT JOIN models m ON g.car_id = m.id
@@ -176,8 +136,8 @@ router.delete('/:id', async(req, res) => {
     try {
         const { id } = req.params;
 
-        const [game] = await executeQuery('SELECT * FROM game_sessions WHERE id = ?', [id]);
-        if (!game) {
+        const [existing] = await executeQuery('SELECT id FROM game_sessions WHERE id = ?', [id]);
+        if (!existing) {
             return res.status(404).json({
                 success: false,
                 error: 'Partie non trouvée'
@@ -186,7 +146,7 @@ router.delete('/:id', async(req, res) => {
 
         await executeQuery('DELETE FROM game_sessions WHERE id = ?', [id]);
 
-        logger.info('Game session deleted:', { id, user_id: game.user_id });
+        logger.info('Game session deleted:', { id });
 
         res.json({
             success: true,
@@ -197,58 +157,6 @@ router.delete('/:id', async(req, res) => {
         res.status(500).json({
             success: false,
             error: 'Erreur lors de la suppression de la partie'
-        });
-    }
-});
-
-/**
- * DELETE /api/admin/games/bulk - Suppression en masse des parties
- */
-router.delete('/bulk', async(req, res) => {
-    try {
-        const { criteria = {} } = req.body;
-
-        let whereClause = '';
-        let params = [];
-        const conditions = [];
-
-        if (criteria.status) {
-            switch (criteria.status) {
-            case 'completed':
-                conditions.push('completed = 1');
-                break;
-            case 'abandoned':
-                conditions.push('abandoned = 1');
-                break;
-            case 'timeout':
-                conditions.push('timeout = 1');
-                break;
-            }
-        }
-
-        if (criteria.older_than_days) {
-            conditions.push('started_at < DATE_SUB(NOW(), INTERVAL ? DAY)');
-            params.push(criteria.older_than_days);
-        }
-
-        if (conditions.length > 0) {
-            whereClause = 'WHERE ' + conditions.join(' AND ');
-        }
-
-        const result = await executeQuery(`DELETE FROM game_sessions ${whereClause}`, params);
-
-        logger.info('Bulk games deletion:', { criteria, deleted: result.affectedRows });
-
-        res.json({
-            success: true,
-            message: `${result.affectedRows} parties supprimées avec succès`,
-            deleted_count: result.affectedRows
-        });
-    } catch (error) {
-        logger.error('Error bulk deleting games:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Erreur lors de la suppression en masse'
         });
     }
 });

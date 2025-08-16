@@ -1,168 +1,85 @@
+// src/core/player/Player.js
+
 class Player {
-    constructor(userId, username) {
-        this.id = null;
-        this.userId = userId;
-        this.username = username;
-
-        // Statistiques principales
-        this.totalPoints = 0;
-        this.totalDifficultyPoints = 0;
-        this.gamesPlayed = 0;
-        this.gamesWon = 0;
-
-        // Statistiques détaillées
-        this.correctBrandGuesses = 0;
-        this.correctModelGuesses = 0;
-        this.totalBrandGuesses = 0;
-        this.totalModelGuesses = 0;
-
-        // Performance
-        this.bestStreak = 0;
-        this.currentStreak = 0;
-        this.bestTime = null;
-        this.averageResponseTime = 0;
-
-        // Métadonnées
-        this.createdAt = null;
-        this.updatedAt = null;
+    constructor(data = {}) {
+        this.id = data.id || null;
+        this.userId = data.user_id || data.userId || null;
+        this.username = data.username || '';
+        this.totalPoints = parseFloat(data.total_points || data.totalPoints || 0);
+        this.totalDifficultyPoints = parseFloat(data.total_difficulty_points || data.totalDifficultyPoints || 0);
+        this.gamesPlayed = parseInt(data.games_played || data.gamesPlayed || 0);
+        this.gamesWon = parseInt(data.games_won || data.gamesWon || 0);
+        this.correctBrandGuesses = parseInt(data.correct_brand_guesses || data.correctBrandGuesses || 0);
+        this.correctModelGuesses = parseInt(data.correct_model_guesses || data.correctModelGuesses || 0);
+        this.totalBrandGuesses = parseInt(data.total_brand_guesses || data.totalBrandGuesses || 0);
+        this.totalModelGuesses = parseInt(data.total_model_guesses || data.totalModelGuesses || 0);
+        this.bestStreak = parseInt(data.best_streak || data.bestStreak || 0);
+        this.currentStreak = parseInt(data.current_streak || data.currentStreak || 0);
+        this.bestTime = data.best_time || data.bestTime || null;
+        this.averageResponseTime = parseFloat(data.average_response_time || data.averageResponseTime || 0);
+        this.createdAt = data.created_at || data.createdAt || null;
+        this.updatedAt = data.updated_at || data.updatedAt || null;
     }
 
     /**
-     * Crée une instance Player depuis les données de base
+     * Calcule le pourcentage de victoires
      */
-    static fromDatabase(data) {
-        const player = new Player(data.user_id, data.username);
-
-        player.id = data.id;
-
-        // Assurer que toutes les valeurs numériques sont définies
-        player.totalPoints = Number(data.total_points) || 0;
-        player.totalDifficultyPoints = Number(data.total_difficulty_points) || 0;
-        player.gamesPlayed = Number(data.games_played) || 0;
-        player.gamesWon = Number(data.games_won) || 0;
-        player.correctBrandGuesses = Number(data.correct_brand_guesses) || 0;
-        player.correctModelGuesses = Number(data.correct_model_guesses) || 0;
-        player.totalBrandGuesses = Number(data.total_brand_guesses) || 0;
-        player.totalModelGuesses = Number(data.total_model_guesses) || 0;
-        player.bestStreak = Number(data.best_streak) || 0;
-        player.currentStreak = Number(data.current_streak) || 0;
-        player.bestTime = data.best_time ? Number(data.best_time) : null;
-        player.averageResponseTime = Number(data.average_response_time) || 0;
-        player.createdAt = data.created_at;
-        player.updatedAt = data.updated_at;
-
-        return player;
-    }
-
-    /**
-     * Propriétés calculées pour compatibilité avec embedBuilder
-     */
-    get carsGuessed() {
-        return this.gamesWon;
-    }
-
-    get partialGuesses() {
-        return this.gamesPlayed - this.gamesWon;
-    }
-
-    get totalGames() {
-        return this.gamesPlayed;
-    }
-
-    get averageAttempts() {
+    get winRate() {
         if (this.gamesPlayed === 0) return 0;
-        return this.totalBrandGuesses > 0 ?
-            Math.round((this.totalBrandGuesses / this.gamesPlayed) * 10) / 10 : 0;
-    }
-
-    get successRate() {
-        if (this.gamesPlayed === 0) return 0;
-        return Math.round((this.gamesWon / this.gamesPlayed) * 100 * 10) / 10;
-    }
-
-
-    updateGameStats(gameResult) {
-        // TOUJOURS incrementer les parties jouées
-        this.gamesPlayed++;
-
-        // Compter les tentatives
-        this.totalBrandGuesses += gameResult.attemptsMake || 0;
-        this.totalModelGuesses += gameResult.attemptsModel || 0;
-
-        // Marque trouvée ?
-        if (gameResult.makeFound) {
-            this.correctBrandGuesses++;
-        }
-
-        // Modèle trouvé (partie complète) ?
-        if (gameResult.modelFound) {
-            this.correctModelGuesses++;
-            this.gamesWon++;
-            this.currentStreak++;
-
-            if (this.currentStreak > this.bestStreak) {
-                this.bestStreak = this.currentStreak;
-            }
-        } else {
-            // Réinitialiser la série si pas de victoire complète
-            this.currentStreak = 0;
-        }
-
-        // Ajouter les points (même si 0)
-        this.totalPoints += gameResult.pointsEarned || 0;
-        this.totalDifficultyPoints += gameResult.difficultyPointsEarned || 0;
-
-        // Mettre à jour le meilleur temps (seulement si partie complétée)
-        if (gameResult.modelFound && gameResult.durationSeconds &&
-            (this.bestTime === null || gameResult.durationSeconds < this.bestTime)) {
-            this.bestTime = gameResult.durationSeconds;
-        }
-
-        // Log pour debug
-        console.log(`[DEBUG] Player ${this.username} stats updated:`, {
-            gamesPlayed: this.gamesPlayed,
-            gamesWon: this.gamesWon,
-            pointsEarned: gameResult.pointsEarned || 0,
-            totalPoints: this.totalDifficultyPoints,
-            makeFound: gameResult.makeFound,
-            modelFound: gameResult.modelFound,
-            abandoned: gameResult.abandoned,
-            timeout: gameResult.timeout
-        });
+        return (this.gamesWon / this.gamesPlayed) * 100;
     }
 
     /**
-     * Obtient le niveau de compétence
+     * Calcule le pourcentage de réussite des marques
      */
-    getSkillLevel() {
-        if (this.totalDifficultyPoints >= 50) return 'Maître';
-        if (this.totalDifficultyPoints >= 25) return 'Expert';
-        if (this.totalDifficultyPoints >= 15) return 'Avancé';
-        if (this.totalDifficultyPoints >= 8) return 'Intermédiaire';
-        if (this.totalDifficultyPoints >= 3) return 'Apprenti';
+    get brandSuccessRate() {
+        if (this.totalBrandGuesses === 0) return 0;
+        return (this.correctBrandGuesses / this.totalBrandGuesses) * 100;
+    }
+
+    /**
+     * Calcule le pourcentage de réussite des modèles
+     */
+    get modelSuccessRate() {
+        if (this.totalModelGuesses === 0) return 0;
+        return (this.correctModelGuesses / this.totalModelGuesses) * 100;
+    }
+
+    /**
+     * Détermine le niveau de compétence du joueur
+     */
+    get skillLevel() {
+        if (this.totalDifficultyPoints >= 100) return 'Expert';
+        if (this.totalDifficultyPoints >= 50) return 'Avancé';
+        if (this.totalDifficultyPoints >= 20) return 'Intermédiaire';
         return 'Débutant';
     }
 
     /**
-     * Formate le temps en chaîne lisible
+     * Obtient la moyenne de tentatives par partie
      */
-    formatTime(seconds) {
-        if (!seconds) return 'N/A';
-
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = seconds % 60;
-
-        if (minutes > 0) {
-            return `${minutes}m ${remainingSeconds}s`;
-        }
-        return `${remainingSeconds}s`;
+    get averageAttempts() {
+        if (this.gamesPlayed === 0) return 0;
+        return (this.totalBrandGuesses + this.totalModelGuesses) / this.gamesPlayed;
     }
 
     /**
-     * Convertit en format base de données
+     * Vérifie si le joueur est actif (a joué récemment)
+     */
+    get isActive() {
+        if (!this.updatedAt) return false;
+        const lastActivity = new Date(this.updatedAt);
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        return lastActivity > thirtyDaysAgo;
+    }
+
+    /**
+     * Convertit vers le format base de données
      */
     toDatabase() {
         return {
+            id: this.id,
             user_id: this.userId,
             username: this.username,
             total_points: this.totalPoints,
@@ -176,14 +93,16 @@ class Player {
             best_streak: this.bestStreak,
             current_streak: this.currentStreak,
             best_time: this.bestTime,
-            average_response_time: this.averageResponseTime
+            average_response_time: this.averageResponseTime,
+            created_at: this.createdAt,
+            updated_at: this.updatedAt
         };
     }
 
     /**
-     * Convertit en JSON pour l'affichage
+     * Convertit vers le format API
      */
-    toJSON() {
+    toAPI() {
         return {
             id: this.id,
             userId: this.userId,
@@ -192,22 +111,167 @@ class Player {
             totalDifficultyPoints: this.totalDifficultyPoints,
             gamesPlayed: this.gamesPlayed,
             gamesWon: this.gamesWon,
-            successRate: this.successRate,
-            averageAttempts: this.averageAttempts,
+            winRate: this.winRate,
+            correctBrandGuesses: this.correctBrandGuesses,
+            correctModelGuesses: this.correctModelGuesses,
+            totalBrandGuesses: this.totalBrandGuesses,
+            totalModelGuesses: this.totalModelGuesses,
+            brandSuccessRate: this.brandSuccessRate,
+            modelSuccessRate: this.modelSuccessRate,
             bestStreak: this.bestStreak,
             currentStreak: this.currentStreak,
             bestTime: this.bestTime,
-            skillLevel: this.getSkillLevel(),
+            averageResponseTime: this.averageResponseTime,
+            averageAttempts: this.averageAttempts,
+            skillLevel: this.skillLevel,
+            isActive: this.isActive,
             createdAt: this.createdAt,
             updatedAt: this.updatedAt
         };
     }
 
     /**
-     * Obtient une représentation textuelle
+     * Met à jour les statistiques après une partie
      */
-    toString() {
-        return `${this.username} (${this.getSkillLevel()}) - ${this.totalDifficultyPoints} pts`;
+    updateAfterGame(gameResult) {
+        this.gamesPlayed += 1;
+
+        if (gameResult.completed) {
+            this.gamesWon += 1;
+            this.currentStreak += 1;
+            this.bestStreak = Math.max(this.bestStreak, this.currentStreak);
+        } else {
+            this.currentStreak = 0;
+        }
+
+        this.totalPoints += gameResult.basePoints || 0;
+        this.totalDifficultyPoints += gameResult.difficultyPoints || 0;
+
+        if (gameResult.makeFound) {
+            this.correctBrandGuesses += 1;
+        }
+        if (gameResult.modelFound) {
+            this.correctModelGuesses += 1;
+        }
+
+        this.totalBrandGuesses += gameResult.attemptsMake || 0;
+        this.totalModelGuesses += gameResult.attemptsModel || 0;
+
+        // Mettre à jour le meilleur temps
+        if (gameResult.duration && gameResult.completed) {
+            if (!this.bestTime || gameResult.duration < this.bestTime) {
+                this.bestTime = gameResult.duration;
+            }
+        }
+
+        // Mettre à jour le temps de réponse moyen
+        if (gameResult.duration) {
+            const totalTime = this.averageResponseTime * (this.gamesPlayed - 1) + gameResult.duration;
+            this.averageResponseTime = totalTime / this.gamesPlayed;
+        }
+
+        this.updatedAt = new Date();
+    }
+
+    /**
+     * Réinitialise toutes les statistiques
+     */
+    resetStats() {
+        this.totalPoints = 0;
+        this.totalDifficultyPoints = 0;
+        this.gamesPlayed = 0;
+        this.gamesWon = 0;
+        this.correctBrandGuesses = 0;
+        this.correctModelGuesses = 0;
+        this.totalBrandGuesses = 0;
+        this.totalModelGuesses = 0;
+        this.bestStreak = 0;
+        this.currentStreak = 0;
+        this.bestTime = null;
+        this.averageResponseTime = 0;
+        this.updatedAt = new Date();
+    }
+
+    /**
+     * Valide les données du joueur
+     */
+    validate() {
+        const errors = [];
+
+        if (!this.userId) {
+            errors.push('User ID requis');
+        }
+
+        if (!this.username || this.username.length < 1 || this.username.length > 32) {
+            errors.push('Username requis (1-32 caractères)');
+        }
+
+        if (this.totalPoints < 0) {
+            errors.push('Total points ne peut pas être négatif');
+        }
+
+        if (this.gamesPlayed < 0) {
+            errors.push('Nombre de parties ne peut pas être négatif');
+        }
+
+        if (this.gamesWon > this.gamesPlayed) {
+            errors.push('Parties gagnées ne peut pas dépasser parties jouées');
+        }
+
+        return errors;
+    }
+
+    /**
+     * Clône le joueur
+     */
+    clone() {
+        return new Player(this.toDatabase());
+    }
+
+    /**
+     * Méthodes statiques
+     */
+
+    /**
+     * Crée un Player depuis les données de base
+     */
+    static fromDatabase(data) {
+        return new Player(data);
+    }
+
+    /**
+     * Crée un nouveau joueur avec les valeurs par défaut
+     */
+    static createNew(userId, username) {
+        return new Player({
+            user_id: userId,
+            username: username,
+            total_points: 0,
+            total_difficulty_points: 0,
+            games_played: 0,
+            games_won: 0,
+            correct_brand_guesses: 0,
+            correct_model_guesses: 0,
+            total_brand_guesses: 0,
+            total_model_guesses: 0,
+            best_streak: 0,
+            current_streak: 0,
+            best_time: null,
+            average_response_time: 0,
+            created_at: new Date(),
+            updated_at: new Date()
+        });
+    }
+
+    /**
+     * Compare deux joueurs pour le classement
+     */
+    static compare(playerA, playerB) {
+        // Tri par points de difficulté décroissant, puis par parties gagnées
+        if (playerA.totalDifficultyPoints !== playerB.totalDifficultyPoints) {
+            return playerB.totalDifficultyPoints - playerA.totalDifficultyPoints;
+        }
+        return playerB.gamesWon - playerA.gamesWon;
     }
 }
 

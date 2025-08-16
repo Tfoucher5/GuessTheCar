@@ -61,27 +61,61 @@ class BaseRepository {
 
     /**
      * Crée un nouvel enregistrement
+     * CORRECTION: Utiliser les noms de colonnes au lieu des index
      */
     async create(data) {
-        const columns = Object.keys(data).join(', ');
-        const placeholders = Object.keys(data).map(() => '?').join(', ');
-        const values = Object.values(data);
+        // Filtrer les valeurs undefined et null pour les colonnes optionnelles
+        const cleanData = {};
+        Object.keys(data).forEach(key => {
+            if (data[key] !== undefined) {
+                cleanData[key] = data[key];
+            }
+        });
 
-        const query = `INSERT INTO ${this.tableName} (${columns}) VALUES (${placeholders})`;
-        const result = await executeQuery(query, values);
+        const columns = Object.keys(cleanData);
+        const placeholders = columns.map(() => '?');
+        const values = Object.values(cleanData);
 
-        return {
-            id: result.insertId,
-            ...data
-        };
+        // CORRECTION: Utiliser les vrais noms de colonnes
+        const columnsStr = columns.join(', ');
+        const placeholdersStr = placeholders.join(', ');
+
+        const query = `INSERT INTO ${this.tableName} (${columnsStr}) VALUES (${placeholdersStr})`;
+
+        try {
+            const result = await executeQuery(query, values);
+
+            return {
+                id: result.insertId,
+                ...cleanData
+            };
+        } catch (error) {
+            // Log pour debug
+            console.error('BaseRepository.create error:', {
+                query,
+                values,
+                tableName: this.tableName,
+                columns: columnsStr,
+                error: error.message
+            });
+            throw error;
+        }
     }
 
     /**
      * Met à jour un enregistrement
      */
     async update(id, data) {
-        const setClause = Object.keys(data).map(key => `${key} = ?`).join(', ');
-        const values = [...Object.values(data), id];
+        // Filtrer les valeurs undefined
+        const cleanData = {};
+        Object.keys(data).forEach(key => {
+            if (data[key] !== undefined) {
+                cleanData[key] = data[key];
+            }
+        });
+
+        const setClause = Object.keys(cleanData).map(key => `${key} = ?`).join(', ');
+        const values = [...Object.values(cleanData), id];
 
         const query = `UPDATE ${this.tableName} SET ${setClause} WHERE id = ?`;
         const result = await executeQuery(query, values);
@@ -97,9 +131,17 @@ class BaseRepository {
      * Met à jour selon des critères
      */
     async updateWhere(conditions, data) {
-        const setClause = Object.keys(data).map(key => `${key} = ?`).join(', ');
+        // Filtrer les valeurs undefined
+        const cleanData = {};
+        Object.keys(data).forEach(key => {
+            if (data[key] !== undefined) {
+                cleanData[key] = data[key];
+            }
+        });
+
+        const setClause = Object.keys(cleanData).map(key => `${key} = ?`).join(', ');
         const whereClause = Object.keys(conditions).map(key => `${key} = ?`).join(' AND ');
-        const values = [...Object.values(data), ...Object.values(conditions)];
+        const values = [...Object.values(cleanData), ...Object.values(conditions)];
 
         const query = `UPDATE ${this.tableName} SET ${setClause} WHERE ${whereClause}`;
         const result = await executeQuery(query, values);
@@ -157,6 +199,27 @@ class BaseRepository {
     async exists(conditions) {
         const count = await this.count(conditions);
         return count > 0;
+    }
+
+    /**
+     * Méthode utilitaire pour nettoyer les données avant insertion/mise à jour
+     */
+    cleanData(data, allowedFields = null) {
+        const cleaned = {};
+
+        Object.keys(data).forEach(key => {
+            const value = data[key];
+
+            // Ignorer les valeurs undefined
+            if (value === undefined) return;
+
+            // Si une liste de champs autorisés est fournie, la respecter
+            if (allowedFields && !allowedFields.includes(key)) return;
+
+            cleaned[key] = value;
+        });
+
+        return cleaned;
     }
 }
 

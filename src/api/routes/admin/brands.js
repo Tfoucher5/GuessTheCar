@@ -1,70 +1,57 @@
+// src/api/routes/admin/brands.js
 const express = require('express');
-const router = express.Router();
 const { executeQuery } = require('../../../shared/database/connection');
 const logger = require('../../../shared/utils/logger');
 
+const router = express.Router();
+
 /**
- * GET /api/admin/brands - Liste des marques avec filtres et pagination
+ * GET /api/admin/brands - Liste des marques
  */
 router.get('/', async(req, res) => {
     try {
-        const {
-            page = 1,
-            limit = 25,
-            search = '',
-            country = '',
-            sortBy = 'name',
-            sortOrder = 'asc'
-        } = req.query;
+        const { page = 1, limit = 20, search = '', country = '' } = req.query;
+        const offset = (page - 1) * limit;
 
-        let whereClause = '';
-        let params = [];
-
-        // Construire la clause WHERE
-        const conditions = [];
-        if (search) {
-            conditions.push('b.name LIKE ?');
-            params.push(`%${search}%`);
-        }
-        if (country) {
-            conditions.push('b.country = ?');
-            params.push(country);
-        }
-
-        if (conditions.length > 0) {
-            whereClause = 'WHERE ' + conditions.join(' AND ');
-        }
-
-        // Validation du tri
-        const validSortFields = ['name', 'country', 'created_at', 'models_count'];
-        const validSortOrders = ['asc', 'desc'];
-        const sortField = validSortFields.includes(sortBy) ? sortBy : 'name';
-        const sortDir = validSortOrders.includes(sortOrder.toLowerCase()) ? sortOrder.toUpperCase() : 'ASC';
-
-        // Requête principale avec comptage des modèles
-        const offset = (parseInt(page) - 1) * parseInt(limit);
-        const query = `
+        let query = `
             SELECT 
                 b.*,
                 COUNT(m.id) as models_count
             FROM brands b
             LEFT JOIN models m ON b.id = m.brand_id
-            ${whereClause}
-            GROUP BY b.id
-            ORDER BY ${sortField === 'models_count' ? 'models_count' : 'b.' + sortField} ${sortDir}
-            LIMIT ? OFFSET ?
         `;
 
-        params.push(parseInt(limit), offset);
+        let params = [];
+        const whereConditions = [];
+
+        if (search) {
+            whereConditions.push('b.name LIKE ?');
+            params.push(`%${search}%`);
+        }
+
+        if (country) {
+            whereConditions.push('b.country = ?');
+            params.push(country);
+        }
+
+        if (whereConditions.length > 0) {
+            query += ` WHERE ${whereConditions.join(' AND ')}`;
+        }
+
+        query += ' GROUP BY b.id ORDER BY b.name LIMIT ? OFFSET ?';
+        params.push(parseInt(limit), parseInt(offset));
+
         const brands = await executeQuery(query, params);
 
-        // Comptage total
-        const countQuery = `
-            SELECT COUNT(DISTINCT b.id) as total
-            FROM brands b
-            ${whereClause}
-        `;
-        const countParams = params.slice(0, -2);
+        // Compter le total
+        let countQuery = 'SELECT COUNT(*) as total FROM brands b';
+        let countParams = [];
+
+        if (whereConditions.length > 0) {
+            countQuery += ` WHERE ${whereConditions.join(' AND ')}`;
+            countParams = params.slice(0, -2); // Enlever limit et offset
+        }
+
         const [{ total }] = await executeQuery(countQuery, countParams);
 
         res.json({
@@ -74,8 +61,8 @@ router.get('/', async(req, res) => {
                 pagination: {
                     page: parseInt(page),
                     limit: parseInt(limit),
-                    total: parseInt(total),
-                    totalPages: Math.ceil(total / limit)
+                    total,
+                    pages: Math.ceil(total / limit)
                 }
             }
         });
@@ -84,6 +71,32 @@ router.get('/', async(req, res) => {
         res.status(500).json({
             success: false,
             error: 'Erreur lors du chargement des marques'
+        });
+    }
+});
+
+/**
+ * GET /api/admin/brands/countries - Liste des pays
+ */
+router.get('/countries', async(req, res) => {
+    try {
+        const countries = await executeQuery(`
+            SELECT DISTINCT country, COUNT(*) as count
+            FROM brands 
+            WHERE country IS NOT NULL AND country != ''
+            GROUP BY country
+            ORDER BY country
+        `);
+
+        res.json({
+            success: true,
+            data: countries
+        });
+    } catch (error) {
+        logger.error('Error fetching countries:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Erreur lors du chargement des pays'
         });
     }
 });
@@ -112,9 +125,20 @@ router.get('/:id', async(req, res) => {
             });
         }
 
+        // Récupérer les modèles associés
+        const models = await executeQuery(`
+            SELECT id, name, year, difficulty_level, image_url
+            FROM models
+            WHERE brand_id = ?
+            ORDER BY name
+        `, [id]);
+
         res.json({
             success: true,
-            data: brand
+            data: {
+                brand,
+                models
+            }
         });
     } catch (error) {
         logger.error('Error fetching brand:', error);
@@ -130,25 +154,25 @@ router.get('/:id', async(req, res) => {
  */
 router.post('/', async(req, res) => {
     try {
-        const { name, country } = req.body;
+        const { name, country = 'Inconnu' } = req.body;
 
         // Validation
-        if (!name || !country) {
+        if (!name || name.trim().length === 0) {
             return res.status(400).json({
                 success: false,
-                error: 'Le nom et le pays sont requis'
+                error: 'Le nom de la marque est requis'
             });
         }
 
-        if (name.length < 2 || name.length > 50) {
+        if (name.length > 50) {
             return res.status(400).json({
                 success: false,
-                error: 'Le nom doit contenir entre 2 et 50 caractères'
+                error: 'Le nom ne peut pas dépasser 50 caractères'
             });
         }
 
         // Vérifier si la marque existe déjà
-        const [existing] = await executeQuery('SELECT id FROM brands WHERE name = ?', [name]);
+        const [existing] = await executeQuery('SELECT id FROM brands WHERE name = ?', [name.trim()]);
         if (existing) {
             return res.status(400).json({
                 success: false,
@@ -157,14 +181,14 @@ router.post('/', async(req, res) => {
         }
 
         // Créer la marque
-        const result = await executeQuery(
+        await executeQuery(
             'INSERT INTO brands (name, country) VALUES (?, ?)',
-            [name, country]
+            [name.trim(), country.trim()]
         );
 
-        const [newBrand] = await executeQuery('SELECT * FROM brands WHERE id = ?', [result.insertId]);
+        const [newBrand] = await executeQuery('SELECT * FROM brands WHERE name = ?', [name.trim()]);
 
-        logger.info('Brand created:', { id: result.insertId, name, country });
+        logger.info('Brand created:', { name, country });
 
         res.status(201).json({
             success: true,
@@ -188,15 +212,7 @@ router.put('/:id', async(req, res) => {
         const { id } = req.params;
         const { name, country } = req.body;
 
-        // Validation
-        if (!name || !country) {
-            return res.status(400).json({
-                success: false,
-                error: 'Le nom et le pays sont requis'
-            });
-        }
-
-        // Vérifier si la marque existe
+        // Vérifier que la marque existe
         const [existing] = await executeQuery('SELECT id FROM brands WHERE id = ?', [id]);
         if (!existing) {
             return res.status(404).json({
@@ -205,35 +221,62 @@ router.put('/:id', async(req, res) => {
             });
         }
 
-        // Vérifier les doublons (excluant la marque actuelle)
-        const [duplicate] = await executeQuery('SELECT id FROM brands WHERE name = ? AND id != ?', [name, id]);
-        if (duplicate) {
+        // Préparer les champs à mettre à jour
+        const updateFields = [];
+        const updateValues = [];
+
+        if (name !== undefined) {
+            if (!name || name.trim().length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Le nom de la marque ne peut pas être vide'
+                });
+            }
+            if (name.length > 50) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Le nom ne peut pas dépasser 50 caractères'
+                });
+            }
+            updateFields.push('name = ?');
+            updateValues.push(name.trim());
+        }
+
+        if (country !== undefined) {
+            updateFields.push('country = ?');
+            updateValues.push(country.trim() || 'Inconnu');
+        }
+
+        if (updateFields.length === 0) {
             return res.status(400).json({
                 success: false,
-                error: 'Une marque avec ce nom existe déjà'
+                error: 'Aucun champ à mettre à jour'
             });
         }
 
-        // Modifier la marque
+        updateValues.push(id);
+
+        // Exécuter la mise à jour
         await executeQuery(
-            'UPDATE brands SET name = ?, country = ? WHERE id = ?',
-            [name, country, id]
+            `UPDATE brands SET ${updateFields.join(', ')} WHERE id = ?`,
+            updateValues
         );
 
+        // Récupérer la marque mise à jour
         const [updatedBrand] = await executeQuery('SELECT * FROM brands WHERE id = ?', [id]);
 
-        logger.info('Brand updated:', { id, name, country });
+        logger.info('Brand updated:', { id, updatedFields: updateFields });
 
         res.json({
             success: true,
             data: updatedBrand,
-            message: 'Marque modifiée avec succès'
+            message: 'Marque mise à jour avec succès'
         });
     } catch (error) {
         logger.error('Error updating brand:', error);
         res.status(500).json({
             success: false,
-            error: 'Erreur lors de la modification de la marque'
+            error: 'Erreur lors de la mise à jour de la marque'
         });
     }
 });
@@ -245,9 +288,9 @@ router.delete('/:id', async(req, res) => {
     try {
         const { id } = req.params;
 
-        // Vérifier si la marque existe
-        const [brand] = await executeQuery('SELECT * FROM brands WHERE id = ?', [id]);
-        if (!brand) {
+        // Vérifier que la marque existe
+        const [existing] = await executeQuery('SELECT id FROM brands WHERE id = ?', [id]);
+        if (!existing) {
             return res.status(404).json({
                 success: false,
                 error: 'Marque non trouvée'
@@ -255,18 +298,18 @@ router.delete('/:id', async(req, res) => {
         }
 
         // Vérifier s'il y a des modèles associés
-        const [modelsCount] = await executeQuery('SELECT COUNT(*) as count FROM models WHERE brand_id = ?', [id]);
-        if (modelsCount.count > 0) {
+        const [modelCount] = await executeQuery('SELECT COUNT(*) as count FROM models WHERE brand_id = ?', [id]);
+        if (modelCount.count > 0) {
             return res.status(400).json({
                 success: false,
-                error: `Impossible de supprimer cette marque car elle contient ${modelsCount.count} modèle(s)`
+                error: `Impossible de supprimer la marque: ${modelCount.count} modèle(s) associé(s)`
             });
         }
 
         // Supprimer la marque
         await executeQuery('DELETE FROM brands WHERE id = ?', [id]);
 
-        logger.info('Brand deleted:', { id, name: brand.name });
+        logger.info('Brand deleted:', { id });
 
         res.json({
             success: true,

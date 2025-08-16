@@ -1,54 +1,52 @@
+// src/api/routes/admin/players.js
 const express = require('express');
-const router = express.Router();
 const { executeQuery } = require('../../../shared/database/connection');
 const logger = require('../../../shared/utils/logger');
+
+const router = express.Router();
 
 /**
  * GET /api/admin/players - Liste des joueurs
  */
 router.get('/', async(req, res) => {
     try {
-        const {
-            page = 1,
-            limit = 25,
-            search = '',
-            sortBy = 'total_points',
-            sortOrder = 'desc'
-        } = req.query;
+        const { page = 1, limit = 20, search = '' } = req.query;
+        const offset = (page - 1) * limit;
 
-        let whereClause = '';
+        let query = `
+            SELECT 
+                us.*,
+                ROW_NUMBER() OVER (ORDER BY us.total_difficulty_points DESC, us.games_won DESC) as ranking,
+                CASE 
+                    WHEN us.total_difficulty_points >= 100 THEN 'Expert'
+                    WHEN us.total_difficulty_points >= 50 THEN 'Avancé'
+                    WHEN us.total_difficulty_points >= 20 THEN 'Intermédiaire'
+                    ELSE 'Débutant'
+                END as skill_level
+            FROM user_scores us
+        `;
+
         let params = [];
 
         if (search) {
-            whereClause = 'WHERE username LIKE ? OR user_id LIKE ?';
-            params.push(`%${search}%`, `%${search}%`);
+            query += ' WHERE us.username LIKE ?';
+            params.push(`%${search}%`);
         }
 
-        const validSortFields = ['username', 'total_points', 'games_played', 'games_won', 'created_at'];
-        const sortField = validSortFields.includes(sortBy) ? sortBy : 'total_points';
-        const sortDir = sortOrder.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+        query += ' ORDER BY us.total_difficulty_points DESC LIMIT ? OFFSET ?';
+        params.push(parseInt(limit), parseInt(offset));
 
-        const offset = (parseInt(page) - 1) * parseInt(limit);
-        const query = `
-            SELECT 
-                *,
-                CASE 
-                    WHEN games_played > 0 
-                    THEN ROUND((games_won / games_played) * 100, 1)
-                    ELSE 0 
-                END as win_rate
-            FROM user_scores
-            ${whereClause}
-            ORDER BY ${sortField} ${sortDir}
-            LIMIT ? OFFSET ?
-        `;
-
-        params.push(parseInt(limit), offset);
         const players = await executeQuery(query, params);
 
-        // Comptage total
-        const countQuery = `SELECT COUNT(*) as total FROM user_scores ${whereClause}`;
-        const countParams = whereClause ? params.slice(0, -2) : [];
+        // Compter le total
+        let countQuery = 'SELECT COUNT(*) as total FROM user_scores';
+        let countParams = [];
+
+        if (search) {
+            countQuery += ' WHERE username LIKE ?';
+            countParams.push(`%${search}%`);
+        }
+
         const [{ total }] = await executeQuery(countQuery, countParams);
 
         res.json({
@@ -58,8 +56,8 @@ router.get('/', async(req, res) => {
                 pagination: {
                     page: parseInt(page),
                     limit: parseInt(limit),
-                    total: parseInt(total),
-                    totalPages: Math.ceil(total / limit)
+                    total,
+                    pages: Math.ceil(total / limit)
                 }
             }
         });
@@ -79,16 +77,28 @@ router.get('/:userId', async(req, res) => {
     try {
         const { userId } = req.params;
 
+        // Récupérer le joueur avec son classement
         const [player] = await executeQuery(`
             SELECT 
-                *,
+                us.*,
+                (
+                    SELECT COUNT(*) + 1 
+                    FROM user_scores us2 
+                    WHERE us2.total_difficulty_points > us.total_difficulty_points
+                    OR (us2.total_difficulty_points = us.total_difficulty_points AND us2.games_won > us.games_won)
+                ) as ranking,
                 CASE 
-                    WHEN games_played > 0 
-                    THEN ROUND((games_won / games_played) * 100, 1)
+                    WHEN us.total_difficulty_points >= 100 THEN 'Expert'
+                    WHEN us.total_difficulty_points >= 50 THEN 'Avancé'
+                    WHEN us.total_difficulty_points >= 20 THEN 'Intermédiaire'
+                    ELSE 'Débutant'
+                END as skill_level,
+                CASE 
+                    WHEN us.total_brand_guesses > 0 THEN ROUND((us.correct_brand_guesses / us.total_brand_guesses) * 100, 1)
                     ELSE 0 
-                END as win_rate
-            FROM user_scores 
-            WHERE user_id = ?
+                END as success_rate
+            FROM user_scores us
+            WHERE us.user_id = ?
         `, [userId]);
 
         if (!player) {
@@ -102,7 +112,9 @@ router.get('/:userId', async(req, res) => {
         const recentGames = await executeQuery(`
             SELECT 
                 g.*,
-                CONCAT(b.name, ' ', m.name) as car_name
+                CONCAT(b.name, ' ', m.name) as car_name,
+                b.name as brand_name,
+                m.name as model_name
             FROM game_sessions g
             LEFT JOIN models m ON g.car_id = m.id
             LEFT JOIN brands b ON m.brand_id = b.id
@@ -111,11 +123,27 @@ router.get('/:userId', async(req, res) => {
             LIMIT 10
         `, [userId]);
 
+        // Statistiques par difficulté
+        const difficultyStats = await executeQuery(`
+            SELECT 
+                m.difficulty_level,
+                COUNT(*) as games_count,
+                SUM(CASE WHEN g.completed = 1 THEN 1 ELSE 0 END) as wins_count,
+                AVG(g.duration_seconds) as avg_duration,
+                SUM(g.points_earned) as total_points
+            FROM game_sessions g
+            LEFT JOIN models m ON g.car_id = m.id
+            WHERE g.user_id = ?
+            GROUP BY m.difficulty_level
+            ORDER BY m.difficulty_level
+        `, [userId]);
+
         res.json({
             success: true,
             data: {
                 player,
-                recentGames
+                recentGames,
+                difficultyStats
             }
         });
     } catch (error) {
@@ -142,6 +170,22 @@ router.post('/', async(req, res) => {
             });
         }
 
+        // Validation du format user_id (Discord ID)
+        if (!/^\d{17,19}$/.test(user_id)) {
+            return res.status(400).json({
+                success: false,
+                error: 'L\'ID utilisateur doit être un ID Discord valide'
+            });
+        }
+
+        // Validation du username
+        if (username.length < 1 || username.length > 32) {
+            return res.status(400).json({
+                success: false,
+                error: 'Le nom d\'utilisateur doit faire entre 1 et 32 caractères'
+            });
+        }
+
         // Vérifier si le joueur existe déjà
         const [existing] = await executeQuery('SELECT user_id FROM user_scores WHERE user_id = ?', [user_id]);
         if (existing) {
@@ -151,15 +195,30 @@ router.post('/', async(req, res) => {
             });
         }
 
-        // Créer le joueur
-        await executeQuery(
-            'INSERT INTO user_scores (user_id, username) VALUES (?, ?)',
-            [user_id, username]
-        );
+        // Créer le joueur avec la requête correcte
+        await executeQuery(`
+            INSERT INTO user_scores (
+                user_id, 
+                username, 
+                total_points, 
+                total_difficulty_points, 
+                games_played, 
+                games_won, 
+                correct_brand_guesses, 
+                correct_model_guesses, 
+                total_brand_guesses, 
+                total_model_guesses, 
+                best_streak, 
+                current_streak, 
+                best_time, 
+                average_response_time
+            ) VALUES (?, ?, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, 0)
+        `, [user_id, username]);
 
+        // Récupérer le joueur créé
         const [newPlayer] = await executeQuery('SELECT * FROM user_scores WHERE user_id = ?', [user_id]);
 
-        logger.info('Player created:', { user_id, username });
+        logger.info('Player created via admin:', { user_id, username });
 
         res.status(201).json({
             success: true,
@@ -181,7 +240,7 @@ router.post('/', async(req, res) => {
 router.put('/:userId', async(req, res) => {
     try {
         const { userId } = req.params;
-        const { username, total_points, games_played, games_won } = req.body;
+        const { username, total_points, total_difficulty_points, games_played, games_won } = req.body;
 
         // Vérifier que le joueur existe
         const [existing] = await executeQuery('SELECT user_id FROM user_scores WHERE user_id = ?', [userId]);
@@ -192,103 +251,72 @@ router.put('/:userId', async(req, res) => {
             });
         }
 
-        // Construire la requête de mise à jour
-        const updates = [];
-        const params = [];
+        // Préparer les champs à mettre à jour
+        const updateFields = [];
+        const updateValues = [];
 
         if (username !== undefined) {
-            updates.push('username = ?');
-            params.push(username);
-        }
-        if (total_points !== undefined) {
-            updates.push('total_points = ?');
-            params.push(total_points);
-        }
-        if (games_played !== undefined) {
-            updates.push('games_played = ?');
-            params.push(games_played);
-        }
-        if (games_won !== undefined) {
-            updates.push('games_won = ?');
-            params.push(games_won);
+            if (username.length < 1 || username.length > 32) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Le nom d\'utilisateur doit faire entre 1 et 32 caractères'
+                });
+            }
+            updateFields.push('username = ?');
+            updateValues.push(username);
         }
 
-        if (updates.length === 0) {
+        if (total_points !== undefined) {
+            updateFields.push('total_points = ?');
+            updateValues.push(parseFloat(total_points) || 0);
+        }
+
+        if (total_difficulty_points !== undefined) {
+            updateFields.push('total_difficulty_points = ?');
+            updateValues.push(parseFloat(total_difficulty_points) || 0);
+        }
+
+        if (games_played !== undefined) {
+            updateFields.push('games_played = ?');
+            updateValues.push(parseInt(games_played) || 0);
+        }
+
+        if (games_won !== undefined) {
+            updateFields.push('games_won = ?');
+            updateValues.push(parseInt(games_won) || 0);
+        }
+
+        if (updateFields.length === 0) {
             return res.status(400).json({
                 success: false,
-                error: 'Aucune donnée à mettre à jour'
+                error: 'Aucun champ à mettre à jour'
             });
         }
 
-        params.push(userId);
+        updateFields.push('updated_at = CURRENT_TIMESTAMP');
+        updateValues.push(userId);
 
+        // Exécuter la mise à jour
         await executeQuery(
-            `UPDATE user_scores SET ${updates.join(', ')} WHERE user_id = ?`,
-            params
+            `UPDATE user_scores SET ${updateFields.join(', ')} WHERE user_id = ?`,
+            updateValues
         );
 
+        // Récupérer le joueur mis à jour
         const [updatedPlayer] = await executeQuery('SELECT * FROM user_scores WHERE user_id = ?', [userId]);
 
-        logger.info('Player updated:', { userId, updates: Object.keys(req.body) });
+        logger.info('Player updated via admin:', { userId, updatedFields: updateFields });
 
         res.json({
             success: true,
             data: updatedPlayer,
-            message: 'Joueur modifié avec succès'
+            message: 'Joueur mis à jour avec succès'
         });
     } catch (error) {
         logger.error('Error updating player:', error);
         res.status(500).json({
             success: false,
-            error: 'Erreur lors de la modification du joueur'
-        });
-    }
-});
-
-/**
- * POST /api/admin/players/:userId/reset - Reset des stats d'un joueur
- */
-router.post('/:userId/reset', async(req, res) => {
-    try {
-        const { userId } = req.params;
-
-        const [player] = await executeQuery('SELECT * FROM user_scores WHERE user_id = ?', [userId]);
-        if (!player) {
-            return res.status(404).json({
-                success: false,
-                error: 'Joueur non trouvé'
-            });
-        }
-
-        await executeQuery(`
-            UPDATE user_scores 
-            SET 
-                total_points = 0,
-                total_difficulty_points = 0,
-                games_played = 0,
-                games_won = 0,
-                correct_brand_guesses = 0,
-                correct_model_guesses = 0,
-                total_brand_guesses = 0,
-                total_model_guesses = 0,
-                best_streak = 0,
-                current_streak = 0,
-                best_time = NULL,
-                average_response_time = 0
-            WHERE user_id = ?
-        `, [userId]);
-
-        logger.info('Player stats reset:', { userId, username: player.username });
-
-        res.json({
-            success: true,
-            message: 'Statistiques du joueur remises à zéro'
-        });
-    } catch (error) {
-        logger.error('Error resetting player stats:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Erreur lors de la remise à zéro des statistiques'
+            error: 'Erreur lors de la mise à jour du joueur'
         });
     }
 });
@@ -300,21 +328,22 @@ router.delete('/:userId', async(req, res) => {
     try {
         const { userId } = req.params;
 
-        const [player] = await executeQuery('SELECT * FROM user_scores WHERE user_id = ?', [userId]);
-        if (!player) {
+        // Vérifier que le joueur existe
+        const [existing] = await executeQuery('SELECT user_id FROM user_scores WHERE user_id = ?', [userId]);
+        if (!existing) {
             return res.status(404).json({
                 success: false,
                 error: 'Joueur non trouvé'
             });
         }
 
-        // Supprimer d'abord les sessions de jeu
+        // Supprimer d'abord les sessions de jeu associées
         await executeQuery('DELETE FROM game_sessions WHERE user_id = ?', [userId]);
 
-        // Puis supprimer le joueur
+        // Supprimer le joueur
         await executeQuery('DELETE FROM user_scores WHERE user_id = ?', [userId]);
 
-        logger.info('Player deleted:', { userId, username: player.username });
+        logger.info('Player deleted via admin:', { userId });
 
         res.json({
             success: true,
@@ -325,6 +354,63 @@ router.delete('/:userId', async(req, res) => {
         res.status(500).json({
             success: false,
             error: 'Erreur lors de la suppression du joueur'
+        });
+    }
+});
+
+/**
+ * POST /api/admin/players/:userId/reset-stats - Réinitialiser les stats d'un joueur
+ */
+router.post('/:userId/reset-stats', async(req, res) => {
+    try {
+        const { userId } = req.params;
+
+        // Vérifier que le joueur existe
+        const [existing] = await executeQuery('SELECT user_id, username FROM user_scores WHERE user_id = ?', [userId]);
+        if (!existing) {
+            return res.status(404).json({
+                success: false,
+                error: 'Joueur non trouvé'
+            });
+        }
+
+        // Réinitialiser les statistiques (garder username et user_id)
+        await executeQuery(`
+            UPDATE user_scores SET
+                total_points = 0,
+                total_difficulty_points = 0,
+                games_played = 0,
+                games_won = 0,
+                correct_brand_guesses = 0,
+                correct_model_guesses = 0,
+                total_brand_guesses = 0,
+                total_model_guesses = 0,
+                best_streak = 0,
+                current_streak = 0,
+                best_time = NULL,
+                average_response_time = 0,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = ?
+        `, [userId]);
+
+        // Supprimer l'historique des parties
+        await executeQuery('DELETE FROM game_sessions WHERE user_id = ?', [userId]);
+
+        // Récupérer le joueur réinitialisé
+        const [resetPlayer] = await executeQuery('SELECT * FROM user_scores WHERE user_id = ?', [userId]);
+
+        logger.info('Player stats reset via admin:', { userId, username: existing.username });
+
+        res.json({
+            success: true,
+            data: resetPlayer,
+            message: 'Statistiques du joueur réinitialisées avec succès'
+        });
+    } catch (error) {
+        logger.error('Error resetting player stats:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Erreur lors de la réinitialisation des statistiques'
         });
     }
 });

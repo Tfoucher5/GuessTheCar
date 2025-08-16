@@ -1,70 +1,145 @@
-const fs = require('fs');
+// src/bot/handlers/commandHandler.js
+const fs = require('fs').promises;
 const path = require('path');
-const { REST, Routes, MessageFlags } = require('discord.js');
-const discordConfig = require('../../shared/config/discord');
+const { REST } = require('@discordjs/rest');
+const { Routes } = require('discord-api-types/v10');
 const logger = require('../../shared/utils/logger');
 
 class CommandHandler {
-    constructor() {
+    constructor(client) {
+        this.client = client;
         this.commands = new Map();
-        this.commandsData = [];
-        this.rest = new REST({ version: discordConfig.restVersion }).setToken(discordConfig.token);
+        this.rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
     }
 
-    loadCommands() {
-        const commandsPath = path.join(__dirname, '../commands');
+    async loadCommands() {
+        try {
+            const commandsPath = path.join(__dirname, '../commands');
+            const commandCategories = await fs.readdir(commandsPath);
 
-        if (!fs.existsSync(commandsPath)) {
-            logger.warn('Commands directory not found');
+            for (const category of commandCategories) {
+                const categoryPath = path.join(commandsPath, category);
+                const stat = await fs.stat(categoryPath);
+
+                if (!stat.isDirectory()) continue;
+
+                const commandFiles = await fs.readdir(categoryPath);
+                const jsFiles = commandFiles.filter(file => file.endsWith('.js'));
+
+                for (const file of jsFiles) {
+                    try {
+                        const filePath = path.join(categoryPath, file);
+
+                        // Supprimer du cache pour permettre le rechargement
+                        delete require.cache[require.resolve(filePath)];
+
+                        const command = require(filePath);
+
+                        // Validation de la commande
+                        if (!command.data || !command.execute) {
+                            logger.warn(`Command ${file} is missing required 'data' or 'execute' property`);
+                            continue;
+                        }
+
+                        // Vérifier les doublons
+                        if (this.commands.has(command.data.name)) {
+                            logger.warn(`Duplicate command found: ${command.data.name} in ${file}. Skipping...`);
+                            continue;
+                        }
+
+                        this.commands.set(command.data.name, command);
+                        logger.debug(`Loaded command: ${command.data.name} from ${category}/${file}`);
+
+                    } catch (error) {
+                        logger.error(`Error loading command ${file}:`, error);
+                    }
+                }
+            }
+
+            logger.info(`Loaded ${this.commands.size} commands`);
+            return this.commands.size;
+
+        } catch (error) {
+            logger.error('Error loading commands:', error);
+            throw error;
+        }
+    }
+
+    async registerCommands() {
+        try {
+            // Convertir la Map en Array et éliminer les doublons
+            const commandsArray = Array.from(this.commands.values());
+            const uniqueCommands = [];
+            const seenNames = new Set();
+
+            for (const command of commandsArray) {
+                if (!seenNames.has(command.data.name)) {
+                    seenNames.add(command.data.name);
+                    uniqueCommands.push(command.data.toJSON());
+                } else {
+                    logger.warn(`Skipping duplicate command: ${command.data.name}`);
+                }
+            }
+
+            logger.info(`Registering ${uniqueCommands.length} unique commands with Discord...`);
+
+            // Enregistrer les commandes
+            await this.rest.put(
+                Routes.applicationCommands(process.env.DISCORD_CLIENT_ID),
+                { body: uniqueCommands }
+            );
+
+            logger.info(`✅ Successfully registered ${uniqueCommands.length} application commands`);
+
+        } catch (error) {
+            logger.error('Error registering commands:', error.message, {
+                code: error.code,
+                status: error.status,
+                method: error.method,
+                url: error.url,
+                requestBody: error.requestBody
+            });
+            throw error;
+        }
+    }
+
+    async executeCommand(interaction) {
+        const command = this.commands.get(interaction.commandName);
+
+        if (!command) {
+            logger.warn(`No command matching ${interaction.commandName} was found.`);
             return;
         }
 
-        this.loadCommandsFromDirectory(commandsPath);
-        logger.info(`Loaded ${this.commands.size} commands`);
-    }
-
-    loadCommandsFromDirectory(dirPath) {
-        const items = fs.readdirSync(dirPath);
-
-        for (const item of items) {
-            const itemPath = path.join(dirPath, item);
-            const stat = fs.statSync(itemPath);
-
-            if (stat.isDirectory()) {
-                this.loadCommandsFromDirectory(itemPath);
-            } else if (item.endsWith('.js')) {
-                try {
-                    const command = require(itemPath);
-
-                    if (command?.data && command?.execute) {
-                        if (!this.commands.has(command.data.name)) {
-                            this.commands.set(command.data.name, command);
-                            this.commandsData.push(command.data.toJSON());
-                            logger.info(`Command loaded: ${command.data.name}`);
-                        } else {
-                            logger.warn(`Duplicate command name skipped: ${command.data.name}`);
-                        }
-                    } else {
-                        logger.warn(`Invalid command file (missing data or execute): ${itemPath}`);
-                    }
-                } catch (error) {
-                    logger.error(`Failed to load command ${itemPath}:`, error);
-                }
-            }
-        }
-    }
-
-    async registerCommands(client) {
         try {
-            logger.info('Refreshing application (/) commands...');
-            await this.rest.put(
-                Routes.applicationCommands(client.user.id),
-                { body: this.commandsData }
-            );
-            logger.info('Successfully reloaded application (/) commands.');
+            logger.info('Command executed:', {
+                command: interaction.commandName,
+                user: interaction.user.username,
+                guild: interaction.guild?.name || 'DM'
+            });
+
+            await command.execute(interaction);
+
         } catch (error) {
-            logger.error('Error registering commands:', error);
-            throw error;
+            logger.error(`Error executing command ${interaction.commandName}:`, error);
+
+            const errorMessage = 'Une erreur est survenue lors de l\'exécution de cette commande.';
+
+            try {
+                if (interaction.deferred || interaction.replied) {
+                    await interaction.followUp({
+                        content: errorMessage,
+                        ephemeral: true
+                    });
+                } else {
+                    await interaction.reply({
+                        content: errorMessage,
+                        ephemeral: true
+                    });
+                }
+            } catch (replyError) {
+                logger.error('Error sending error message:', replyError);
+            }
         }
     }
 
@@ -76,35 +151,61 @@ class CommandHandler {
         return Array.from(this.commands.values());
     }
 
-    async executeCommand(interaction) {
-        const command = this.getCommand(interaction.commandName);
-        if (!command) {
-            logger.warn(`Command not found: ${interaction.commandName}`);
+    async reloadCommand(commandName) {
+        try {
+            // Trouver le fichier de la commande
+            const commandsPath = path.join(__dirname, '../commands');
+            const commandCategories = await fs.readdir(commandsPath);
+
+            for (const category of commandCategories) {
+                const categoryPath = path.join(commandsPath, category);
+                const stat = await fs.stat(categoryPath);
+
+                if (!stat.isDirectory()) continue;
+
+                const commandFiles = await fs.readdir(categoryPath);
+
+                for (const file of commandFiles.filter(f => f.endsWith('.js'))) {
+                    const filePath = path.join(categoryPath, file);
+
+                    // Supprimer du cache
+                    delete require.cache[require.resolve(filePath)];
+
+                    const command = require(filePath);
+
+                    if (command.data && command.data.name === commandName) {
+                        this.commands.set(commandName, command);
+                        logger.info(`Reloaded command: ${commandName}`);
+                        return true;
+                    }
+                }
+            }
+
+            logger.warn(`Command ${commandName} not found for reload`);
+            return false;
+
+        } catch (error) {
+            logger.error(`Error reloading command ${commandName}:`, error);
             return false;
         }
+    }
 
+    async clearCommands() {
         try {
-            await command.execute(interaction);
-            logger.info('Command executed:', {
-                command: interaction.commandName,
-                user: interaction.user.tag,
-                guild: interaction.guild?.name || 'DM'
-            });
-            return true;
+            logger.info('Clearing all application commands...');
+
+            await this.rest.put(
+                Routes.applicationCommands(process.env.DISCORD_CLIENT_ID),
+                { body: [] }
+            );
+
+            logger.info('✅ Successfully cleared all application commands');
+
         } catch (error) {
-            logger.error(`Error executing command ${interaction.commandName}:`, error);
-            const errorMessage = {
-                content: 'Une erreur est survenue lors de l\'exécution de cette commande.',
-                flags: MessageFlags.Ephemeral
-            };
-            if (interaction.replied || interaction.deferred) {
-                await interaction.followUp(errorMessage);
-            } else {
-                await interaction.reply(errorMessage);
-            }
-            return false;
+            logger.error('Error clearing commands:', error);
+            throw error;
         }
     }
 }
 
-module.exports = new CommandHandler();
+module.exports = CommandHandler;

@@ -86,8 +86,8 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/health', require('./routes/health'));
 app.use('/api/stats', require('./routes/stats'));
 app.use('/api/cars', require('./routes/cars'));
-app.use('/api/players', require('./routes/players'));
-app.use('/api/games', require('./routes/games'));
+app.use('/api/players', require('./routes/admin/players'));
+app.use('/api/games', require('./routes/admin/games'));
 app.use('/api/leaderboard', require('./routes/leaderboard'));
 
 // Route par défaut - rediriger vers l'admin
@@ -168,7 +168,7 @@ app.use('*', (req, res) => {
 });
 
 // Middleware de gestion d'erreurs global
-app.use((error, req, res, next) => {
+app.use((error, req, res) => {
     logger.error('Unhandled error:', error);
 
     if (error instanceof AppError) {
@@ -190,3 +190,11 @@ app.use((error, req, res, next) => {
 });
 
 module.exports = app;
+
+if (require.main === module) {
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+        console.log(`🚀 Server running at http://localhost:${PORT}`);
+    });
+}
+
