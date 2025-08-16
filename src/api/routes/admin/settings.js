@@ -1,15 +1,25 @@
-// src/api/routes/admin/settings.js
 const express = require('express');
 const router = express.Router();
 
+// Route stub pour les paramètres - sera implémentée plus tard
 router.get('/', async(req, res) => {
     res.json({
         success: true,
         data: {
-            settings: {
-                gameTimeout: 300,
+            game: {
                 maxAttempts: 5,
-                difficultyLevels: ['Facile', 'Moyen', 'Difficile']
+                timeLimit: 300,
+                pointsPerCorrectAnswer: 10
+            },
+            bot: {
+                prefix: '!',
+                language: 'fr',
+                timezone: 'Europe/Paris'
+            },
+            admin: {
+                logLevel: 'info',
+                autoBackup: false,
+                maintenanceMode: false
             }
         }
     });
@@ -18,7 +28,7 @@ router.get('/', async(req, res) => {
 router.put('/', async(req, res) => {
     res.json({
         success: true,
-        message: 'Paramètres mis à jour avec succès'
+        message: 'Fonction de mise à jour des paramètres en cours de développement'
     });
 });
 

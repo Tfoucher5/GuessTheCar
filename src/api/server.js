@@ -86,8 +86,6 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/health', require('./routes/health'));
 app.use('/api/stats', require('./routes/stats'));
 app.use('/api/cars', require('./routes/cars'));
-app.use('/api/players', require('./routes/admin/players'));
-app.use('/api/games', require('./routes/admin/games'));
 app.use('/api/leaderboard', require('./routes/leaderboard'));
 
 // Route par défaut - rediriger vers l'admin
