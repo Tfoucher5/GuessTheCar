@@ -1,5 +1,6 @@
-const { SlashCommandBuilder, EmbedBuilder , MessageFlags } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const PlayerManager = require('../../../core/player/PlayerManager');
+const LevelSystem = require('../../../core/levels/LevelSystem');
 const logger = require('../../../shared/utils/logger');
 
 const playerManager = new PlayerManager();
@@ -25,8 +26,8 @@ module.exports = {
 
             logger.info('Leaderboard command executed:', {
                 userId: interaction.user.id,
-                limit,
-                guild: interaction.guild?.name
+                guild: interaction.guild?.name,
+                limit
             });
 
             // Récupérer le classement
@@ -35,38 +36,27 @@ module.exports = {
             if (!leaderboard || leaderboard.length === 0) {
                 const noDataEmbed = new EmbedBuilder()
                     .setColor('#FFA500')
-                    .setTitle('🏆 Classement')
-                    .setDescription('Aucun joueur n\'a encore de points.\nCommencez une partie avec `/guesscar` pour apparaître dans le classement !')
-                    .setTimestamp()
-                    .setFooter({
-                        text: 'GuessTheCar Bot',
-                        iconURL: interaction.client.user.displayAvatarURL()
-                    });
+                    .setTitle('📊 Classement')
+                    .setDescription('Aucune donnée de classement disponible.\nSoyez le premier à jouer avec `/guesscar` !');
 
                 await interaction.editReply({ embeds: [noDataEmbed] });
                 return;
             }
 
-            // Créer l'embed du classement
             const leaderboardEmbed = new EmbedBuilder()
                 .setColor('#FFD700')
-                .setTitle('🏆 Classement des Joueurs')
-                .setDescription(`Top ${limit} des meilleurs joueurs`)
-                .setTimestamp()
-                .setFooter({
-                    text: `${leaderboard.length} joueur(s) affiché(s)`,
-                    iconURL: interaction.client.user.displayAvatarURL()
-                });
+                .setTitle('🏆 Classement des Champions')
+                .setDescription(`**Top ${Math.min(limit, leaderboard.length)} des meilleurs joueurs**`);
 
-            // Ajouter les joueurs au classement
             let leaderboardText = '';
 
+            // Construire le texte du classement
             for (let i = 0; i < leaderboard.length; i++) {
                 const player = leaderboard[i];
                 const position = i + 1;
 
-                // Icônes pour les 3 premiers
-                let positionIcon = '';
+                // Icône de position
+                let positionIcon;
                 if (position === 1) positionIcon = '🥇';
                 else if (position === 2) positionIcon = '🥈';
                 else if (position === 3) positionIcon = '🥉';
@@ -79,8 +69,11 @@ module.exports = {
                 const avgTime = player.averageTime && player.averageTime > 0 ?
                     formatTime(Math.round(player.averageTime)) : 'N/A';
 
-                leaderboardText += `${positionIcon} **${player.username}**\n`;
-                leaderboardText += `└ ${points} pts • ${player.gamesWon}/${player.gamesPlayed} parties • ${successRate}% • ${avgAttempts} tent. • ${avgTime}\n\n`;
+                // NOUVEAU: Obtenir le niveau du joueur
+                const playerLevel = LevelSystem.getPlayerLevel(player.totalDifficultyPoints);
+
+                leaderboardText += `${positionIcon} **${player.username}** ${playerLevel.emoji}\n`;
+                leaderboardText += `└ ${playerLevel.title} • ${points} pts • ${player.gamesWon}/${player.gamesPlayed} parties • ${successRate}%\n\n`;
             }
 
             leaderboardEmbed.addFields({
@@ -102,9 +95,12 @@ module.exports = {
                         const avgTime = requesterStats.averageTime && requesterStats.averageTime > 0 ?
                             formatTime(Math.round(requesterStats.averageTime)) : 'N/A';
 
+                        // NOUVEAU: Niveau du demandeur
+                        const requesterLevel = LevelSystem.getPlayerLevel(requesterStats.totalDifficultyPoints);
+
                         leaderboardEmbed.addFields({
                             name: '👤 Votre position',
-                            value: `**#${requesterStats.ranking}** • ${points} pts • ${requesterStats.gamesWon}/${requesterStats.gamesPlayed} parties • ${successRate}% • ${avgTime}`,
+                            value: `**#${requesterStats.ranking}** ${requesterLevel.emoji} ${requesterLevel.title}\n${points} pts • ${requesterStats.gamesWon}/${requesterStats.gamesPlayed} parties • ${successRate}%`,
                             inline: false
                         });
                     }
@@ -113,39 +109,35 @@ module.exports = {
                 }
             }
 
-            // Ajouter la légende
+            // Ajouter la légende mise à jour
             leaderboardEmbed.addFields({
                 name: '📖 Légende',
-                value: 'Points de difficulté • Victoires/Parties • Taux de réussite • Moy. tentatives • Temps moyen',
+                value: 'Points de difficulté • Victoires/Parties • Taux de réussite\n💡 Les niveaux sont basés sur vos points de difficulté totaux',
                 inline: false
+            });
+
+            leaderboardEmbed.setFooter({
+                text: `Demandé par ${interaction.user.username} • ${new Date().toLocaleString('fr-FR')}`,
+                iconURL: interaction.user.displayAvatarURL({ dynamic: true })
             });
 
             await interaction.editReply({ embeds: [leaderboardEmbed] });
 
         } catch (error) {
-            logger.error('Error in leaderboard command:', {
-                userId: interaction.user.id,
-                error: error.message,
-                stack: error.stack
-            });
+            logger.error('Error in classement command:', { userId: interaction.user.id, error });
 
             const errorEmbed = new EmbedBuilder()
                 .setColor('#FF0000')
                 .setTitle('❌ Erreur')
-                .setDescription('Impossible de récupérer le classement pour le moment.')
-                .setTimestamp();
+                .setDescription('Une erreur est survenue lors de la récupération du classement.');
 
-            if (interaction.deferred) {
-                await interaction.editReply({ embeds: [errorEmbed] });
-            } else {
-                await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
-            }
+            await interaction.editReply({ embeds: [errorEmbed] });
         }
     }
 };
 
 /**
- * Formate le temps en format lisible
+ * Formate une durée en secondes en format lisible
  */
 function formatTime(seconds) {
     if (!seconds || seconds <= 0) return 'N/A';

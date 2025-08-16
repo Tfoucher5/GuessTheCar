@@ -1,5 +1,6 @@
-const { SlashCommandBuilder, EmbedBuilder, MessageFlags  } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
 const PlayerManager = require('../../../core/player/PlayerManager');
+const LevelSystem = require('../../../core/levels/LevelSystem');
 const logger = require('../../../shared/utils/logger');
 
 const playerManager = new PlayerManager();
@@ -41,97 +42,108 @@ module.exports = {
                     .setColor('#FFA500')
                     .setTitle(`📊 Statistiques de ${username}`)
                     .setDescription('Aucune partie jouée pour le moment.\nCommencez une partie avec `/guesscar` !')
-                    .addFields(
-                        { name: '🎮 Parties jouées', value: '0', inline: true },
-                        { name: '🏆 Parties gagnées', value: '0', inline: true },
-                        { name: '⭐ Points totaux', value: '0', inline: true },
-                        { name: '🎯 Niveau', value: 'Débutant', inline: true },
-                        { name: '📈 Classement', value: 'Non classé', inline: true },
-                        { name: '📊 Taux de réussite', value: '0%', inline: true }
-                    )
-                    .setTimestamp()
-                    .setFooter({ text: 'GuessTheCar Bot', iconURL: interaction.client.user.displayAvatarURL() });
+                    .addFields({
+                        name: '🎯 Niveau',
+                        value: `*${LevelSystem.levels[0].title}**\n*${LevelSystem.levels[0].description}*`,
+                        inline: false
+                    });
 
                 await interaction.editReply({ embeds: [noStatsEmbed] });
                 return;
             }
 
-            // Créer l'embed avec les statistiques complètes
-            const statsEmbed = new EmbedBuilder()
-                .setColor('#00FF00')
-                .setTitle(`📊 Statistiques de ${playerStats.username}`)
-                .setDescription(`**Niveau :** ${playerStats.skillLevel || 'Débutant'}\n**Classement :** #${playerStats.ranking || 'Non classé'}`)
-                .addFields(
-                    // Statistiques principales
-                    {
-                        name: '🎮 Parties',
-                        value: `**Jouées :** ${playerStats.gamesPlayed || 0}\n**Gagnées :** ${playerStats.gamesWon || 0}\n**Taux :** ${playerStats.successRate || 0}%`,
-                        inline: true
-                    },
-                    {
-                        name: '⭐ Points',
-                        value: `**Total :** ${playerStats.totalPoints || 0}\n**Difficulté :** ${playerStats.totalDifficultyPoints || 0}\n**Moyenne :** ${playerStats.gamesPlayed > 0 ? Math.round((playerStats.totalDifficultyPoints / playerStats.gamesPlayed) * 10) / 10 : 0}`,
-                        inline: true
-                    },
-                    {
-                        name: '🎯 Performance',
-                        value: `**Série actuelle :** ${playerStats.currentStreak || 0}\n**Meilleure série :** ${playerStats.bestStreak || 0}\n**Moy. tentatives :** ${playerStats.averageAttempts || 0}`,
-                        inline: true
-                    },
-                    // Statistiques détaillées
-                    {
-                        name: '🔍 Détails marques',
-                        value: `**Trouvées :** ${playerStats.correctBrandGuesses || 0}\n**Tentatives :** ${playerStats.totalBrandGuesses || 0}\n**Précision :** ${playerStats.totalBrandGuesses > 0 ? Math.round((playerStats.correctBrandGuesses / playerStats.totalBrandGuesses) * 100) : 0}%`,
-                        inline: true
-                    },
-                    {
-                        name: '🚗 Détails modèles',
-                        value: `**Trouvés :** ${playerStats.correctModelGuesses || 0}\n**Tentatives :** ${playerStats.totalModelGuesses || 0}\n**Précision :** ${playerStats.totalModelGuesses > 0 ? Math.round((playerStats.correctModelGuesses / playerStats.totalModelGuesses) * 100) : 0}%`,
-                        inline: true
-                    },
-                    {
-                        name: '⏱️ Temps',
-                        value: `**Meilleur :** ${playerStats.bestTime ? formatTime(playerStats.bestTime) : 'N/A'}\n**Moyen :** ${playerStats.averageTime ? formatTime(Math.round(playerStats.averageTime)) : 'N/A'}`,
-                        inline: true
-                    }
-                )
-                .setTimestamp()
-                .setFooter({
-                    text: 'Statistiques mises à jour',
-                    iconURL: interaction.client.user.displayAvatarURL()
-                });
+            // Calculer les statistiques formatées
+            const points = Math.round(playerStats.totalDifficultyPoints * 10) / 10;
+            const successRate = Math.round(playerStats.successRate * 10) / 10;
+            const avgAttempts = Math.round(playerStats.averageAttempts * 10) / 10;
+            const avgTime = playerStats.averageTime && playerStats.averageTime > 0 ?
+                formatTime(Math.round(playerStats.averageTime)) : 'N/A';
 
-            // Ajouter un thumbnail si c'est un autre joueur
-            if (targetUser.id !== interaction.user.id) {
-                statsEmbed.setThumbnail(targetUser.displayAvatarURL());
+            // NOUVEAU: Obtenir le niveau du joueur
+            const playerLevel = LevelSystem.getPlayerLevel(playerStats.totalDifficultyPoints);
+            const progressInfo = LevelSystem.getProgressToNextLevel(playerStats.totalDifficultyPoints);
+
+            // Créer l'embed avec le niveau
+            const statsEmbed = new EmbedBuilder()
+                .setColor(LevelSystem.hexToDecimal(playerLevel.color))
+                .setTitle(`📊 Statistiques de ${username}`)
+                .setThumbnail(targetUser.displayAvatarURL({ dynamic: true }));
+
+            // NOUVEAU: Ajouter le niveau en premier
+            let levelText = `*${playerLevel.title}**\n*${playerLevel.description}*\n\n`;
+
+            if (!progressInfo.isMaxLevel) {
+                const progressBar = LevelSystem.generateProgressBar(progressInfo.progressPercentage);
+                levelText += `**Progression:** ${progressBar} ${Math.round(progressInfo.progressPercentage)}%\n`;
+                levelText += `**Prochain niveau:** ${progressInfo.nextLevelTitle}\n`;
+                levelText += `**Points nécessaires:** ${progressInfo.pointsNeeded}`;
+            } else {
+                levelText += progressInfo.message;
             }
+
+            statsEmbed.addFields({
+                name: '🎯 Niveau & Progression',
+                value: levelText,
+                inline: false
+            });
+
+            // Ajouter les statistiques de base
+            statsEmbed.addFields(
+                {
+                    name: '🏁 Résultats',
+                    value: `**Parties:** ${playerStats.gamesPlayed}\n**Victoires:** ${playerStats.gamesWon}\n**Taux de réussite:** ${successRate}%`,
+                    inline: true
+                },
+                {
+                    name: '🏆 Points & Classement',
+                    value: `**Points de difficulté:** ${points}\n**Classement:** #${playerStats.ranking || 'N/A'}\n**Série actuelle:** ${playerStats.currentStreak}`,
+                    inline: true
+                },
+                {
+                    name: '⏱️ Performance',
+                    value: `**Temps moyen:** ${avgTime}\n**Tentatives moy.:** ${avgAttempts}\n**Meilleur temps:** ${playerStats.bestTime ? formatTime(playerStats.bestTime) : 'N/A'}`,
+                    inline: true
+                }
+            );
+
+            // Ajouter les détails de devinettes
+            if (playerStats.totalBrandGuesses > 0 || playerStats.totalModelGuesses > 0) {
+                const brandAccuracy = playerStats.totalBrandGuesses > 0
+                    ? Math.round((playerStats.correctBrandGuesses / playerStats.totalBrandGuesses) * 100)
+                    : 0;
+                const modelAccuracy = playerStats.totalModelGuesses > 0
+                    ? Math.round((playerStats.correctModelGuesses / playerStats.totalModelGuesses) * 100)
+                    : 0;
+
+                statsEmbed.addFields({
+                    name: '🎯 Précision des devinettes',
+                    value: `**Marques:** ${playerStats.correctBrandGuesses}/${playerStats.totalBrandGuesses} (${brandAccuracy}%)\n**Modèles:** ${playerStats.correctModelGuesses}/${playerStats.totalModelGuesses} (${modelAccuracy}%)`,
+                    inline: false
+                });
+            }
+
+            // Footer avec informations supplémentaires
+            statsEmbed.setFooter({
+                text: `Meilleure série: ${playerStats.bestStreak} • Membre depuis: ${new Date(playerStats.createdAt).toLocaleDateString('fr-FR')}`
+            });
 
             await interaction.editReply({ embeds: [statsEmbed] });
 
         } catch (error) {
-            logger.error('Error in stats command:', {
-                userId: interaction.user.id,
-                error: error.message,
-                stack: error.stack
-            });
+            logger.error('Error in stats command:', { userId: interaction.user.id, error });
 
             const errorEmbed = new EmbedBuilder()
                 .setColor('#FF0000')
                 .setTitle('❌ Erreur')
-                .setDescription('Impossible de récupérer les statistiques pour le moment.')
-                .setTimestamp();
+                .setDescription('Une erreur est survenue lors de la récupération des statistiques.');
 
-            if (interaction.deferred) {
-                await interaction.editReply({ embeds: [errorEmbed] });
-            } else {
-                await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
-            }
+            await interaction.editReply({ embeds: [errorEmbed] });
         }
     }
 };
 
 /**
- * Formate le temps en format lisible
+ * Formate une durée en secondes en format lisible
  */
 function formatTime(seconds) {
     if (!seconds || seconds <= 0) return 'N/A';
