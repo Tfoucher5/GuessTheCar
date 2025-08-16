@@ -1,6 +1,13 @@
-const { executeQuery, executeTransaction } = require('../connection');
-const { DatabaseError, NotFoundError } = require('../../errors');
-const logger = require('../../utils/logger');
+// src/shared/database/repositories/BaseRepository.js
+const { executeQuery } = require('../connection');
+
+class NotFoundError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = 'NotFoundError';
+        this.statusCode = 404;
+    }
+}
 
 class BaseRepository {
     constructor(tableName) {
@@ -8,48 +15,47 @@ class BaseRepository {
     }
 
     /**
-     * Trouve un enregistrement par ID
-     */
-    async findById(id, columns = '*') {
-        const query = `SELECT ${columns} FROM ${this.tableName} WHERE id = ?`;
-        const results = await executeQuery(query, [id]);
-
-        if (results.length === 0) {
-            return null;
-        }
-
-        return results[0];
-    }
-
-    /**
      * Trouve tous les enregistrements
      */
-    async findAll(columns = '*', orderBy = 'id ASC', limit = null) {
-        let query = `SELECT ${columns} FROM ${this.tableName} ORDER BY ${orderBy}`;
+    async findAll(conditions = {}, limit = null, offset = null) {
+        let query = `SELECT * FROM ${this.tableName}`;
+        let values = [];
+
+        if (Object.keys(conditions).length > 0) {
+            const whereClause = Object.keys(conditions).map(key => `${key} = ?`).join(' AND ');
+            values = Object.values(conditions);
+            query += ` WHERE ${whereClause}`;
+        }
 
         if (limit) {
             query += ` LIMIT ${limit}`;
+            if (offset) {
+                query += ` OFFSET ${offset}`;
+            }
         }
 
-        return await executeQuery(query);
+        const results = await executeQuery(query, values);
+        return results;
     }
 
     /**
-     * Trouve des enregistrements selon des critères
+     * Trouve un enregistrement par ID
      */
-    async findWhere(conditions, columns = '*', orderBy = 'id ASC') {
+    async findById(id) {
+        const query = `SELECT * FROM ${this.tableName} WHERE id = ?`;
+        const results = await executeQuery(query, [id]);
+        return results.length > 0 ? results[0] : null;
+    }
+
+    /**
+     * Trouve un enregistrement selon des critères
+     */
+    async findOne(conditions) {
         const whereClause = Object.keys(conditions).map(key => `${key} = ?`).join(' AND ');
         const values = Object.values(conditions);
 
-        const query = `SELECT ${columns} FROM ${this.tableName} WHERE ${whereClause} ORDER BY ${orderBy}`;
-        return await executeQuery(query, values);
-    }
-
-    /**
-     * Trouve un seul enregistrement selon des critères
-     */
-    async findOneWhere(conditions, columns = '*') {
-        const results = await this.findWhere(conditions, columns);
+        const query = `SELECT * FROM ${this.tableName} WHERE ${whereClause} LIMIT 1`;
+        const results = await executeQuery(query, values);
         return results.length > 0 ? results[0] : null;
     }
 

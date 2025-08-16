@@ -1,51 +1,55 @@
-// src/shared/database/connection.js - VERSION CORRIGÉE
-
+// src/shared/database/connection.js
 require('dotenv').config();
 const mysql = require('mysql2/promise');
 const logger = require('../utils/logger');
 
-let connection = null;
+let pool = null;
 
-/**
- * Initialise la connexion à la base de données
- */
 async function initializeDatabase() {
-    if (connection) {
-        return connection; // Déjà initialisée
+    if (pool) {
+        return pool;
     }
 
     const config = {
         host: process.env.DB_HOST || 'localhost',
         port: process.env.DB_PORT || 3306,
         user: process.env.DB_USER || 'root',
-        database: process.env.DB_NAME || 'guessthecar'
+        database: process.env.DB_NAME || 'guessthecar',
+        // Configuration du pool - SEULEMENT les options valides pour mysql2
+        connectionLimit: 10,
+        queueLimit: 0
+        // SUPPRIMÉ: idleTimeout: 60000, (invalide pour les pools)
+        // SUPPRIMÉ: acquireTimeout: 60000 (invalide pour les pools)
     };
 
+    // Mot de passe optionnel
     if (process.env.DB_PASSWORD && process.env.DB_PASSWORD !== '') {
         config.password = process.env.DB_PASSWORD;
     }
 
     try {
-        connection = await mysql.createConnection(config);
-        logger.info('Database connection initialized');
-        return connection;
+        pool = mysql.createPool(config);
+
+        // Test de connexion
+        const connection = await pool.getConnection();
+        await connection.ping();
+        connection.release();
+
+        logger.info('✅ Database pool initialized');
+        return pool;
     } catch (error) {
-        logger.error('Failed to initialize database connection:', error);
+        logger.error('❌ Failed to initialize database pool:', error);
         throw error;
     }
 }
 
-/**
- * Exécute une requête SQL
- */
 async function executeQuery(query, params = []) {
     try {
-        // S'assurer que la connexion est initialisée
-        if (!connection) {
+        if (!pool) {
             await initializeDatabase();
         }
 
-        const [results] = await connection.execute(query, params);
+        const [results] = await pool.execute(query, params);
         return results;
     } catch (error) {
         logger.error('Database query error:', {
@@ -53,34 +57,30 @@ async function executeQuery(query, params = []) {
             params,
             error: error.message
         });
-        
-        // Si connexion fermée, essayer de reconnecter
-        if (error.code === 'PROTOCOL_CONNECTION_LOST') {
-            logger.info('Reconnecting to database...');
-            connection = null;
-            await initializeDatabase();
-            const [results] = await connection.execute(query, params);
-            return results;
+
+        // Retry une fois en cas d'erreur de connexion
+        if (error.code === 'ECONNRESET' || error.code === 'PROTOCOL_CONNECTION_LOST') {
+            logger.info('Retrying query after connection error...');
+            try {
+                const [results] = await pool.execute(query, params);
+                return results;
+            } catch (retryError) {
+                throw new DatabaseError(`Query failed after retry: ${retryError.message}`, retryError);
+            }
         }
-        
+
         throw new DatabaseError(`Query execution failed: ${error.message}`, error);
     }
 }
 
-/**
- * Ferme la connexion à la base de données
- */
-async function closeConnection() {
-    if (connection) {
-        await connection.end();
-        connection = null;
-        logger.info('Database connection closed');
+async function closeDatabase() {
+    if (pool) {
+        await pool.end();
+        pool = null;
+        logger.info('Database pool closed');
     }
 }
 
-/**
- * Classe d'erreur pour les erreurs de base de données
- */
 class DatabaseError extends Error {
     constructor(message, originalError = null) {
         super(message);
@@ -95,6 +95,6 @@ class DatabaseError extends Error {
 module.exports = {
     executeQuery,
     initializeDatabase,
-    closeConnection,
+    closeDatabase,
     DatabaseError
 };

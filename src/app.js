@@ -1,6 +1,5 @@
 require('dotenv').config();
 const logger = require('./shared/utils/logger');
-const { AppError } = require('./shared/errors');
 
 // Gestion des erreurs non capturées
 process.on('uncaughtException', (error) => {

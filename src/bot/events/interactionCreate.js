@@ -1,4 +1,6 @@
-const { Events } = require('discord.js');
+// Correction pour src/bot/events/interactionCreate.js
+
+const { Events, MessageFlags } = require('discord.js');
 const commandHandler = require('../handlers/commandHandler');
 const logger = require('../../shared/utils/logger');
 
@@ -18,16 +20,15 @@ module.exports = {
                 user: interaction.user.tag
             });
 
-            // Ici on pourrait ajouter la logique des boutons
             await interaction.reply({
                 content: 'Cette fonctionnalité n\'est pas encore implémentée.',
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
             return;
         }
 
         // Gérer les menus de sélection (si nécessaire pour le futur)
-        if (interaction.isSelectMenu()) {
+        if (interaction.isStringSelectMenu()) {
             logger.debug('Select menu interaction received:', {
                 customId: interaction.customId,
                 user: interaction.user.tag
@@ -35,7 +36,7 @@ module.exports = {
 
             await interaction.reply({
                 content: 'Cette fonctionnalité n\'est pas encore implémentée.',
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
             return;
         }
@@ -49,7 +50,7 @@ module.exports = {
 
             await interaction.reply({
                 content: 'Cette fonctionnalité n\'est pas encore implémentée.',
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
             return;
         }

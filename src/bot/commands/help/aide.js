@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const EmbedBuilder = require('../../../shared/utils/embedBuilder');
 const logger = require('../../../shared/utils/logger');
 
@@ -12,7 +12,7 @@ module.exports = {
             // Créer l'embed d'aide
             const helpEmbed = EmbedBuilder.createHelpEmbed();
 
-            await interaction.reply({ embeds: [helpEmbed], ephemeral: true });
+            await interaction.reply({ embeds: [helpEmbed], flags: MessageFlags.Ephemeral });
 
             logger.info('Help requested:', {
                 userId: interaction.user.id,
@@ -30,7 +30,7 @@ module.exports = {
                 'Une erreur est survenue lors de l\'affichage de l\'aide.'
             );
 
-            await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+            await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
         }
     }
 };

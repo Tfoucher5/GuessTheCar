@@ -21,17 +21,17 @@ module.exports = {
 
             // Gérer les commandes spéciales pendant le jeu
             switch (userInput) {
-                case '!indice':
-                    await handleHintCommand(message, activeGame);
-                    return;
+            case '!indice':
+                await handleHintCommand(message, activeGame);
+                return;
 
-                case '!change':
-                    await handleChangeCommand(message, activeGame);
-                    return;
+            case '!change':
+                await handleChangeCommand(message, activeGame);
+                return;
 
-                case '!terminer':
-                    await handleEndCommand(message, activeGame);
-                    return;
+            case '!terminer':
+                await handleEndCommand(message, activeGame);
+                return;
             }
 
             // Traiter la réponse du joueur
@@ -119,7 +119,7 @@ async function handleEndCommand(message, gameState) {
         await message.reply({ embeds: [abandonEmbed] });
 
         // Fermer le thread après un délai (même que /abandon)
-        setTimeout(async () => {
+        setTimeout(async() => {
             try {
                 if (message.channel.isThread()) {
                     const closeEmbed = EmbedBuilder.createInfoEmbed(
@@ -130,7 +130,7 @@ async function handleEndCommand(message, gameState) {
                     await message.channel.send({ embeds: [closeEmbed] });
                     await message.channel.setLocked(true);
 
-                    setTimeout(async () => {
+                    setTimeout(async() => {
                         try {
                             await message.channel.delete();
                         } catch (error) {
@@ -157,54 +157,54 @@ async function handleGameResult(message, result, gameState) {
     let shouldCloseThread = false;
 
     switch (result.type) {
-        case 'makeSuccess':
-            embed = EmbedBuilder.createGameEmbed(gameState, {
-                title: '✅ Marque trouvée !',
-                description: result.feedback
-            });
-            break;
+    case 'makeSuccess':
+        embed = EmbedBuilder.createGameEmbed(gameState, {
+            title: '✅ Marque trouvée !',
+            description: result.feedback
+        });
+        break;
 
-        case 'makeFailed':
-            embed = EmbedBuilder.createGameEmbed(gameState, {
-                color: '#FFA500',
-                title: '⌛ Plus d\'essais pour la marque',
-                description: result.feedback
-            });
-            break;
+    case 'makeFailed':
+        embed = EmbedBuilder.createGameEmbed(gameState, {
+            color: '#FFA500',
+            title: '⌛ Plus d\'essais pour la marque',
+            description: result.feedback
+        });
+        break;
 
-        case 'gameComplete':
-            embed = EmbedBuilder.createWinEmbed(
-                result.score,
-                result.timeSpent,
-                result.attempts
-            );
-            shouldCloseThread = true;
-            break;
+    case 'gameComplete':
+        embed = EmbedBuilder.createWinEmbed(
+            result.score,
+            result.timeSpent,
+            result.attempts
+        );
+        shouldCloseThread = true;
+        break;
 
-        case 'gameOver':
-            embed = EmbedBuilder.createGameEmbed(gameState, {
-                color: '#FFA500',
-                title: '⌛ Partie terminée',
-                description: result.feedback
-            });
-            shouldCloseThread = true;
-            break;
+    case 'gameOver':
+        embed = EmbedBuilder.createGameEmbed(gameState, {
+            color: '#FFA500',
+            title: '⌛ Partie terminée',
+            description: result.feedback
+        });
+        shouldCloseThread = true;
+        break;
 
-        case 'incorrect':
-        default:
-            embed = EmbedBuilder.createGameEmbed(gameState, {
-                color: '#FF0000',
-                title: '❌ Mauvaise réponse',
-                description: result.feedback
-            });
-            break;
+    case 'incorrect':
+    default:
+        embed = EmbedBuilder.createGameEmbed(gameState, {
+            color: '#FF0000',
+            title: '❌ Mauvaise réponse',
+            description: result.feedback
+        });
+        break;
     }
 
     await message.reply({ embeds: [embed] });
 
     // Fermer le thread si la partie est terminée
     if (shouldCloseThread) {
-        setTimeout(async () => {
+        setTimeout(async() => {
             try {
                 if (message.channel.isThread()) {
                     const closeEmbed = EmbedBuilder.createInfoEmbed(
@@ -215,7 +215,7 @@ async function handleGameResult(message, result, gameState) {
                     await message.channel.send({ embeds: [closeEmbed] });
                     await message.channel.setLocked(true);
 
-                    setTimeout(async () => {
+                    setTimeout(async() => {
                         try {
                             await message.channel.delete();
                         } catch (error) {

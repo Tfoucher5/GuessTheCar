@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { REST, Routes } = require('discord.js');
+const { REST, Routes, MessageFlags } = require('discord.js');
 const discordConfig = require('../../shared/config/discord');
 const logger = require('../../shared/utils/logger');
 
@@ -95,7 +95,7 @@ class CommandHandler {
             logger.error(`Error executing command ${interaction.commandName}:`, error);
             const errorMessage = {
                 content: 'Une erreur est survenue lors de l\'exécution de cette commande.',
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             };
             if (interaction.replied || interaction.deferred) {
                 await interaction.followUp(errorMessage);

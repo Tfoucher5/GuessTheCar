@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { gameEngine } = require('../../events/messageCreate');
 const EmbedBuilder = require('../../../shared/utils/embedBuilder');
 const logger = require('../../../shared/utils/logger');
@@ -11,7 +11,7 @@ module.exports = {
     async execute(interaction) {
         try {
             // Différer la réponse
-            await interaction.deferReply({ ephemeral: true });
+            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
             // Trouver la partie active de l'utilisateur
             const userGame = gameEngine.findActiveGameByUser(interaction.user.id);
@@ -95,7 +95,7 @@ module.exports = {
             if (interaction.deferred) {
                 await interaction.editReply({ embeds: [errorEmbed] });
             } else {
-                await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+                await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
             }
         }
     }

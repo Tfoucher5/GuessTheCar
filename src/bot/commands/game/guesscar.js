@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, ChannelType } = require('discord.js');
+const { SlashCommandBuilder, ChannelType , MessageFlags } = require('discord.js');
 const { gameEngine } = require('../../events/messageCreate');
 const EmbedBuilder = require('../../../shared/utils/embedBuilder');
 const logger = require('../../../shared/utils/logger');
@@ -18,12 +18,12 @@ module.exports = {
                     'Partie déjà en cours',
                     `Vous avez déjà une partie en cours dans <#${existingGame.threadId}> !`
                 );
-                await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+                await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
                 return;
             }
 
             // Différer la réponse pour éviter le timeout
-            await interaction.deferReply({ ephemeral: true });
+            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
             // Créer le thread pour la partie
             const thread = await interaction.channel.threads.create({
@@ -74,7 +74,7 @@ module.exports = {
             if (interaction.deferred) {
                 await interaction.editReply({ embeds: [errorEmbed] });
             } else {
-                await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+                await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
             }
         }
     }

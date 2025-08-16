@@ -1,6 +1,5 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags  } = require('discord.js');
 const PlayerManager = require('../../../core/player/PlayerManager');
-const { AppError } = require('../../../shared/errors');
 const logger = require('../../../shared/utils/logger');
 
 const playerManager = new PlayerManager();
@@ -37,7 +36,6 @@ module.exports = {
             if (!playerStats) {
                 // Créer le joueur s'il n'existe pas
                 await playerManager.findOrCreatePlayer(userId, username);
-                const newPlayer = await playerManager.getPlayerWithRanking(userId);
 
                 const noStatsEmbed = new EmbedBuilder()
                     .setColor('#FFA500')
@@ -99,7 +97,7 @@ module.exports = {
                 )
                 .setTimestamp()
                 .setFooter({
-                    text: `Statistiques mises à jour`,
+                    text: 'Statistiques mises à jour',
                     iconURL: interaction.client.user.displayAvatarURL()
                 });
 
@@ -126,7 +124,7 @@ module.exports = {
             if (interaction.deferred) {
                 await interaction.editReply({ embeds: [errorEmbed] });
             } else {
-                await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+                await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
             }
         }
     }

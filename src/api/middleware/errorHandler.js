@@ -4,7 +4,7 @@ const { AppError, DatabaseError, ValidationError, NotFoundError } = require('../
 /**
  * Middleware de gestion d'erreurs pour l'API
  */
-const errorHandler = (error, req, res, next) => {
+const errorHandler = (error, req, res) => {
     let err = { ...error };
     err.message = error.message;
 

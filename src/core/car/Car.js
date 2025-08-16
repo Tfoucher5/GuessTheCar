@@ -143,10 +143,10 @@ class Car {
      */
     getBasePoints() {
         switch (this.difficulty) {
-            case 1: return 10; // Facile
-            case 2: return 15; // Moyen
-            case 3: return 25; // Difficile
-            default: return 10;
+        case 1: return 10; // Facile
+        case 2: return 15; // Moyen
+        case 3: return 25; // Difficile
+        default: return 10;
         }
     }
 
@@ -155,10 +155,10 @@ class Car {
      */
     getDifficultyPoints() {
         switch (this.difficulty) {
-            case 1: return 1;
-            case 2: return 2;
-            case 3: return 4;
-            default: return 1;
+        case 1: return 1;
+        case 2: return 2;
+        case 3: return 4;
+        default: return 1;
         }
     }
 
@@ -167,10 +167,10 @@ class Car {
      */
     getDifficultyName() {
         switch (this.difficulty) {
-            case 1: return 'Facile';
-            case 2: return 'Moyen';
-            case 3: return 'Difficile';
-            default: return 'Inconnu';
+        case 1: return 'Facile';
+        case 2: return 'Moyen';
+        case 3: return 'Difficile';
+        default: return 'Inconnu';
         }
     }
 

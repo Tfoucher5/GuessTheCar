@@ -222,23 +222,6 @@ class GameEmbedBuilder {
     }
 
     /**
-     * Crée un embed de démarrage de partie
-     */
-    static createGameStartEmbed(car, gameState) {
-        const difficultyText = car.getDifficultyText();
-
-        return this.createGameEmbed(gameState, {
-            title: `🚗 Nouvelle partie - Difficulté: **${difficultyText}**`,
-            description: 'C\'est parti ! Devine la **marque** de la voiture.\n\n' +
-                '• Tape `!indice` pour obtenir des indices\n' +
-                '• Tape `!change` pour changer de voiture (3 fois max)\n' +
-                '• Tape `!terminer` pour mettre fin à la partie\n' +
-                '• Tu as 10 essais maximum !\n\n' +
-                'La partie se termine automatiquement après 5 minutes d\'inactivité'
-        });
-    }
-
-    /**
      * Crée un embed d'abandon de partie
      */
     static createAbandonEmbed(gameState, correctAnswer, score = null) {
