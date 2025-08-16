@@ -82,7 +82,7 @@ class Player {
 
     /**
      * Met à jour les statistiques après une partie
-     */
+    */
     updateGameStats(gameResult) {
         this.gamesPlayed++;
         this.totalBrandGuesses += gameResult.attemptsMake || 0;

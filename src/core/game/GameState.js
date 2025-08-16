@@ -7,6 +7,7 @@ class GameState {
         this.userId = validateUserId(userId);
         this.username = validateUsername(username);
         this.threadId = threadId;
+        this.attemptsMake = 0;
 
         // Données de la voiture
         this.car = car;
@@ -39,6 +40,7 @@ class GameState {
         this.car = newCar;
         this.step = 'make';
         this.attempts = 0;
+        this.attemptsMake = 0;
         this.makeFailed = false;
         this.hintsUsed = {
             firstLetter: false,
@@ -135,6 +137,7 @@ class GameState {
         return {
             step: this.step,
             attempts: this.attempts,
+            attemptsMake: this.attemptsMake,
             maxAttempts: gameConfig.MAX_ATTEMPTS,
             makeFailed: this.makeFailed,
             carChangesCount: this.carChangesCount,
@@ -222,24 +225,38 @@ class GameState {
 
         let finalPoints = 0;
         let difficultyPoints = 0;
+        let isFullSuccess = false;
 
-        if (this.isSearchingModel() || this.makeFailed) {
-            // Marque trouvée, modèle en cours ou échoué
-            if (this.isSearchingModel()) {
-                // Partie complète (marque + modèle trouvés)
-                finalPoints = basePoints;
-                difficultyPoints = difficultyMultiplier;
-            } else {
-                // Seulement la marque trouvée
-                finalPoints = basePoints * 0.5;
-                difficultyPoints = difficultyMultiplier * 0.5;
-            }
+        // Vérifier si la marque a été trouvée
+        const makeFound = this.isSearchingModel() && !this.makeFailed;
+
+        if (makeFound) {
+            // Marque trouvée, on peut donner des points
+            finalPoints = basePoints * 0.5; // Points partiels pour la marque
+            difficultyPoints = difficultyMultiplier * 0.5;
         }
 
         return {
             basePoints: Math.round(finalPoints * 10) / 10,
             difficultyPoints: Math.round(difficultyPoints * 10) / 10,
-            isComplete: this.isSearchingModel() && !this.makeFailed
+            isFullSuccess: false, // Sera mis à true seulement pour une victoire complète
+            makeFound: makeFound
+        };
+    }
+
+    /**
+     * Calcule le score pour une victoire complète (marque + modèle)
+     */
+    calculateFullSuccessScore() {
+        const basePoints = this.car.getBasePoints();
+        const difficultyMultiplier = this.car.getDifficultyPoints();
+
+        return {
+            basePoints: Math.round(basePoints * 10) / 10,
+            difficultyPoints: Math.round(difficultyMultiplier * 10) / 10,
+            isFullSuccess: true,
+            makeFound: true,
+            modelFound: true
         };
     }
 

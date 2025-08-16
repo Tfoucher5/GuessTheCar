@@ -37,40 +37,40 @@ class PlayerRepository extends BaseRepository {
     }
 
     /**
-     * Met à jour les statistiques d'un joueur
-     */
+ * Met à jour les statistiques d'un joueur
+ */
     async updatePlayerStats(userId, stats) {
         const query = `
-            UPDATE user_scores SET
-                username = ?,
-                total_points = ?,
-                total_difficulty_points = ?,
-                games_played = ?,
-                games_won = ?,
-                correct_brand_guesses = ?,
-                correct_model_guesses = ?,
-                total_brand_guesses = ?,
-                total_model_guesses = ?,
-                best_streak = ?,
-                current_streak = ?,
-                best_time = ?,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE user_id = ?
-        `;
+        UPDATE user_scores SET
+            username = ?,
+            total_points = ?,
+            total_difficulty_points = ?,
+            games_played = ?,
+            games_won = ?,
+            correct_brand_guesses = ?,
+            correct_model_guesses = ?,
+            total_brand_guesses = ?,
+            total_model_guesses = ?,
+            best_streak = ?,
+            current_streak = ?,
+            best_time = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = ?
+    `;
 
         const params = [
             stats.username,
-            stats.totalPoints || 0,
-            stats.totalDifficultyPoints || 0,
-            stats.gamesPlayed || 0,
-            stats.gamesWon || 0,
-            stats.correctBrandGuesses || 0,
-            stats.correctModelGuesses || 0,
-            stats.totalBrandGuesses || 0,
-            stats.totalModelGuesses || 0,
-            stats.bestStreak || 0,
-            stats.currentStreak || 0,
-            stats.bestTime || null,
+            stats.total_points || 0,
+            stats.total_difficulty_points || 0,
+            stats.games_played || 0,
+            stats.games_won || 0,
+            stats.correct_brand_guesses || 0,
+            stats.correct_model_guesses || 0,
+            stats.total_brand_guesses || 0,
+            stats.total_model_guesses || 0,
+            stats.best_streak || 0,
+            stats.current_streak || 0,
+            stats.best_time || null,
             userId
         ];
 
