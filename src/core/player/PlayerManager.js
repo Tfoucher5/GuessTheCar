@@ -27,8 +27,8 @@ class PlayerManager {
     }
 
     /**
-     * Met à jour le score d'un joueur
-     */
+ * Met à jour le score d'un joueur
+ */
     async updatePlayerScore(userId, username, basePoints, difficultyPoints, isComplete, gameStats = {}) {
         try {
             // Récupérer ou créer le joueur
@@ -59,11 +59,64 @@ class PlayerManager {
                 await this.playerRepository.saveGameSession(gameSession);
             }
 
-            // CORRECTION CRITIQUE: Toujours mettre à jour les stats du joueur
-            // Même sans points, la partie doit compter comme jouée
-            player.updateGameStats(gameSession);
+            // FAIRE LA MISE À JOUR DES STATS DIRECTEMENT ICI au lieu d'appeler player.updateGameStats()
 
-            // Sauvegarder les changements
+            // Ajouter les points
+            player.totalPoints += gameSession.pointsEarned || 0;
+            player.totalDifficultyPoints += gameSession.difficultyPointsEarned || 0;
+
+            // Incrémenter les parties jouées
+            player.gamesPlayed += 1;
+
+            // Compter les victoires
+            if (gameSession.completed && !gameSession.abandoned) {
+                player.gamesWon += 1;
+                player.currentStreak += 1;
+
+                // Mettre à jour le meilleur streak
+                if (player.currentStreak > player.bestStreak) {
+                    player.bestStreak = player.currentStreak;
+                }
+            } else {
+                // Réinitialiser le streak en cas d'échec
+                player.currentStreak = 0;
+            }
+
+            // Compter les tentatives et réussites de marques
+            if (gameSession.attemptsMake > 0) {
+                player.totalBrandGuesses += gameSession.attemptsMake;
+                if (gameSession.makeFound) {
+                    player.correctBrandGuesses += 1;
+                }
+            }
+
+            // Compter les tentatives et réussites de modèles
+            if (gameSession.attemptsModel > 0) {
+                player.totalModelGuesses += gameSession.attemptsModel;
+                if (gameSession.modelFound) {
+                    player.correctModelGuesses += 1;
+                }
+            }
+
+            // Mettre à jour le temps de réponse si disponible
+            if (gameSession.durationSeconds && gameSession.completed) {
+                // Mettre à jour le meilleur temps
+                if (!player.bestTime || gameSession.durationSeconds < player.bestTime) {
+                    player.bestTime = gameSession.durationSeconds;
+                }
+
+                // Mettre à jour le temps de réponse moyen
+                if (player.gamesWon > 1) {
+                    player.averageResponseTime = ((player.averageResponseTime * (player.gamesWon - 1)) + gameSession.durationSeconds) / player.gamesWon;
+                } else {
+                    player.averageResponseTime = gameSession.durationSeconds;
+                }
+            }
+
+            // Mettre à jour le timestamp
+            player.updatedAt = new Date();
+
+            // Sauvegarder les changements - IL FAUT ENCORE VÉRIFIER QUE toDatabase() EXISTE
             const updatedPlayer = await this.playerRepository.updatePlayerStats(userId, player.toDatabase());
 
             logger.info('Player score updated:', {

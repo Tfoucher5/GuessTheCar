@@ -9,29 +9,46 @@ class PlayerRepository extends BaseRepository {
     }
 
     /**
-     * Crée un nouveau joueur avec les valeurs par défaut
-     */
+ * Crée un nouveau joueur avec les valeurs par défaut
+ */
     async create(userId, username) {
         const query = `
-            INSERT INTO user_scores (
-                user_id, 
-                username, 
-                total_points, 
-                total_difficulty_points, 
-                games_played, 
-                games_won, 
-                correct_brand_guesses, 
-                correct_model_guesses, 
-                total_brand_guesses, 
-                total_model_guesses, 
-                best_streak, 
-                current_streak, 
-                best_time, 
-                average_response_time
-            ) VALUES (?, ?, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, 0)
-        `;
+        INSERT INTO user_scores (
+            user_id, 
+            username, 
+            total_points, 
+            total_difficulty_points, 
+            games_played, 
+            games_won, 
+            correct_brand_guesses, 
+            correct_model_guesses, 
+            total_brand_guesses, 
+            total_model_guesses, 
+            best_streak, 
+            current_streak, 
+            best_time, 
+            average_response_time
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
 
-        const result = await executeQuery(query, [userId, username]);
+        const params = [
+            userId,
+            username,
+            0,    // total_points
+            0,    // total_difficulty_points
+            0,    // games_played
+            0,    // games_won
+            0,    // correct_brand_guesses
+            0,    // correct_model_guesses
+            0,    // total_brand_guesses
+            0,    // total_model_guesses
+            0,    // best_streak
+            0,    // current_streak
+            null, // best_time
+            0     // average_response_time
+        ];
+
+        await executeQuery(query, params);
 
         // Retourner le joueur créé
         return await this.findByUserId(userId);
@@ -70,44 +87,48 @@ class PlayerRepository extends BaseRepository {
     }
 
     /**
-     * Met à jour les statistiques d'un joueur
-     */
+ * Met à jour les statistiques d'un joueur
+ */
     async updatePlayerStats(userId, stats) {
         const query = `
-            UPDATE user_scores SET
-                username = ?,
-                total_points = ?,
-                total_difficulty_points = ?,
-                games_played = ?,
-                games_won = ?,
-                correct_brand_guesses = ?,
-                correct_model_guesses = ?,
-                total_brand_guesses = ?,
-                total_model_guesses = ?,
-                best_streak = ?,
-                current_streak = ?,
-                best_time = ?,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE user_id = ?
-        `;
+        UPDATE user_scores SET
+            username = ?,
+            total_points = ?,
+            total_difficulty_points = ?,
+            games_played = ?,
+            games_won = ?,
+            correct_brand_guesses = ?,
+            correct_model_guesses = ?,
+            total_brand_guesses = ?,
+            total_model_guesses = ?,
+            best_streak = ?,
+            current_streak = ?,
+            best_time = ?,
+            average_response_time = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = ?
+    `;
 
         const params = [
             stats.username,
-            stats.totalPoints || 0,
-            stats.totalDifficultyPoints || 0,
-            stats.gamesPlayed || 0,
-            stats.gamesWon || 0,
-            stats.correctBrandGuesses || 0,
-            stats.correctModelGuesses || 0,
-            stats.totalBrandGuesses || 0,
-            stats.totalModelGuesses || 0,
-            stats.bestStreak || 0,
-            stats.currentStreak || 0,
-            stats.bestTime || null,
+            stats.total_points || stats.totalPoints || 0,
+            stats.total_difficulty_points || stats.totalDifficultyPoints || 0,
+            stats.games_played || stats.gamesPlayed || 0,
+            stats.games_won || stats.gamesWon || 0,
+            stats.correct_brand_guesses || stats.correctBrandGuesses || 0,
+            stats.correct_model_guesses || stats.correctModelGuesses || 0,
+            stats.total_brand_guesses || stats.totalBrandGuesses || 0,
+            stats.total_model_guesses || stats.totalModelGuesses || 0,
+            stats.best_streak || stats.bestStreak || 0,
+            stats.current_streak || stats.currentStreak || 0,
+            stats.best_time || stats.bestTime || null,
+            stats.average_response_time || stats.averageResponseTime || 0,
             userId
         ];
 
         await executeQuery(query, params);
+
+        // Retourner le joueur mis à jour
         return await this.findByUserId(userId);
     }
 
@@ -175,26 +196,32 @@ class PlayerRepository extends BaseRepository {
     }
 
     /**
-     * Enregistre une session de jeu
-     */
+ * Enregistre une session de jeu
+ */
     async saveGameSession(sessionData) {
         const query = `
-            INSERT INTO game_sessions (
-                user_id, car_id, started_at, ended_at, duration_seconds,
-                attempts_make, attempts_model, make_found, model_found,
-                completed, abandoned, timeout, car_changes_used, hints_used,
-                points_earned, difficulty_points_earned
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
+        INSERT INTO game_sessions (
+            user_id, car_id, started_at, ended_at, duration_seconds,
+            attempts_make, attempts_model, make_found, model_found,
+            completed, abandoned, timeout, car_changes_used, hints_used,
+            points_earned, difficulty_points_earned
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
 
-        // CORRECTION: Sérialiser hints_used en JSON
+        // FIX CRITIQUE: Gestion correcte de hintsUsed
         let hintsUsedJson = null;
         if (sessionData.hintsUsed) {
             if (typeof sessionData.hintsUsed === 'object') {
+                // Convertir l'objet en JSON, même s'il est vide
                 hintsUsedJson = JSON.stringify(sessionData.hintsUsed);
-            } else {
+            } else if (typeof sessionData.hintsUsed === 'string') {
                 hintsUsedJson = sessionData.hintsUsed;
             }
+        }
+
+        // Si hintsUsedJson est toujours null, utiliser un objet vide JSON
+        if (hintsUsedJson === null) {
+            hintsUsedJson = '{}';
         }
 
         const params = [
@@ -205,16 +232,18 @@ class PlayerRepository extends BaseRepository {
             sessionData.durationSeconds,
             sessionData.attemptsMake || 0,
             sessionData.attemptsModel || 0,
-            sessionData.makeFound || false,
-            sessionData.modelFound || false,
-            sessionData.completed || false,
-            sessionData.abandoned || false,
-            sessionData.timeout || false,
+            sessionData.makeFound ? 1 : 0,  // FIX: Convertir boolean en int
+            sessionData.modelFound ? 1 : 0, // FIX: Convertir boolean en int
+            sessionData.completed ? 1 : 0,  // FIX: Convertir boolean en int
+            sessionData.abandoned ? 1 : 0,  // FIX: Convertir boolean en int
+            sessionData.timeout ? 1 : 0,    // FIX: Convertir boolean en int
             sessionData.carChangesUsed || 0,
-            hintsUsedJson, // ✅ CORRIGÉ : JSON sérialisé au lieu d'objet
+            hintsUsedJson, // ✅ CORRIGÉ : Toujours une string JSON valide
             sessionData.pointsEarned || 0,
             sessionData.difficultyPointsEarned || 0
         ];
+
+        console.log('DEBUG saveGameSession params:', params); // Pour debug
 
         await executeQuery(query, params);
     }
