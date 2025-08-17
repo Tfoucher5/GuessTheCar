@@ -12,8 +12,9 @@ const client = new Client({
     intents: discordConfig.intents
 });
 
-// Créer une instance du CommandHandler
+// Créer une instance du CommandHandler et l'attacher au client
 const commandHandler = new CommandHandler(client);
+client.commandHandler = commandHandler;
 
 // Charger les gestionnaires d'événements
 eventHandler.loadEvents(client);
@@ -63,6 +64,4 @@ process.on('SIGTERM', async() => {
     client.destroy();
 });
 
-// Exporter les deux pour compatibilité
 module.exports = client;
-module.exports.commandHandler = commandHandler;

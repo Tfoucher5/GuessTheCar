@@ -1,7 +1,5 @@
-// Correction pour src/bot/events/interactionCreate.js
-
+// src/bot/events/interactionCreate.js
 const { Events, MessageFlags } = require('discord.js');
-const commandHandler = require('../handlers/commandHandler');
 const logger = require('../../shared/utils/logger');
 
 module.exports = {
@@ -9,7 +7,8 @@ module.exports = {
     async execute(interaction) {
         // Gérer les commandes slash
         if (interaction.isChatInputCommand()) {
-            await commandHandler.executeCommand(interaction);
+            // Récupérer l'instance du commandHandler depuis le client
+            await interaction.client.commandHandler.executeCommand(interaction);
             return;
         }
 

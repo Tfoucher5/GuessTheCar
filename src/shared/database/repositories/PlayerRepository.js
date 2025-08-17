@@ -187,6 +187,16 @@ class PlayerRepository extends BaseRepository {
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
+        // CORRECTION: Sérialiser hints_used en JSON
+        let hintsUsedJson = null;
+        if (sessionData.hintsUsed) {
+            if (typeof sessionData.hintsUsed === 'object') {
+                hintsUsedJson = JSON.stringify(sessionData.hintsUsed);
+            } else {
+                hintsUsedJson = sessionData.hintsUsed;
+            }
+        }
+
         const params = [
             sessionData.userId,
             sessionData.carId,
@@ -201,7 +211,7 @@ class PlayerRepository extends BaseRepository {
             sessionData.abandoned || false,
             sessionData.timeout || false,
             sessionData.carChangesUsed || 0,
-            sessionData.hintsUsed || 0,
+            hintsUsedJson, // ✅ CORRIGÉ : JSON sérialisé au lieu d'objet
             sessionData.pointsEarned || 0,
             sessionData.difficultyPointsEarned || 0
         ];

@@ -247,7 +247,7 @@ class GameEngine extends EventEmitter {
             const attemptsModel = gameState.attempts;
             const totalAttempts = attemptsMake + attemptsModel;
 
-            const score = gameState.calculatePartialSuccessScore();
+            const score = gameState.calculateFinalScore();
             score.difficultyName = gameState.car.getDifficultyText();
             score.carName = gameState.car.getFullName();
 

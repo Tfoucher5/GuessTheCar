@@ -131,48 +131,64 @@ class Player {
     }
 
     /**
-     * Met à jour les statistiques après une partie
+     * Met à jour les statistiques du joueur après une partie
      */
-    updateAfterGame(gameResult) {
+    updateGameStats(gameSession) {
+        // Ajouter les points
+        this.totalPoints += gameSession.pointsEarned || 0;
+        this.totalDifficultyPoints += gameSession.difficultyPointsEarned || 0;
+
+        // Incrémenter les parties jouées
         this.gamesPlayed += 1;
 
-        if (gameResult.completed) {
+        // Compter les victoires
+        if (gameSession.completed && !gameSession.abandoned) {
             this.gamesWon += 1;
             this.currentStreak += 1;
-            this.bestStreak = Math.max(this.bestStreak, this.currentStreak);
+
+            // Mettre à jour le meilleur streak
+            if (this.currentStreak > this.bestStreak) {
+                this.bestStreak = this.currentStreak;
+            }
         } else {
+            // Réinitialiser le streak en cas d'échec
             this.currentStreak = 0;
         }
 
-        this.totalPoints += gameResult.basePoints || 0;
-        this.totalDifficultyPoints += gameResult.difficultyPoints || 0;
-
-        if (gameResult.makeFound) {
-            this.correctBrandGuesses += 1;
-        }
-        if (gameResult.modelFound) {
-            this.correctModelGuesses += 1;
-        }
-
-        this.totalBrandGuesses += gameResult.attemptsMake || 0;
-        this.totalModelGuesses += gameResult.attemptsModel || 0;
-
-        // Mettre à jour le meilleur temps
-        if (gameResult.duration && gameResult.completed) {
-            if (!this.bestTime || gameResult.duration < this.bestTime) {
-                this.bestTime = gameResult.duration;
+        // Compter les tentatives et réussites de marques
+        if (gameSession.attemptsMake > 0) {
+            this.totalBrandGuesses += gameSession.attemptsMake;
+            if (gameSession.makeFound) {
+                this.correctBrandGuesses += 1;
             }
         }
 
-        // Mettre à jour le temps de réponse moyen
-        if (gameResult.duration) {
-            const totalTime = this.averageResponseTime * (this.gamesPlayed - 1) + gameResult.duration;
-            this.averageResponseTime = totalTime / this.gamesPlayed;
+        // Compter les tentatives et réussites de modèles
+        if (gameSession.attemptsModel > 0) {
+            this.totalModelGuesses += gameSession.attemptsModel;
+            if (gameSession.modelFound) {
+                this.correctModelGuesses += 1;
+            }
         }
 
+        // Mettre à jour le temps de réponse si disponible
+        if (gameSession.durationSeconds && gameSession.completed) {
+            // Mettre à jour le meilleur temps
+            if (!this.bestTime || gameSession.durationSeconds < this.bestTime) {
+                this.bestTime = gameSession.durationSeconds;
+            }
+
+            // Mettre à jour le temps de réponse moyen
+            if (this.gamesWon > 1) {
+                this.averageResponseTime = ((this.averageResponseTime * (this.gamesWon - 1)) + gameSession.durationSeconds) / this.gamesWon;
+            } else {
+                this.averageResponseTime = gameSession.durationSeconds;
+            }
+        }
+
+        // Mettre à jour le timestamp
         this.updatedAt = new Date();
     }
-
     /**
      * Réinitialise toutes les statistiques
      */
