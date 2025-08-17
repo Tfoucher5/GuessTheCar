@@ -66,22 +66,6 @@ app.use((req, res, next) => {
     next();
 });
 
-// 🆕 SERVIR L'INTERFACE D'ADMINISTRATION
-// Servir les fichiers statiques de l'admin
-app.use('/admin', express.static(path.join(__dirname, '../admin/public'), {
-    maxAge: process.env.NODE_ENV === 'production' ? '1h' : '0',
-    etag: true,
-    lastModified: true
-}));
-
-// Route SPA fallback pour l'admin
-app.get('/admin/*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../admin/public/index.html'));
-});
-
-// 🆕 ROUTES API D'ADMINISTRATION
-app.use('/api/admin', require('./routes/admin'));
-
 // Routes API existantes
 app.use('/api/health', require('./routes/health'));
 app.use('/api/stats', require('./routes/stats'));
@@ -129,28 +113,6 @@ app.get('/api/docs', (req, res) => {
                 path: '/api/leaderboard',
                 methods: ['GET'],
                 description: 'Classement des joueurs'
-            },
-
-            // Admin endpoints
-            adminDashboard: {
-                path: '/api/admin/dashboard',
-                methods: ['GET'],
-                description: 'Tableau de bord administrateur'
-            },
-            adminModels: {
-                path: '/api/admin/models',
-                methods: ['GET', 'POST', 'PUT', 'DELETE'],
-                description: 'Gestion des modèles de voitures'
-            },
-            adminBrands: {
-                path: '/api/admin/brands',
-                methods: ['GET', 'POST', 'PUT', 'DELETE'],
-                description: 'Gestion des marques'
-            },
-            adminPlayers: {
-                path: '/api/admin/players',
-                methods: ['GET'],
-                description: 'Gestion des joueurs'
             }
         }
     });
