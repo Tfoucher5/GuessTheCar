@@ -3896,3 +3896,21 @@
 {"changesUsed":2,"level":"info","message":"Car changed in game:","newCar":"Geely Atlas","service":"guess-the-car-bot","threadId":"1406701596213121036","timestamp":"2025-08-17T18:10:32.349Z","userId":"573543227525824516"}
 {"changesUsed":3,"level":"info","message":"Car changed in game:","newCar":"Renault Clio","service":"guess-the-car-bot","threadId":"1406701596213121036","timestamp":"2025-08-17T18:11:17.518Z","userId":"573543227525824516"}
 {"abandoned":false,"basePoints":10,"difficultyPoints":1,"gamesPlayed":0,"gamesWon":0,"isComplete":true,"level":"info","message":"Player score updated:","newTotal":0,"service":"guess-the-car-bot","timeout":false,"timestamp":"2025-08-17T18:11:36.070Z","userId":"573543227525824516"}
+{"level":"info","message":"SIGINT received, shutting down gracefully","service":"guess-the-car-bot","timestamp":"2025-08-17T18:13:58.638Z"}
+{"level":"info","message":"🚀 Starting Guess The Car Bot Application...","service":"guess-the-car-bot","timestamp":"2025-08-17T18:13:59.844Z"}
+{"level":"info","message":"✅ Database pool initialized","service":"guess-the-car-bot","timestamp":"2025-08-17T18:13:59.902Z"}
+{"level":"info","message":"✅ Database connected","service":"guess-the-car-bot","timestamp":"2025-08-17T18:13:59.902Z"}
+{"level":"info","message":"Loaded 3 events","service":"guess-the-car-bot","timestamp":"2025-08-17T18:14:00.350Z"}
+{"level":"info","message":"✅ API Server running on port 3001","service":"guess-the-car-bot","timestamp":"2025-08-17T18:14:00.372Z"}
+{"level":"info","message":"✅ Discord Bot connected","service":"guess-the-car-bot","timestamp":"2025-08-17T18:14:01.066Z"}
+{"level":"info","message":"🎉 Application started successfully!","service":"guess-the-car-bot","timestamp":"2025-08-17T18:14:01.067Z"}
+{"level":"info","message":"Bot Discord prêt! Connecté en tant que GuessTheCar#6976","service":"guess-the-car-bot","timestamp":"2025-08-17T18:14:01.072Z"}
+{"level":"info","message":"Bot présent sur 1 serveurs","service":"guess-the-car-bot","timestamp":"2025-08-17T18:14:01.072Z"}
+{"level":"info","message":"Bot connecté à 22 canaux","service":"guess-the-car-bot","timestamp":"2025-08-17T18:14:01.073Z"}
+{"level":"info","message":"Bot peut voir 1 utilisateurs","service":"guess-the-car-bot","timestamp":"2025-08-17T18:14:01.073Z"}
+{"level":"info","message":"Discord Bot connecté: GuessTheCar#6976","service":"guess-the-car-bot","timestamp":"2025-08-17T18:14:01.073Z"}
+{"level":"info","message":"Bot présent sur 1 serveurs","service":"guess-the-car-bot","timestamp":"2025-08-17T18:14:01.073Z"}
+{"level":"info","message":"Loaded 5 commands","service":"guess-the-car-bot","timestamp":"2025-08-17T18:14:01.081Z"}
+{"level":"info","message":"Registering 5 unique commands with Discord...","service":"guess-the-car-bot","timestamp":"2025-08-17T18:14:01.081Z"}
+{"level":"info","message":"✅ Successfully registered 5 application commands","service":"guess-the-car-bot","timestamp":"2025-08-17T18:14:01.782Z"}
+{"level":"info","message":"Commandes Discord chargées et enregistrées avec succès","service":"guess-the-car-bot","timestamp":"2025-08-17T18:14:01.782Z"}
