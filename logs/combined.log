@@ -6171,3 +6171,4 @@
 {"guild":"Shyish","level":"info","limit":10,"message":"Leaderboard command executed:","service":"guess-the-car-bot","timestamp":"2025-08-18T17:06:59.237Z","userId":"573543227525824516"}
 {"command":"stats","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-18T17:07:30.491Z","user":"t3sk0"}
 {"guild":"Shyish","level":"info","message":"Stats command executed:","requesterId":"573543227525824516","service":"guess-the-car-bot","targetUserId":"573543227525824516","timestamp":"2025-08-18T17:07:30.903Z"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-18T17:10:58.960Z"}

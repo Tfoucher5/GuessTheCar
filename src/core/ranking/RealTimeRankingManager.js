@@ -276,7 +276,7 @@ class RealTimeRankingManager {
             clearInterval(this.saveInterval);
         }
 
-        this.saveInterval = setInterval(async () => {
+        this.saveInterval = setInterval(async() => {
             await this.savePendingUpdates();
         }, 30000); // Toutes les 30 secondes
     }
