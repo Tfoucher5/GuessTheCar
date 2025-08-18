@@ -1,200 +1,185 @@
 /**
- * Système de niveaux avec titres généraux - Version plus difficile
- * Seul le premier niveau fait référence à Lance Stroll (F1)
- * Les seuils sont beaucoup plus élevés pour rendre la progression plus difficile
+ * Système de niveaux automobile avec références au sport auto et Sylvain Lyve
+ * Basé sur les points totaux avec progression équilibrée et niveau max très difficile
  */
 
 const LEVEL_SYSTEM = {
     levels: [
-        // ========== NIVEAUX BAS (Rabaissants) ==========
+        // ========== NIVEAUX DÉBUTANTS (Humoristiques) ==========
         {
             minPoints: 0,
-            maxPoints: 49,
-            title: '🤡 Même Lance Stroll ferait mieux',
+            maxPoints: 99,
+            title: '🤡 Pire que Lance Stroll',
             color: '#8B4513', // Marron
-            description: 'Vraiment... même le pilote le plus critiqué de la grille ferait mieux !',
+            description: 'Même le pilote le plus critiqué de F1 fait mieux que ça !',
             emoji: '🤡'
         },
         {
-            minPoints: 50,
-            maxPoints: 99,
-            title: '🦶 Débutant Catastrophique',
-            color: '#696969', // Gris foncé
-            description: 'Au moins vous avez essayé... mais c\'était pas terrible.',
-            emoji: '🦶'
-        },
-        {
             minPoints: 100,
-            maxPoints: 199,
-            title: '🐌 Apprenti Maladroit',
+            maxPoints: 249,
+            title: '🚗 Conducteur du Dimanche',
+            color: '#696969', // Gris foncé
+            description: 'Vous conduisez votre Clio au supermarché, c\'est déjà ça !',
+            emoji: '🚗'
+        },
+        {
+            minPoints: 250,
+            maxPoints: 499,
+            title: '🔰 Apprenti Mécanicien',
             color: '#A0522D', // Brun
-            description: 'Lentement mais sûrement... enfin surtout lentement.',
-            emoji: '🐌'
+            description: 'Vous savez faire la vidange... enfin, vous essayez.',
+            emoji: '🔰'
         },
         {
-            minPoints: 200,
-            maxPoints: 349,
-            title: '🔧 Bricoleur du Dimanche',
+            minPoints: 500,
+            maxPoints: 899,
+            title: '🚙 Fan de SUV',
             color: '#4682B4', // Bleu acier
-            description: 'Vos méthodes sont... créatives, disons.',
-            emoji: '🔧'
+            description: 'Un Qashqai, c\'est sportif non ? Non ?',
+            emoji: '🚙'
         },
         {
-            minPoints: 350,
-            maxPoints: 549,
-            title: '📚 Élève en Difficulté',
+            minPoints: 900,
+            maxPoints: 1499,
+            title: '🏁 Spectateur de F1',
             color: '#708090', // Gris ardoise
-            description: 'Il va falloir réviser vos classiques.',
-            emoji: '📚'
+            description: 'Vous regardez les courses du canapé avec des chips.',
+            emoji: '🏁'
         },
 
-        // ========== NIVEAUX MOYENS (Progression) ==========
-        {
-            minPoints: 550,
-            maxPoints: 799,
-            title: '🌱 Pousse Timide',
-            color: '#9ACD32', // Vert jaune
-            description: 'Ça commence à pousser, continuez !',
-            emoji: '🌱'
-        },
-        {
-            minPoints: 800,
-            maxPoints: 1199,
-            title: '⚡ Étincelle Prometteuse',
-            color: '#32CD32', // Vert citron
-            description: 'On voit des éclairs de talent !',
-            emoji: '⚡'
-        },
-        {
-            minPoints: 1200,
-            maxPoints: 1799,
-            title: '🎯 Tireur d\'Élite',
-            color: '#FF6347', // Tomate
-            description: 'Vous commencez à faire mouche !',
-            emoji: '🎯'
-        },
-        {
-            minPoints: 1800,
-            maxPoints: 2599,
-            title: '🏆 Compétiteur Sérieux',
-            color: '#FFD700', // Or
-            description: 'Maintenant on peut parler affaires !',
-            emoji: '🏆'
-        },
-        {
-            minPoints: 2600,
-            maxPoints: 3699,
-            title: '🥇 Champion en Herbe',
-            color: '#FF4500', // Orange rouge
-            description: 'Le talent commence à vraiment se voir !',
-            emoji: '🥇'
-        },
-
-        // ========== NIVEAUX ÉLEVÉS (Impressionnants) ==========
-        {
-            minPoints: 3700,
-            maxPoints: 5499,
-            title: '⭐ Virtuose Confirmé',
-            color: '#9932CC', // Violet foncé
-            description: 'Vous maîtrisez votre art !',
-            emoji: '⭐'
-        },
-        {
-            minPoints: 5500,
-            maxPoints: 7999,
-            title: '💎 Diamant Brut',
-            color: '#00CED1', // Turquoise foncé
-            description: 'Rare et précieux, vous brillez !',
-            emoji: '💎'
-        },
-        {
-            minPoints: 8000,
-            maxPoints: 11999,
-            title: '🚀 Phénomène Ascendant',
-            color: '#FF1493', // Rose profond
-            description: 'Vous décollez vers les sommets !',
-            emoji: '🚀'
-        },
-        {
-            minPoints: 12000,
-            maxPoints: 17999,
-            title: '👑 Maître Incontesté',
-            color: '#8A2BE2', // Violet bleu
-            description: 'Vous dominez votre domaine !',
-            emoji: '👑'
-        },
-        {
-            minPoints: 18000,
-            maxPoints: 26999,
-            title: '🌟 Étoile Montante',
-            color: '#FF6B35', // Orange vif
-            description: 'Votre éclat illumine tout !',
-            emoji: '🌟'
-        },
-
-        // ========== NIVEAUX TRÈS ÉLEVÉS (Exceptionnels) ==========
+        // ========== NIVEAUX INTERMÉDIAIRES ==========
         {
             minPoints: 1500,
             maxPoints: 2499,
-            title: '🔥 Force de la Nature',
-            color: '#DC143C', // Cramoisi
-            description: 'Rien ne peut vous arrêter !',
-            emoji: '🔥'
+            title: '🏎️ Pilote de Karting',
+            color: '#9ACD32', // Vert jaune
+            description: 'Enfin du vrai pilotage ! Même si c\'est sur un parking.',
+            emoji: '🏎️'
         },
         {
             minPoints: 2500,
             maxPoints: 3999,
-            title: '⚡ Foudre Vivante',
-            color: '#FFD700', // Or brillant
-            description: 'Vous frappez avec la puissance de l\'éclair !',
-            emoji: '⚡'
+            title: '🚘 Propriétaire de GTI',
+            color: '#32CD32', // Vert citron
+            description: 'Golf GTI ou 208 GTI, vous avez du goût !',
+            emoji: '🚘'
         },
         {
             minPoints: 4000,
             maxPoints: 6499,
-            title: '🌪️ Ouragan Déchaîné',
-            color: '#4169E1', // Bleu royal
-            description: 'Vous balayez tout sur votre passage !',
-            emoji: '🌪️'
+            title: '🏃 Coureur Amateur',
+            color: '#FF6347', // Tomate
+            description: 'Trackdays le weekend, embouteillages la semaine.',
+            emoji: '🏃'
         },
         {
             minPoints: 6500,
             maxPoints: 9999,
-            title: '🗲 Dieu du Tonnerre',
+            title: '🔧 Mécanicien Confirmé',
+            color: '#FFD700', // Or
+            description: 'Vous savez distinguer un flat-6 d\'un V6 !',
+            emoji: '🔧'
+        },
+        {
+            minPoints: 10000,
+            maxPoints: 15999,
+            title: '🚀 Passionné de Supercars',
+            color: '#FF4500', // Orange rouge
+            description: 'Ferrari, Lamborghini... vous connaissez par cœur !',
+            emoji: '🚀'
+        },
+
+        // ========== NIVEAUX AVANCÉS ==========
+        {
+            minPoints: 16000,
+            maxPoints: 24999,
+            title: '🏆 Julien Febreau',
+            color: '#9932CC', // Violet foncé
+            description: 'Vous avez la culture auto du journaliste de Sport Auto !',
+            emoji: '🏆'
+        },
+        {
+            minPoints: 25000,
+            maxPoints: 39999,
+            title: '⭐ Soheil Ayari',
+            color: '#00CED1', // Turquoise foncé
+            description: 'Votre expertise rappelle celle du pilote instructeur !',
+            emoji: '⭐'
+        },
+        {
+            minPoints: 40000,
+            maxPoints: 64999,
+            title: '🎯 Sébastien Loeb',
+            color: '#FF1493', // Rose profond
+            description: 'Nonuple champion du monde, respect !',
+            emoji: '🎯'
+        },
+        {
+            minPoints: 65000,
+            maxPoints: 99999,
+            title: '👑 Alain Prost',
+            color: '#8A2BE2', // Violet bleu
+            description: 'Le Professeur serait fier de vos connaissances !',
+            emoji: '👑'
+        },
+        {
+            minPoints: 100000,
+            maxPoints: 159999,
+            title: '🌟 Ayrton Senna',
+            color: '#FF6B35', // Orange vif
+            description: 'La légende brésilienne approuverait votre passion !',
+            emoji: '🌟'
+        },
+
+        // ========== NIVEAUX EXPERTS ==========
+        {
+            minPoints: 160000,
+            maxPoints: 249999,
+            title: '🔥 Encyclopédie Vivante',
+            color: '#DC143C', // Cramoisi
+            description: 'Vous êtes une bible automobile sur pattes !',
+            emoji: '🔥'
+        },
+        {
+            minPoints: 250000,
+            maxPoints: 399999,
+            title: '⚡ Sage de l\'Automobile',
+            color: '#4169E1', // Bleu royal
+            description: 'Votre savoir dépasse l\'entendement humain !',
+            emoji: '⚡'
+        },
+        {
+            minPoints: 400000,
+            maxPoints: 649999,
+            title: '🌪️ Maître Absolu',
             color: '#8B008B', // Magenta foncé
-            description: 'Votre pouvoir résonne dans les cieux !',
+            description: 'Il n\'y a plus grand chose que vous ignoriez !',
+            emoji: '🌪️'
+        },
+        {
+            minPoints: 650000,
+            maxPoints: 999999,
+            title: '🗲 Génie de l\'Automobile',
+            color: '#000080', // Bleu marine
+            description: 'Vous frôlez la perfection, c\'est impressionnant !',
             emoji: '🗲'
         },
 
-        // ========== NIVEAU ULTIME (Ultra difficile) ==========
+        // ========== NIVEAU ULTIME (Référence Sylvain Lyve) ==========
         {
-            minPoints: 10000,
-            maxPoints: 17999,
-            title: '🌌 Transcendance Cosmique',
-            color: '#000080', // Bleu marine
-            description: 'Vous avez dépassé les limites de l\'entendement humain.',
-            emoji: '🌌'
-        },
-        {
-            minPoints: 18000,
-            maxPoints: 29999,
-            title: '∞ Entité Omnisciente',
-            color: '#191970', // Bleu nuit
-            description: 'Vous êtes devenu une légende vivante, maître de tous les mystères.',
-            emoji: '∞'
-        },
-        {
-            minPoints: 30000,
+            minPoints: 1000000,
             maxPoints: Number.MAX_SAFE_INTEGER,
-            title: '🕳️ Singularité Absolue',
-            color: '#000000', // Noir absolu
-            description: 'Vous avez atteint l\'impossible. L\'univers lui-même vous révère.',
-            emoji: '🕳️'
+            title: '🧠 Sylvain Lyve',
+            color: '#191970', // Bleu nuit
+            description: 'Vous avez atteint le niveau du maître absolu de YouTube automobile ! Sylvain serait impressionné par votre culture !',
+            emoji: '🧠'
         }
     ],
 
-    // Dans getPlayerLevel()
-    getPlayerLevel(totalPoints) { // Utiliser totalPoints au lieu de totalDifficultyPoints
+    /**
+     * Obtient le niveau d'un joueur basé sur ses points totaux
+     */
+    getPlayerLevel(totalPoints) {
         for (let i = this.levels.length - 1; i >= 0; i--) {
             if (totalPoints >= this.levels[i].minPoints) {
                 return {
@@ -230,7 +215,7 @@ const LEVEL_SYSTEM = {
         if (!currentLevel.nextLevel) {
             return {
                 isMaxLevel: true,
-                message: '🎊 Niveau maximum atteint ! Vous êtes une légende !'
+                message: '🎊 Niveau maximum atteint ! Vous êtes au niveau de Sylvain Lyve !'
             };
         }
 
@@ -257,6 +242,23 @@ const LEVEL_SYSTEM = {
      */
     hexToDecimal(hex) {
         return parseInt(hex.replace('#', ''), 16);
+    },
+
+    /**
+     * Obtient des statistiques sur la distribution des niveaux
+     */
+    getLevelStats() {
+        return {
+            totalLevels: this.levels.length,
+            maxPointsToReach: this.levels[this.levels.length - 1].minPoints,
+            levelsByDifficulty: {
+                beginner: this.levels.slice(0, 5).length,
+                intermediate: this.levels.slice(5, 10).length,
+                advanced: this.levels.slice(10, 15).length,
+                expert: this.levels.slice(15, 19).length,
+                master: 1
+            }
+        };
     }
 };
 
