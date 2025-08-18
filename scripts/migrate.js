@@ -44,7 +44,9 @@ async function createDatabase() {
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 name VARCHAR(50) NOT NULL,
                 country VARCHAR(50) NOT NULL DEFAULT 'Inconnu',
+                logo_url VARCHAR(255) DEFAULT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 INDEX idx_name (name),
                 INDEX idx_country (country)
             )
@@ -61,6 +63,7 @@ async function createDatabase() {
                 difficulty_level TINYINT NOT NULL DEFAULT 1,
                 image_url VARCHAR(255) DEFAULT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 INDEX idx_brand_id (brand_id),
                 INDEX idx_difficulty (difficulty_level),
                 INDEX idx_year (year)

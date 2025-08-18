@@ -86,6 +86,7 @@ app.use((req, res, next) => {
 });
 
 // Routes API publiques uniquement
+app.use('/api/bot', require('./routes/bot'));
 app.use('/api/health', require('./routes/health'));
 app.use('/api/stats', require('./routes/stats'));
 app.use('/api/cars', require('./routes/cars'));
@@ -182,7 +183,7 @@ app.use((error, req, res, next) => {
 module.exports = app;
 
 if (require.main === module) {
-    const PORT = process.env.PORT || 3000;
+    const PORT = process.env.API_PORT || 3000;
     app.listen(PORT, () => {
         console.log(`🚀 Server running at http://localhost:${PORT}`);
     });

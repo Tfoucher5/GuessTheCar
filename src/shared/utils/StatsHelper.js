@@ -103,10 +103,15 @@ class StatsHelper {
         if (!this.enabled) return null;
 
         try {
-            const response = await this.client.get('/stats');
+            const response = await this.client.get('/bot/stats');
+
+            logger.debug('Stats retrieved from API:', response.data);
+
             return response.data;
         } catch (error) {
-            logger.warn('Failed to get stats:', error.message);
+            logger.warn('Failed to get stats from API:', {
+                error: error.message
+            });
             return null;
         }
     }
