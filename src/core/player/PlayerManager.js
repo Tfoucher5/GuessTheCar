@@ -1,3 +1,4 @@
+// src/core/player/PlayerManager.js
 const PlayerRepository = require('../../shared/database/repositories/PlayerRepository');
 const { ValidationError } = require('../../shared/errors');
 const logger = require('../../shared/utils/logger');
@@ -27,8 +28,8 @@ class PlayerManager {
     }
 
     /**
- * Met à jour le score d'un joueur
- */
+     * ✅ CORRIGÉ - Met à jour le score d'un joueur
+     */
     async updatePlayerScore(userId, username, basePoints, difficultyPoints, isComplete, gameStats = {}) {
         try {
             // Récupérer ou créer le joueur
@@ -54,70 +55,54 @@ class PlayerManager {
                 difficultyPointsEarned: difficultyPoints || 0
             };
 
-            // IMPORTANT: Toujours enregistrer la session si on a un carId (partie commencée)
-            if (gameSession.carId) {
-                await this.playerRepository.saveGameSession(gameSession);
-            }
+            // ✅ Sauvegarder la session de jeu
+            await this.playerRepository.saveGameSession(gameSession);
 
-            // FAIRE LA MISE À JOUR DES STATS DIRECTEMENT ICI au lieu d'appeler player.updateGameStats()
+            // Calculer les nouvelles statistiques
+            const newStats = {
+                userId: player.userId,
+                username: player.username,
+                totalPoints: player.totalPoints + (basePoints || 0),
+                totalDifficultyPoints: player.totalDifficultyPoints + (difficultyPoints || 0),
+                gamesPlayed: player.gamesPlayed + 1,
+                gamesWon: player.gamesWon + (isComplete ? 1 : 0),
+                correctBrandGuesses: player.correctBrandGuesses + (gameStats.makeFound ? 1 : 0),
+                correctModelGuesses: player.correctModelGuesses + (gameStats.modelFound ? 1 : 0),
+                totalBrandGuesses: player.totalBrandGuesses + (gameStats.attemptsMake || 0),
+                totalModelGuesses: player.totalModelGuesses + (gameStats.attemptsModel || 0),
+                bestStreak: player.bestStreak,
+                currentStreak: player.currentStreak,
+                bestTime: player.bestTime,
+                averageResponseTime: player.averageResponseTime
+            };
 
-            // Ajouter les points
-            player.totalPoints += gameSession.pointsEarned || 0;
-            player.totalDifficultyPoints += gameSession.difficultyPointsEarned || 0;
-
-            // Incrémenter les parties jouées
-            player.gamesPlayed += 1;
-
-            // Compter les victoires
-            if (gameSession.completed && !gameSession.abandoned) {
-                player.gamesWon += 1;
-                player.currentStreak += 1;
-
-                // Mettre à jour le meilleur streak
-                if (player.currentStreak > player.bestStreak) {
-                    player.bestStreak = player.currentStreak;
+            // Gérer les streaks
+            if (isComplete) {
+                newStats.currentStreak = player.currentStreak + 1;
+                if (newStats.currentStreak > player.bestStreak) {
+                    newStats.bestStreak = newStats.currentStreak;
                 }
             } else {
-                // Réinitialiser le streak en cas d'échec
-                player.currentStreak = 0;
-            }
-
-            // Compter les tentatives et réussites de marques
-            if (gameSession.attemptsMake > 0) {
-                player.totalBrandGuesses += gameSession.attemptsMake;
-                if (gameSession.makeFound) {
-                    player.correctBrandGuesses += 1;
-                }
-            }
-
-            // Compter les tentatives et réussites de modèles
-            if (gameSession.attemptsModel > 0) {
-                player.totalModelGuesses += gameSession.attemptsModel;
-                if (gameSession.modelFound) {
-                    player.correctModelGuesses += 1;
-                }
+                newStats.currentStreak = 0;
             }
 
             // Mettre à jour le temps de réponse si disponible
-            if (gameSession.durationSeconds && gameSession.completed) {
+            if (gameSession.durationSeconds && isComplete) {
                 // Mettre à jour le meilleur temps
                 if (!player.bestTime || gameSession.durationSeconds < player.bestTime) {
-                    player.bestTime = gameSession.durationSeconds;
+                    newStats.bestTime = gameSession.durationSeconds;
                 }
 
                 // Mettre à jour le temps de réponse moyen
-                if (player.gamesWon > 1) {
-                    player.averageResponseTime = ((player.averageResponseTime * (player.gamesWon - 1)) + gameSession.durationSeconds) / player.gamesWon;
+                if (newStats.gamesWon > 1) {
+                    newStats.averageResponseTime = ((player.averageResponseTime * (newStats.gamesWon - 1)) + gameSession.durationSeconds) / newStats.gamesWon;
                 } else {
-                    player.averageResponseTime = gameSession.durationSeconds;
+                    newStats.averageResponseTime = gameSession.durationSeconds;
                 }
             }
 
-            // Mettre à jour le timestamp
-            player.updatedAt = new Date();
-
-            // Sauvegarder les changements - IL FAUT ENCORE VÉRIFIER QUE toDatabase() EXISTE
-            const updatedPlayer = await this.playerRepository.updatePlayerStats(userId, player.toDatabase());
+            // ✅ Sauvegarder les statistiques mises à jour
+            const updatedPlayer = await this.playerRepository.updatePlayerStats(userId, newStats);
 
             logger.info('Player score updated:', {
                 userId,
@@ -147,7 +132,7 @@ class PlayerManager {
             const playerStats = await this.playerRepository.getPlayerWithRanking(userId);
 
             if (!playerStats) {
-                logger.debug('No player stats found for user:', { userId });
+                logger.warn('Player not found for ranking:', { userId });
                 return null;
             }
 
@@ -159,36 +144,21 @@ class PlayerManager {
     }
 
     /**
-     * Obtient le classement des joueurs
+     * Obtient le classement général
      */
     async getLeaderboard(limit = 10) {
         try {
             const leaderboard = await this.playerRepository.getLeaderboard(limit);
-
-            logger.debug('Leaderboard retrieved:', { count: leaderboard.length, limit });
-
+            logger.debug('Leaderboard retrieved:', { count: leaderboard.length });
             return leaderboard;
         } catch (error) {
-            logger.error('Error getting leaderboard:', { limit, error });
+            logger.error('Error getting leaderboard:', { error });
             throw error;
         }
     }
 
     /**
-     * Obtient les statistiques globales
-     */
-    async getGlobalStats() {
-        try {
-            const stats = await this.playerRepository.getGlobalStats();
-            return stats;
-        } catch (error) {
-            logger.error('Error getting global stats:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Remet à zéro les statistiques d'un joueur (admin uniquement)
+     * Remet à zéro les statistiques d'un joueur
      */
     async resetPlayerStats(userId) {
         try {
@@ -198,8 +168,8 @@ class PlayerManager {
                 throw new ValidationError('Joueur non trouvé');
             }
 
-            // Réinitialiser toutes les statistiques
             const resetData = {
+                userId: player.userId,
                 username: player.username,
                 totalPoints: 0,
                 totalDifficultyPoints: 0,
@@ -211,7 +181,8 @@ class PlayerManager {
                 totalModelGuesses: 0,
                 bestStreak: 0,
                 currentStreak: 0,
-                bestTime: null
+                bestTime: null,
+                averageResponseTime: 0
             };
 
             const updatedPlayer = await this.playerRepository.updatePlayerStats(userId, resetData);
@@ -249,12 +220,11 @@ class PlayerManager {
                 throw new ValidationError('Joueur non trouvé');
             }
 
-            player.username = newUsername;
-            const updatedPlayer = await this.playerRepository.updatePlayerStats(userId, player.toDatabase());
+            await this.playerRepository.updateUsername(userId, newUsername);
 
             logger.info('Player username updated:', { userId, newUsername });
 
-            return updatedPlayer;
+            return await this.playerRepository.findByUserId(userId);
         } catch (error) {
             logger.error('Error updating player username:', { userId, newUsername, error });
             throw error;
