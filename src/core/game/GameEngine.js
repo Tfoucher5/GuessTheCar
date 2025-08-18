@@ -70,10 +70,21 @@ class GameEngine extends EventEmitter {
                 throw new GameError('Aucune partie active trouvée');
             }
 
-            // Valider la réponse
-            const validatedGuess = validatePlayerGuess(guess);
+            // === AJOUT : Gestion de la validation ===
+            let validatedGuess;
+            try {
+                validatedGuess = validatePlayerGuess(guess);
+            } catch (validationError) {
+                // Retourner un résultat spécial pour l'erreur de validation
+                return {
+                    type: 'validation_error',
+                    isCorrect: false,
+                    feedback: '❌ **Caractères non autorisés !**\n\n🔤 Utilisez uniquement : **lettres, chiffres, espaces et tirets**\n\nExemples valides : `BMW`, `Audi A4`, `Mercedes-Benz`',
+                    error: validationError.message
+                };
+            }
 
-            // Incrémenter les essais
+            // Incrémenter les essais seulement si la validation passe
             gameState.incrementAttempts();
 
             // Réinitialiser le timeout

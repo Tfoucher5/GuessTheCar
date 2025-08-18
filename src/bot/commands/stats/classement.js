@@ -2,7 +2,7 @@ const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const PlayerManager = require('../../../core/player/PlayerManager');
 const LevelSystem = require('../../../core/levels/LevelSystem');
 const logger = require('../../../shared/utils/logger');
-
+const statsHelper = require('../../../shared/utils/StatsHelper');
 const playerManager = new PlayerManager();
 
 module.exports = {
@@ -20,6 +20,9 @@ module.exports = {
 
     async execute(interaction) {
         try {
+            if (global.statsReporter) {
+                await global.statsReporter.logCommand('classement', interaction);
+            }
             await interaction.deferReply();
 
             const limit = interaction.options.getInteger('limite') || 10;
@@ -104,6 +107,8 @@ module.exports = {
                             inline: false
                         });
                     }
+
+                    statsHelper.logCommand('classement', interaction.user.id);
                 } catch (error) {
                     logger.warn('Could not fetch requester stats for leaderboard:', error);
                 }

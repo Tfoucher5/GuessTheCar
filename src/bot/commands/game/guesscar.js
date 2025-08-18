@@ -1,7 +1,8 @@
-const { SlashCommandBuilder, ChannelType , MessageFlags } = require('discord.js');
+const { SlashCommandBuilder, ChannelType, MessageFlags } = require('discord.js');
 const { gameEngine } = require('../../events/messageCreate');
 const EmbedBuilder = require('../../../shared/utils/embedBuilder');
 const logger = require('../../../shared/utils/logger');
+const statsHelper = require('../../../shared/utils/StatsHelper');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -10,6 +11,9 @@ module.exports = {
 
     async execute(interaction) {
         try {
+            if (global.statsReporter) {
+                await global.statsReporter.logCommand('guesscar', interaction);
+            }
             // Vérifier s'il y a déjà une partie active pour ce joueur
             const existingGame = gameEngine.findActiveGameByUser(interaction.user.id);
 
@@ -59,6 +63,9 @@ module.exports = {
                 threadId: thread.id,
                 guildId: interaction.guild?.id
             });
+
+            statsHelper.logCommand('guesscar', interaction.user.id);
+            statsHelper.logGame('start', interaction.channel.id, interaction.user.id);
 
         } catch (error) {
             logger.error('Error in guesscar command:', {

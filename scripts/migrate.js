@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable no-undef */
 
 require('dotenv').config();
 const mysql = require('mysql2/promise');

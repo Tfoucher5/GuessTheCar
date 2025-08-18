@@ -212,6 +212,12 @@ async function handleGameResult(message, result, gameState) {
             description: result.feedback
         });
         break;
+    case 'validation_error':
+        embed = EmbedBuilder.createWarningEmbed(
+            'Caractères non autorisés',
+            result.feedback
+        );
+        break;
     }
 
     await message.reply({ embeds: [embed] });

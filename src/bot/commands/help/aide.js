@@ -9,6 +9,9 @@ module.exports = {
 
     async execute(interaction) {
         try {
+            if (global.statsReporter) {
+                await global.statsReporter.logCommand('aide', interaction);
+            }
             // Créer l'embed d'aide
             const helpEmbed = EmbedBuilder.createHelpEmbed();
 
