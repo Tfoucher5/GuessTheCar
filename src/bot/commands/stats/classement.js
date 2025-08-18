@@ -65,8 +65,8 @@ module.exports = {
                 else if (position === 3) positionIcon = '🥉';
                 else positionIcon = `**${position}.**`;
 
-                // Formater les statistiques avec validation
-                const totalPoints = Math.round((player.totalPoints || 0) * 10) / 10;
+                // Formater les statistiques - CORRIGÉ pour afficher totalPoints
+                const points = Math.round((player.totalPoints || 0) * 10) / 10; // CHANGÉ de totalDifficultyPoints vers totalPoints
 
                 // FIX: Validation du taux de réussite
                 let successRate = 0;
@@ -80,11 +80,11 @@ module.exports = {
                 const avgTime = player.averageTime && player.averageTime > 0 ?
                     formatTime(Math.round(player.averageTime)) : 'N/A';
 
-                // NOUVEAU: Obtenir le niveau du joueur
-                const playerLevel = LevelSystem.getPlayerLevel(player.totalPoints);
+                // NOUVEAU: Obtenir le niveau du joueur basé sur totalPoints maintenant
+                const playerLevel = LevelSystem.getPlayerLevel(player.totalPoints); // CHANGÉ
 
                 leaderboardText += `${positionIcon} **${player.username}** ${playerLevel.emoji}\n`;
-                leaderboardText += `└ ${playerLevel.title} • ${totalPoints} pts • ${player.gamesWon || 0}/${player.gamesPlayed || 0} parties • ${successRate}%\n\n`;
+                leaderboardText += `└ ${playerLevel.title} • ${points} pts • ${player.gamesWon || 0}/${player.gamesPlayed || 0} parties • ${successRate}%\n\n`;
             }
 
             leaderboardEmbed.addFields({

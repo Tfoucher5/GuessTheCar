@@ -1,113 +1,59 @@
-// src/shared/database/repositories/PlayerRepository.js
-const BaseRepository = require('./BaseRepository');
+// src/shared/database/repositories/PlayerRepository.js (VERSION OPTIMISÉE)
+
 const { executeQuery } = require('../connection');
 const Player = require('../../../core/player/Player');
+const logger = require('../../utils/logger');
 
-class PlayerRepository extends BaseRepository {
-    constructor() {
-        super('user_scores');
+class PlayerRepository {
+    constructor(realTimeRankingManager = null) {
+        this.rankingManager = realTimeRankingManager;
     }
 
     /**
- * Crée un nouveau joueur avec les valeurs par défaut
- */
-    async create(userId, username) {
+     * Injection du RankingManager pour les mises à jour instantanées
+     */
+    setRankingManager(rankingManager) {
+        this.rankingManager = rankingManager;
+    }
+
+    /**
+     * Obtient TOUS les joueurs pour initialiser le classement - CORRIGÉ
+     */
+    async getAllPlayersForRanking() {
         const query = `
-        INSERT INTO user_scores (
-            user_id, 
-            username, 
-            total_points, 
-            total_difficulty_points, 
-            games_played, 
-            games_won, 
-            correct_brand_guesses, 
-            correct_model_guesses, 
-            total_brand_guesses, 
-            total_model_guesses, 
-            best_streak, 
-            current_streak, 
-            best_time, 
-            average_response_time
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
+            SELECT 
+                us.*
+            FROM user_scores us
+            WHERE us.games_played > 0
+            ORDER BY us.total_points DESC, us.games_won DESC, us.best_time ASC
+        `;
 
-        const params = [
-            userId,
-            username,
-            0,    // total_points
-            0,    // total_difficulty_points
-            0,    // games_played
-            0,    // games_won
-            0,    // correct_brand_guesses
-            0,    // correct_model_guesses
-            0,    // total_brand_guesses
-            0,    // total_model_guesses
-            0,    // best_streak
-            0,    // current_streak
-            null, // best_time
-            0     // average_response_time
-        ];
-
-        await executeQuery(query, params);
-
-        // Retourner le joueur créé
-        return await this.findByUserId(userId);
+        const results = await executeQuery(query);
+        return results.map(row => Player.fromDatabase(row));
     }
 
     /**
-     * Trouve un joueur par user_id
+     * Met à jour les stats d'un joueur ET le classement en temps réel
      */
-    async findByUserId(userId) {
-        const query = 'SELECT * FROM user_scores WHERE user_id = ?';
-        const results = await executeQuery(query, [userId]);
-
-        if (results.length === 0) {
-            return null;
-        }
-
-        return Player.fromDatabase(results[0]);
-    }
-
-    /**
-     * Obtient ou crée un joueur
-     */
-    async findOrCreate(userId, username) {
-        let player = await this.findByUserId(userId);
-
-        if (!player) {
-            // Créer le joueur avec la méthode spécialisée
-            player = await this.create(userId, username);
-        } else if (player.username !== username) {
-            // Mettre à jour le nom d'utilisateur si nécessaire
-            player.username = username;
-            await this.updatePlayerStats(userId, player);
-        }
-
-        return player;
-    }
-
-    /**
- * Met à jour les statistiques d'un joueur
- */
     async updatePlayerStats(userId, stats) {
         const query = `
-        UPDATE user_scores SET
-            username = ?,
-            total_points = ?,
-            total_difficulty_points = ?,
-            games_played = ?,
-            games_won = ?,
-            correct_brand_guesses = ?,
-            correct_model_guesses = ?,
-            total_brand_guesses = ?,
-            total_model_guesses = ?,
-            best_streak = ?,
-            current_streak = ?,
-            best_time = ?,
-            average_response_time = ?,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE user_id = ?
-    `;
+            UPDATE user_scores SET
+                username = ?,
+                total_points = ?,
+                total_difficulty_points = ?,
+                games_played = ?,
+                games_won = ?,
+                correct_brand_guesses = ?,
+                correct_model_guesses = ?,
+                total_brand_guesses = ?,
+                total_model_guesses = ?,
+                best_streak = ?,
+                current_streak = ?,
+                best_time = ?,
+                average_response_time = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = ?
+        `;
 
         const params = [
             stats.username,
@@ -126,50 +72,77 @@ class PlayerRepository extends BaseRepository {
             userId
         ];
 
+        // 1. Sauvegarder en base PUIS mettre à jour le cache
         await executeQuery(query, params);
 
-        // Retourner le joueur mis à jour
+        // 2. Mettre à jour INSTANTANÉMENT le classement en mémoire
+        if (this.rankingManager) {
+            try {
+                const rankingUpdate = await this.rankingManager.updatePlayerInstantly(userId, stats);
+
+                // Logger les changements significatifs de position
+                if (rankingUpdate.positionChange !== 0) {
+                    const direction = rankingUpdate.positionChange > 0 ? '📈' : '📉';
+                    logger.info(`${direction} Classement ${stats.username}: ${rankingUpdate.oldRanking} → ${rankingUpdate.newRanking}`);
+                }
+            } catch (error) {
+                logger.error('❌ Erreur mise à jour classement temps réel:', error);
+                // Continue quand même, le classement sera mis à jour au prochain rechargement
+            }
+        }
+
+        // 3. Retourner le joueur mis à jour depuis le cache (plus rapide)
+        if (this.rankingManager) {
+            const playerWithRanking = this.rankingManager.getPlayerWithRanking(userId);
+            if (playerWithRanking) {
+                return playerWithRanking;
+            }
+        }
+
+        // Fallback : récupérer depuis la base
         return await this.findByUserId(userId);
     }
 
     /**
-     * Récupère le classement des joueurs
+     * Met à jour SEULEMENT le ranking en base (utilisé par le système de sauvegarde périodique)
      */
-    async getLeaderboard(limit = 10) {
+    async updatePlayerRanking(userId, ranking) {
         const query = `
-            SELECT 
-                us.*,
-                ROW_NUMBER() OVER (ORDER BY us.total_difficulty_points DESC, us.games_won DESC) as ranking
-            FROM user_scores us
-            WHERE us.games_played > 0
-            ORDER BY us.total_difficulty_points DESC, us.games_won DESC
-            LIMIT ?
+            UPDATE user_scores 
+            SET ranking = ?, ranking_updated_at = CURRENT_TIMESTAMP 
+            WHERE user_id = ?
         `;
 
-        const results = await executeQuery(query, [limit]);
-        return results.map(row => ({
-            ...Player.fromDatabase(row),
-            ranking: row.ranking
-        }));
+        await executeQuery(query, [ranking, userId]);
     }
 
     /**
-     * Obtient les statistiques d'un joueur avec son classement
+     * Obtient un joueur avec son classement - CORRIGÉ
      */
     async getPlayerWithRanking(userId) {
+        // 1. Essayer le cache en temps réel d'abord
+        if (this.rankingManager) {
+            const cachedPlayer = this.rankingManager.getPlayerWithRanking(userId);
+            if (cachedPlayer) {
+                return cachedPlayer;
+            }
+        }
+
+        // 2. Fallback : calcul depuis la base - CORRIGÉ pour totalPoints
         const query = `
             SELECT 
                 us.*,
                 (
                     SELECT COUNT(*) + 1 
                     FROM user_scores us2 
-                    WHERE us2.total_difficulty_points > us.total_difficulty_points
-                    OR (us2.total_difficulty_points = us.total_difficulty_points AND us2.games_won > us.games_won)
+                    WHERE (us2.total_points > us.total_points)
+                    OR (us2.total_points = us.total_points AND us2.games_won > us.games_won)
+                    OR (us2.total_points = us.total_points AND us2.games_won = us.games_won AND us2.best_time < us.best_time)
                 ) as ranking,
                 CASE 
-                    WHEN us.total_difficulty_points >= 100 THEN 'Expert'
-                    WHEN us.total_difficulty_points >= 50 THEN 'Avancé'
-                    WHEN us.total_difficulty_points >= 20 THEN 'Intermédiaire'
+                    WHEN us.total_points >= 1000 THEN 'Expert'
+                    WHEN us.total_points >= 500 THEN 'Avancé'
+                    WHEN us.total_points >= 200 THEN 'Intermédiaire'
                     ELSE 'Débutant'
                 END as skill_level,
                 CASE 
@@ -196,95 +169,140 @@ class PlayerRepository extends BaseRepository {
     }
 
     /**
- * Enregistre une session de jeu
- */
-    async saveGameSession(sessionData) {
+     * Obtient le leaderboard - CORRIGÉ pour totalPoints
+     */
+    async getLeaderboard(limit = 10) {
+        // 1. Utiliser le cache en temps réel
+        if (this.rankingManager) {
+            return this.rankingManager.getLeaderboard(limit);
+        }
+
+        // 2. Fallback : requête base (plus lente) - CORRIGÉE
         const query = `
-        INSERT INTO game_sessions (
-            user_id, car_id, started_at, ended_at, duration_seconds,
-            attempts_make, attempts_model, make_found, model_found,
-            completed, abandoned, timeout, car_changes_used, hints_used,
-            points_earned, difficulty_points_earned
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
+            SELECT 
+                us.*,
+                ROW_NUMBER() OVER (
+                    ORDER BY us.total_points DESC, us.games_won DESC, us.best_time ASC
+                ) as ranking
+            FROM user_scores us
+            WHERE us.games_played > 0
+            ORDER BY us.total_points DESC, us.games_won DESC, us.best_time ASC
+            LIMIT ?
+        `;
 
-        // FIX CRITIQUE: Gestion correcte de hintsUsed
-        let hintsUsedJson = null;
-        if (sessionData.hintsUsed) {
-            if (typeof sessionData.hintsUsed === 'object') {
-                // Convertir l'objet en JSON, même s'il est vide
-                hintsUsedJson = JSON.stringify(sessionData.hintsUsed);
-            } else if (typeof sessionData.hintsUsed === 'string') {
-                hintsUsedJson = sessionData.hintsUsed;
-            }
-        }
-
-        // Si hintsUsedJson est toujours null, utiliser un objet vide JSON
-        if (hintsUsedJson === null) {
-            hintsUsedJson = '{}';
-        }
-
-        const params = [
-            sessionData.userId,
-            sessionData.carId,
-            sessionData.startedAt,
-            sessionData.endedAt,
-            sessionData.durationSeconds,
-            sessionData.attemptsMake || 0,
-            sessionData.attemptsModel || 0,
-            sessionData.makeFound ? 1 : 0,  // FIX: Convertir boolean en int
-            sessionData.modelFound ? 1 : 0, // FIX: Convertir boolean en int
-            sessionData.completed ? 1 : 0,  // FIX: Convertir boolean en int
-            sessionData.abandoned ? 1 : 0,  // FIX: Convertir boolean en int
-            sessionData.timeout ? 1 : 0,    // FIX: Convertir boolean en int
-            sessionData.carChangesUsed || 0,
-            hintsUsedJson, // ✅ CORRIGÉ : Toujours une string JSON valide
-            sessionData.pointsEarned || 0,
-            sessionData.difficultyPointsEarned || 0
-        ];
-
-        console.log('DEBUG saveGameSession params:', params); // Pour debug
-
-        await executeQuery(query, params);
+        const results = await executeQuery(query, [limit]);
+        return results.map(row => ({
+            ...Player.fromDatabase(row),
+            ranking: row.ranking
+        }));
     }
 
     /**
-     * Met à jour le score après une partie
+     * Obtient le classement autour d'un joueur spécifique - CORRIGÉ
      */
-    async updatePlayerAfterGame(userId, gameResult) {
-        const player = await this.findByUserId(userId);
-        if (!player) return null;
-
-        // Calcul des nouvelles statistiques
-        const newStats = {
-            ...player,
-            totalPoints: player.totalPoints + (gameResult.basePoints || 0),
-            totalDifficultyPoints: player.totalDifficultyPoints + (gameResult.difficultyPoints || 0),
-            gamesPlayed: player.gamesPlayed + 1,
-            gamesWon: player.gamesWon + (gameResult.completed ? 1 : 0),
-            correctBrandGuesses: player.correctBrandGuesses + (gameResult.makeFound ? 1 : 0),
-            correctModelGuesses: player.correctModelGuesses + (gameResult.modelFound ? 1 : 0),
-            totalBrandGuesses: player.totalBrandGuesses + (gameResult.attemptsMake || 0),
-            totalModelGuesses: player.totalModelGuesses + (gameResult.attemptsModel || 0)
-        };
-
-        // Gestion des streaks
-        if (gameResult.completed) {
-            newStats.currentStreak = player.currentStreak + 1;
-            newStats.bestStreak = Math.max(player.bestStreak, newStats.currentStreak);
-        } else {
-            newStats.currentStreak = 0;
+    async getLeaderboardAroundPlayer(userId, range = 5) {
+        if (this.rankingManager) {
+            return this.rankingManager.getLeaderboardAroundPlayer(userId, range);
         }
 
-        // Gestion du meilleur temps
-        if (gameResult.duration && gameResult.completed) {
-            if (!player.bestTime || gameResult.duration < player.bestTime) {
-                newStats.bestTime = gameResult.duration;
+        // Fallback complexe pour la base de données - CORRIGÉ
+        const playerRankingQuery = `
+            SELECT 
+                (
+                    SELECT COUNT(*) + 1 
+                    FROM user_scores us2 
+                    WHERE (us2.total_points > us.total_points)
+                    OR (us2.total_points = us.total_points AND us2.games_won > us.games_won)
+                    OR (us2.total_points = us.total_points AND us2.games_won = us.games_won AND us2.best_time < us.best_time)
+                ) as player_ranking
+            FROM user_scores us
+            WHERE us.user_id = ?
+        `;
+
+        const rankingResult = await executeQuery(playerRankingQuery, [userId]);
+        if (rankingResult.length === 0) return [];
+
+        const playerRanking = rankingResult[0].player_ranking;
+        const startRanking = Math.max(1, playerRanking - range);
+        const endRanking = playerRanking + range;
+
+        const query = `
+            SELECT 
+                ranked_players.*
+            FROM (
+                SELECT 
+                    us.*,
+                    ROW_NUMBER() OVER (
+                        ORDER BY us.total_points DESC, us.games_won DESC, us.best_time ASC
+                    ) as ranking
+                FROM user_scores us
+                WHERE us.games_played > 0
+            ) ranked_players
+            WHERE ranked_players.ranking BETWEEN ? AND ?
+            ORDER BY ranked_players.ranking
+        `;
+
+        const results = await executeQuery(query, [startRanking, endRanking]);
+        return results.map(row => ({
+            ...Player.fromDatabase(row),
+            ranking: row.ranking
+        }));
+    }
+
+    /**
+     * Autres méthodes inchangées...
+     */
+    async findByUserId(userId) {
+        const query = 'SELECT * FROM user_scores WHERE user_id = ?';
+        const results = await executeQuery(query, [userId]);
+
+        if (results.length === 0) {
+            return null;
+        }
+
+        return Player.fromDatabase(results[0]);
+    }
+
+    async create(userId, username) {
+        const query = `
+            INSERT INTO user_scores (
+                user_id, username, total_points, total_difficulty_points, games_played, games_won,
+                correct_brand_guesses, correct_model_guesses, total_brand_guesses, total_model_guesses,
+                best_streak, current_streak, best_time, average_response_time, created_at, updated_at
+            ) VALUES (?, ?, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        `;
+
+        await executeQuery(query, [userId, username]);
+        return await this.findByUserId(userId);
+    }
+
+    async findOrCreate(userId, username) {
+        let player = await this.findByUserId(userId);
+
+        if (!player) {
+            player = await this.create(userId, username);
+
+            // Ajouter au cache temps réel
+            if (this.rankingManager) {
+                await this.rankingManager.updatePlayerInstantly(userId, player);
             }
+        } else if (player.username !== username) {
+            player.username = username;
+            await this.updatePlayerStats(userId, player);
         }
 
-        await this.updatePlayerStats(userId, newStats);
-        return newStats;
+        return player;
+    }
+
+    // Méthodes de maintenance du système
+    async getSystemStats() {
+        const totalPlayersQuery = 'SELECT COUNT(*) as total FROM user_scores WHERE games_played > 0';
+        const result = await executeQuery(totalPlayersQuery);
+
+        return {
+            totalActivePlayers: result[0].total,
+            rankingSystem: this.rankingManager ? this.rankingManager.getSystemStats() : null
+        };
     }
 }
 

@@ -280,14 +280,32 @@ class Player {
     }
 
     /**
- * Compare deux joueurs pour le classement
- */
+     * Compare deux joueurs pour le classement - CORRIGÉ
+     */
     static compare(playerA, playerB) {
-        // Tri par points totaux décroissant, puis par parties gagnées
+        // 1. Tri par POINTS TOTAUX décroissant (principal critère)
         if (playerA.totalPoints !== playerB.totalPoints) {
             return playerB.totalPoints - playerA.totalPoints;
         }
-        return playerB.gamesWon - playerA.gamesWon;
+
+        // 2. En cas d'égalité : parties gagnées décroissant
+        if (playerA.gamesWon !== playerB.gamesWon) {
+            return playerB.gamesWon - playerA.gamesWon;
+        }
+
+        // 3. En cas d'égalité : meilleur temps croissant (plus rapide = mieux)
+        const timeA = playerA.bestTime || Number.MAX_SAFE_INTEGER;
+        const timeB = playerB.bestTime || Number.MAX_SAFE_INTEGER;
+
+        if (timeA !== timeB) {
+            return timeA - timeB;
+        }
+
+        // 4. Tie-breaker final : taux de réussite décroissant
+        const rateA = playerA.gamesPlayed > 0 ? (playerA.gamesWon / playerA.gamesPlayed) : 0;
+        const rateB = playerB.gamesPlayed > 0 ? (playerB.gamesWon / playerB.gamesPlayed) : 0;
+
+        return rateB - rateA;
     }
 }
 

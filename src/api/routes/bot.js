@@ -90,84 +90,84 @@ router.post('/game', (req, res) => {
         });
 
         switch (action.toLowerCase()) {
-            case 'start':
-                // Démarrer une nouvelle partie
-                gameStats.active++;
-                gameStats.total++;
-                gameStats.todayStarted++;
+        case 'start':
+            // Démarrer une nouvelle partie
+            gameStats.active++;
+            gameStats.total++;
+            gameStats.todayStarted++;
 
-                // Enregistrer la session active
-                gameStats.activeSessions.set(gameSessionId, {
-                    channelId,
-                    user,
-                    startTime: now,
-                    status: 'active',
-                    ...gameData
-                });
+            // Enregistrer la session active
+            gameStats.activeSessions.set(gameSessionId, {
+                channelId,
+                user,
+                startTime: now,
+                status: 'active',
+                ...gameData
+            });
 
-                logger.info(`🎮 Game started | Channel: ${channelId} | User: ${user} | SessionID: ${gameSessionId} | Active games: ${gameStats.active}`);
-                break;
+            logger.info(`🎮 Game started | Channel: ${channelId} | User: ${user} | SessionID: ${gameSessionId} | Active games: ${gameStats.active}`);
+            break;
 
-            case 'complete':
-            case 'finish':
-            case 'end':
-                // Terminer une partie avec succès
-                if (gameStats.activeSessions.has(gameSessionId)) {
-                    const session = gameStats.activeSessions.get(gameSessionId);
-                    const duration = new Date() - new Date(session.startTime);
-
-                    gameStats.active = Math.max(0, gameStats.active - 1);
-                    gameStats.completed++;
-                    gameStats.todayCompleted++;
-
-                    // Supprimer de la liste des sessions actives
-                    gameStats.activeSessions.delete(gameSessionId);
-
-                    logger.info(`✅ Game completed | Channel: ${channelId} | User: ${user} | SessionID: ${gameSessionId} | Duration: ${Math.round(duration / 1000)}s | Active games: ${gameStats.active}`);
-                } else {
-                    // Si la session n'est pas trouvée, décrémenter quand même
-                    gameStats.active = Math.max(0, gameStats.active - 1);
-                    gameStats.completed++;
-                    gameStats.todayCompleted++;
-
-                    logger.warn(`⚠️ Game completed but session not found | Channel: ${channelId} | User: ${user} | SessionID: ${gameSessionId} | Active games: ${gameStats.active}`);
-                }
-                break;
-
-            case 'abandon':
-            case 'quit':
-            case 'stop':
-                // Abandonner une partie
-                if (gameStats.activeSessions.has(gameSessionId)) {
-                    gameStats.activeSessions.delete(gameSessionId);
-                }
+        case 'complete':
+        case 'finish':
+        case 'end':
+            // Terminer une partie avec succès
+            if (gameStats.activeSessions.has(gameSessionId)) {
+                const session = gameStats.activeSessions.get(gameSessionId);
+                const duration = new Date() - new Date(session.startTime);
 
                 gameStats.active = Math.max(0, gameStats.active - 1);
-                gameStats.abandoned++;
-                gameStats.todayAbandoned++;
+                gameStats.completed++;
+                gameStats.todayCompleted++;
 
-                logger.info(`❌ Game abandoned | Channel: ${channelId} | User: ${user} | SessionID: ${gameSessionId} | Active games: ${gameStats.active}`);
-                break;
+                // Supprimer de la liste des sessions actives
+                gameStats.activeSessions.delete(gameSessionId);
 
-            case 'timeout':
-                // Partie expirée par timeout
-                if (gameStats.activeSessions.has(gameSessionId)) {
-                    gameStats.activeSessions.delete(gameSessionId);
-                }
-
+                logger.info(`✅ Game completed | Channel: ${channelId} | User: ${user} | SessionID: ${gameSessionId} | Duration: ${Math.round(duration / 1000)}s | Active games: ${gameStats.active}`);
+            } else {
+                // Si la session n'est pas trouvée, décrémenter quand même
                 gameStats.active = Math.max(0, gameStats.active - 1);
-                gameStats.abandoned++; // Compter comme abandonnée
-                gameStats.todayAbandoned++;
+                gameStats.completed++;
+                gameStats.todayCompleted++;
 
-                logger.info(`⏰ Game timeout | Channel: ${channelId} | User: ${user} | SessionID: ${gameSessionId} | Active games: ${gameStats.active}`);
-                break;
+                logger.warn(`⚠️ Game completed but session not found | Channel: ${channelId} | User: ${user} | SessionID: ${gameSessionId} | Active games: ${gameStats.active}`);
+            }
+            break;
 
-            default:
-                logger.warn(`❓ Action inconnue reçue: ${action} | Channel: ${channelId} | User: ${user} | SessionID: ${gameSessionId}`);
-                return res.status(400).json({
-                    success: false,
-                    error: `Action inconnue: ${action}. Actions supportées: start, complete, abandon, timeout`
-                });
+        case 'abandon':
+        case 'quit':
+        case 'stop':
+            // Abandonner une partie
+            if (gameStats.activeSessions.has(gameSessionId)) {
+                gameStats.activeSessions.delete(gameSessionId);
+            }
+
+            gameStats.active = Math.max(0, gameStats.active - 1);
+            gameStats.abandoned++;
+            gameStats.todayAbandoned++;
+
+            logger.info(`❌ Game abandoned | Channel: ${channelId} | User: ${user} | SessionID: ${gameSessionId} | Active games: ${gameStats.active}`);
+            break;
+
+        case 'timeout':
+            // Partie expirée par timeout
+            if (gameStats.activeSessions.has(gameSessionId)) {
+                gameStats.activeSessions.delete(gameSessionId);
+            }
+
+            gameStats.active = Math.max(0, gameStats.active - 1);
+            gameStats.abandoned++; // Compter comme abandonnée
+            gameStats.todayAbandoned++;
+
+            logger.info(`⏰ Game timeout | Channel: ${channelId} | User: ${user} | SessionID: ${gameSessionId} | Active games: ${gameStats.active}`);
+            break;
+
+        default:
+            logger.warn(`❓ Action inconnue reçue: ${action} | Channel: ${channelId} | User: ${user} | SessionID: ${gameSessionId}`);
+            return res.status(400).json({
+                success: false,
+                error: `Action inconnue: ${action}. Actions supportées: start, complete, abandon, timeout`
+            });
         }
 
         // Nettoyer les sessions expirées (plus de 1 heure)
@@ -289,37 +289,37 @@ router.post('/reset', (req, res) => {
         const { type } = req.body;
 
         switch (type) {
-            case 'all':
-                gameStats = {
-                    active: 0,
-                    total: 0,
-                    completed: 0,
-                    abandoned: 0,
-                    todayStarted: 0,
-                    todayCompleted: 0,
-                    todayAbandoned: 0,
-                    activeSessions: new Map(),
-                    lastReset: new Date().toDateString()
-                };
-                break;
+        case 'all':
+            gameStats = {
+                active: 0,
+                total: 0,
+                completed: 0,
+                abandoned: 0,
+                todayStarted: 0,
+                todayCompleted: 0,
+                todayAbandoned: 0,
+                activeSessions: new Map(),
+                lastReset: new Date().toDateString()
+            };
+            break;
 
-            case 'active':
-                gameStats.active = 0;
-                gameStats.activeSessions.clear();
-                break;
+        case 'active':
+            gameStats.active = 0;
+            gameStats.activeSessions.clear();
+            break;
 
-            case 'daily':
-                gameStats.todayStarted = 0;
-                gameStats.todayCompleted = 0;
-                gameStats.todayAbandoned = 0;
-                gameStats.lastReset = new Date().toDateString();
-                break;
+        case 'daily':
+            gameStats.todayStarted = 0;
+            gameStats.todayCompleted = 0;
+            gameStats.todayAbandoned = 0;
+            gameStats.lastReset = new Date().toDateString();
+            break;
 
-            default:
-                return res.status(400).json({
-                    success: false,
-                    error: 'Type invalide. Utilisez: all, active, ou daily'
-                });
+        default:
+            return res.status(400).json({
+                success: false,
+                error: 'Type invalide. Utilisez: all, active, ou daily'
+            });
         }
 
         logger.info(`Bot stats reset via API: ${type || 'all'}`);
