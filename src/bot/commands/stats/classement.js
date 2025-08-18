@@ -66,7 +66,7 @@ module.exports = {
                 else positionIcon = `**${position}.**`;
 
                 // Formater les statistiques avec validation
-                const points = Math.round((player.totalDifficultyPoints || 0) * 10) / 10;
+                const totalPoints = Math.round((player.totalPoints || 0) * 10) / 10;
 
                 // FIX: Validation du taux de réussite
                 let successRate = 0;
@@ -81,10 +81,10 @@ module.exports = {
                     formatTime(Math.round(player.averageTime)) : 'N/A';
 
                 // NOUVEAU: Obtenir le niveau du joueur
-                const playerLevel = LevelSystem.getPlayerLevel(player.totalDifficultyPoints);
+                const playerLevel = LevelSystem.getPlayerLevel(player.totalPoints);
 
                 leaderboardText += `${positionIcon} **${player.username}** ${playerLevel.emoji}\n`;
-                leaderboardText += `└ ${playerLevel.title} • ${points} pts • ${player.gamesWon || 0}/${player.gamesPlayed || 0} parties • ${successRate}%\n\n`;
+                leaderboardText += `└ ${playerLevel.title} • ${totalPoints} pts • ${player.gamesWon || 0}/${player.gamesPlayed || 0} parties • ${successRate}%\n\n`;
             }
 
             leaderboardEmbed.addFields({
@@ -101,7 +101,7 @@ module.exports = {
                     const requesterStats = await playerManager.getPlayerWithRanking(interaction.user.id);
 
                     if (requesterStats && requesterStats.ranking) {
-                        const points = Math.round((requesterStats.totalDifficultyPoints || 0) * 10) / 10;
+                        const totalPoints = Math.round((requesterStats.totalPoints || 0) * 10) / 10;
 
                         // FIX: Validation du taux de réussite pour le demandeur
                         let successRate = 0;
@@ -115,11 +115,11 @@ module.exports = {
                             formatTime(Math.round(requesterStats.averageTime)) : 'N/A';
 
                         // NOUVEAU: Niveau du demandeur
-                        const requesterLevel = LevelSystem.getPlayerLevel(requesterStats.totalDifficultyPoints);
+                        const requesterLevel = LevelSystem.getPlayerLevel(requesterStats.totalPoints);
 
                         leaderboardEmbed.addFields({
                             name: '👤 Votre position',
-                            value: `**#${requesterStats.ranking}** ${requesterLevel.emoji} ${requesterLevel.title}\n${points} pts • ${requesterStats.gamesWon || 0}/${requesterStats.gamesPlayed || 0} parties • ${successRate}%`,
+                            value: `**#${requesterStats.ranking}** ${requesterLevel.emoji} ${requesterLevel.title}\n${totalPoints} pts • ${requesterStats.gamesWon || 0}/${requesterStats.gamesPlayed || 0} parties • ${successRate}%`,
                             inline: false
                         });
                     }
@@ -133,7 +133,7 @@ module.exports = {
             // Ajouter la légende mise à jour
             leaderboardEmbed.addFields({
                 name: '📖 Légende',
-                value: 'Points de difficulté • Victoires/Parties • Taux de réussite\n💡 Les niveaux sont basés sur vos points de difficulté totaux',
+                value: 'Points totaux • Victoires/Parties • Taux de réussite\n💡 Les niveaux sont basés sur vos points totaux',
                 inline: false
             });
 

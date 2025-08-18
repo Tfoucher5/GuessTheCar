@@ -286,7 +286,7 @@ class GameEngine extends EventEmitter {
                 type: 'gameOver',
                 isCorrect: false,
                 success: false,
-                feedback: `⌛ Plus d'essais !\nLa voiture était la **${gameState.car.getFullName()}**.\n\nVous avez trouvé la marque, vous gagnez ${score.difficultyPoints.toFixed(1)} points !`,
+                feedback: `⌛ Plus d'essais !\nLa voiture était la **${gameState.car.getFullName()}**.\n\nVous avez trouvé la marque, vous gagnez ${(score.basePoints + score.difficultyPoints).toFixed(1)} points totaux (${score.basePoints.toFixed(1)} + ${score.difficultyPoints.toFixed(1)} bonus) !`,
                 score,
                 timeSpent,
                 attempts: totalAttempts,

@@ -280,12 +280,12 @@ class Player {
     }
 
     /**
-     * Compare deux joueurs pour le classement
-     */
+ * Compare deux joueurs pour le classement
+ */
     static compare(playerA, playerB) {
-        // Tri par points de difficulté décroissant, puis par parties gagnées
-        if (playerA.totalDifficultyPoints !== playerB.totalDifficultyPoints) {
-            return playerB.totalDifficultyPoints - playerA.totalDifficultyPoints;
+        // Tri par points totaux décroissant, puis par parties gagnées
+        if (playerA.totalPoints !== playerB.totalPoints) {
+            return playerB.totalPoints - playerA.totalPoints;
         }
         return playerB.gamesWon - playerA.gamesWon;
     }

@@ -57,8 +57,8 @@ module.exports = {
 
             // ===== CALCULS CORRIGÉS =====
             // Vérification et calcul sécurisé des statistiques
-            const points = isValidNumber(playerStats.totalDifficultyPoints) ?
-                Math.round(playerStats.totalDifficultyPoints * 10) / 10 : 0;
+            const points = isValidNumber(playerStats.totalPoints) ?
+                Math.round(playerStats.totalPoints * 10) / 10 : 0;
 
             // FIX: Calcul corrigé du taux de réussite
             let successRate = 0;
@@ -85,8 +85,10 @@ module.exports = {
             }
 
             // NOUVEAU: Obtenir le niveau du joueur
-            const playerLevel = LevelSystem.getPlayerLevel(playerStats.totalDifficultyPoints);
-            const progressInfo = LevelSystem.getProgressToNextLevel(playerStats.totalDifficultyPoints);
+            const playerLevel = LevelSystem.getPlayerLevel(playerStats.totalPoints);
+            const progressInfo = LevelSystem.getProgressToNextLevel(playerStats.totalPoints);
+            const difficultyPoints = Math.round((playerStats.totalDifficultyPoints || 0) * 10) / 10;
+            const totalPoints = Math.round((playerStats.totalPoints || 0) * 10) / 10;
 
             // Créer l'embed avec le niveau
             const statsEmbed = new EmbedBuilder()
@@ -121,12 +123,12 @@ module.exports = {
                 },
                 {
                     name: '🏆 Points & Classement',
-                    value: `**Points de difficulté:** ${points}\n**Classement:** #${playerStats.ranking || 'N/A'}\n**Série actuelle:** ${playerStats.currentStreak || 0}`,
+                    value: `**Points totaux:** ${totalPoints}\n**Bonus difficulté:** ${difficultyPoints}\n**Classement:** #${playerStats.ranking || 'N/A'}\n**Série actuelle:** ${playerStats.currentStreak || 0}`,
                     inline: true
                 },
                 {
                     name: '⏱️ Performance',
-                    value: `**Temps moyen:** ${avgTime}\n**Tentatives moy.:** ${avgAttempts}\n**Meilleur temps:** ${playerStats.bestTime ? formatTime(playerStats.bestTime) : 'N/A'}`,
+                    value: `**Points totaux:** ${totalPoints}\n**Bonus difficulté:** ${difficultyPoints}\n**Classement:** #${playerStats.ranking || 'N/A'}\n**Série actuelle:** ${playerStats.currentStreak || 0}`,
                     inline: true
                 }
             );

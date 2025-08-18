@@ -77,7 +77,8 @@ class GameEmbedBuilder {
                 },
                 {
                     name: '🏆 Points gagnés',
-                    value: `**${score.difficultyPoints.toFixed(1)} points**`,
+                    value: `**${(score.basePoints + score.difficultyPoints).toFixed(1)} points totaux**\n` +
+                        `*Points de base: ${score.basePoints.toFixed(1)} + Bonus difficulté: ${score.difficultyPoints.toFixed(1)}*`,
                     inline: false
                 }
             )
@@ -216,9 +217,9 @@ class GameEmbedBuilder {
                 '3. Vous avez 10 essais pour chaque étape\n\n' +
 
                 '**📝 Points**\n' +
-                '• 1 point pour une réussite complète\n' +
-                '• 0.5 point si vous trouvez avec aide ou uniquement la marque\n' +
-                '• Bonus selon la difficulté (facile: x1, moyen: x1.5, difficile: x2)\n\n' +
+                '• Points de base: 1 point complet, 0.5 point partiel\n' +
+                '• Bonus difficulté: facile (x1), moyen (x1.5), difficile (x2)\n' +
+                '• Classement basé sur les points totaux (base + bonus)\n\n' +
 
                 '**⌨️ Commandes**\n' +
                 '`/guesscar` - Démarrer une nouvelle partie\n' +
@@ -242,8 +243,8 @@ class GameEmbedBuilder {
      * Crée un embed d'abandon de partie
      */
     static createAbandonEmbed(gameState, correctAnswer, score = null) {
-        const pointsMessage = score ? `\nVous gagnez ${Number(score.difficultyPoints || 0).toFixed(1)} points pour avoir trouvé la marque.` : '';
-
+        const pointsMessage = score ?
+            `\nVous gagnez ${(score.basePoints + score.difficultyPoints).toFixed(1)} points totaux (${score.basePoints.toFixed(1)} + ${score.difficultyPoints.toFixed(1)} bonus) pour avoir trouvé la marque.` : '';
         return this.createGameEmbed(gameState, {
             color: '#FFA500',
             title: '🏳️ Partie abandonnée',
@@ -255,7 +256,8 @@ class GameEmbedBuilder {
  * Crée un embed de timeout
  */
     static createTimeoutEmbed(gameState, correctAnswer, score = null) {
-        const pointsMessage = score ? `\nVous gagnez ${Number(score.difficultyPoints || 0).toFixed(1)} points pour avoir trouvé la marque.` : '';
+        const pointsMessage = score ?
+            `\nVous gagnez ${(score.basePoints + score.difficultyPoints).toFixed(1)} points totaux (${score.basePoints.toFixed(1)} + ${score.difficultyPoints.toFixed(1)} bonus) pour avoir trouvé la marque.` : '';
 
         return this.createGameEmbed(gameState, {
             color: '#FF8C00',
@@ -309,8 +311,9 @@ class GameEmbedBuilder {
     static createGameOverEmbed(gameState, carName, score = null, timeSpent = 0, attempts = 0) {
         let description = `😞 Dommage !\nLa voiture était la **${carName}**.`;
 
-        if (score && score.difficultyPoints > 0) {
-            description += `\n\nVous avez trouvé la marque, vous gagnez ${score.difficultyPoints.toFixed(1)} points !`;
+        if (score && (score.basePoints > 0 || score.difficultyPoints > 0)) {
+            const totalPoints = score.basePoints + score.difficultyPoints;
+            description += `\n\nVous avez trouvé la marque, vous gagnez ${totalPoints.toFixed(1)} points totaux (${score.basePoints.toFixed(1)} + ${score.difficultyPoints.toFixed(1)} bonus) !`;
         } else {
             description += '\n\nAucun point cette fois, mais essayez encore !';
         }

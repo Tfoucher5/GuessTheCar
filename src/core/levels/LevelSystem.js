@@ -193,10 +193,8 @@ const LEVEL_SYSTEM = {
         }
     ],
 
-    /**
-     * Obtient le niveau d'un joueur basé sur ses points
-     */
-    getPlayerLevel(totalPoints) {
+    // Dans getPlayerLevel()
+    getPlayerLevel(totalPoints) { // Utiliser totalPoints au lieu de totalDifficultyPoints
         for (let i = this.levels.length - 1; i >= 0; i--) {
             if (totalPoints >= this.levels[i].minPoints) {
                 return {
@@ -207,7 +205,7 @@ const LEVEL_SYSTEM = {
                 };
             }
         }
-        return this.levels[0]; // Par défaut le premier niveau
+        return this.levels[0];
     },
 
     /**
