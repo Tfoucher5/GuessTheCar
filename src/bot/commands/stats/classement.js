@@ -65,10 +65,18 @@ module.exports = {
                 else if (position === 3) positionIcon = '🥉';
                 else positionIcon = `**${position}.**`;
 
-                // Formater les statistiques
-                const points = Math.round(player.totalDifficultyPoints * 10) / 10;
-                const successRate = Math.round(player.successRate * 10) / 10;
-                const avgAttempts = Math.round(player.averageAttempts * 10) / 10;
+                // Formater les statistiques avec validation
+                const points = Math.round((player.totalDifficultyPoints || 0) * 10) / 10;
+
+                // FIX: Validation du taux de réussite
+                let successRate = 0;
+                if (player.gamesPlayed > 0 && typeof player.gamesWon === 'number') {
+                    successRate = Math.round((player.gamesWon / player.gamesPlayed) * 1000) / 10;
+                } else if (typeof player.successRate === 'number' && !isNaN(player.successRate)) {
+                    successRate = Math.round(player.successRate * 10) / 10;
+                }
+
+                const avgAttempts = Math.round((player.averageAttempts || 0) * 10) / 10;
                 const avgTime = player.averageTime && player.averageTime > 0 ?
                     formatTime(Math.round(player.averageTime)) : 'N/A';
 
@@ -76,7 +84,7 @@ module.exports = {
                 const playerLevel = LevelSystem.getPlayerLevel(player.totalDifficultyPoints);
 
                 leaderboardText += `${positionIcon} **${player.username}** ${playerLevel.emoji}\n`;
-                leaderboardText += `└ ${playerLevel.title} • ${points} pts • ${player.gamesWon}/${player.gamesPlayed} parties • ${successRate}%\n\n`;
+                leaderboardText += `└ ${playerLevel.title} • ${points} pts • ${player.gamesWon || 0}/${player.gamesPlayed || 0} parties • ${successRate}%\n\n`;
             }
 
             leaderboardEmbed.addFields({
@@ -93,8 +101,16 @@ module.exports = {
                     const requesterStats = await playerManager.getPlayerWithRanking(interaction.user.id);
 
                     if (requesterStats && requesterStats.ranking) {
-                        const points = Math.round(requesterStats.totalDifficultyPoints * 10) / 10;
-                        const successRate = Math.round(requesterStats.successRate * 10) / 10;
+                        const points = Math.round((requesterStats.totalDifficultyPoints || 0) * 10) / 10;
+
+                        // FIX: Validation du taux de réussite pour le demandeur
+                        let successRate = 0;
+                        if (requesterStats.gamesPlayed > 0 && typeof requesterStats.gamesWon === 'number') {
+                            successRate = Math.round((requesterStats.gamesWon / requesterStats.gamesPlayed) * 1000) / 10;
+                        } else if (typeof requesterStats.successRate === 'number' && !isNaN(requesterStats.successRate)) {
+                            successRate = Math.round(requesterStats.successRate * 10) / 10;
+                        }
+
                         const avgTime = requesterStats.averageTime && requesterStats.averageTime > 0 ?
                             formatTime(Math.round(requesterStats.averageTime)) : 'N/A';
 
@@ -103,7 +119,7 @@ module.exports = {
 
                         leaderboardEmbed.addFields({
                             name: '👤 Votre position',
-                            value: `**#${requesterStats.ranking}** ${requesterLevel.emoji} ${requesterLevel.title}\n${points} pts • ${requesterStats.gamesWon}/${requesterStats.gamesPlayed} parties • ${successRate}%`,
+                            value: `**#${requesterStats.ranking}** ${requesterLevel.emoji} ${requesterLevel.title}\n${points} pts • ${requesterStats.gamesWon || 0}/${requesterStats.gamesPlayed || 0} parties • ${successRate}%`,
                             inline: false
                         });
                     }

@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const PlayerManager = require('../../../core/player/PlayerManager');
 const LevelSystem = require('../../../core/levels/LevelSystem');
 const logger = require('../../../shared/utils/logger');
@@ -47,7 +47,7 @@ module.exports = {
                     .setDescription('Aucune partie jouée pour le moment.\nCommencez une partie avec `/guesscar` !')
                     .addFields({
                         name: '🎯 Niveau',
-                        value: `*${LevelSystem.levels[0].title}**\n*${LevelSystem.levels[0].description}*`,
+                        value: `*${LevelSystem.levels[0].title}*\n*${LevelSystem.levels[0].description}*`,
                         inline: false
                     });
 
@@ -55,12 +55,34 @@ module.exports = {
                 return;
             }
 
-            // Calculer les statistiques formatées
-            const points = Math.round(playerStats.totalDifficultyPoints * 10) / 10;
-            const successRate = Math.round(playerStats.successRate * 10) / 10;
-            const avgAttempts = Math.round(playerStats.averageAttempts * 10) / 10;
-            const avgTime = playerStats.averageTime && playerStats.averageTime > 0 ?
-                formatTime(Math.round(playerStats.averageTime)) : 'N/A';
+            // ===== CALCULS CORRIGÉS =====
+            // Vérification et calcul sécurisé des statistiques
+            const points = isValidNumber(playerStats.totalDifficultyPoints) ?
+                Math.round(playerStats.totalDifficultyPoints * 10) / 10 : 0;
+
+            // FIX: Calcul corrigé du taux de réussite
+            let successRate = 0;
+            if (playerStats.gamesPlayed > 0 && typeof playerStats.gamesWon === 'number') {
+                successRate = Math.round((playerStats.gamesWon / playerStats.gamesPlayed) * 1000) / 10;
+            } else if (isValidNumber(playerStats.successRate)) {
+                successRate = Math.round(playerStats.successRate * 10) / 10;
+            }
+
+            // FIX: Utiliser les bonnes propriétés du modèle Player
+
+            // averageAttempts est un getter dans Player.js - il se calcule automatiquement
+            let avgAttempts = 'N/A';
+            if (playerStats.gamesPlayed > 0) {
+                // Utiliser le getter averageAttempts qui existe dans Player.js
+                const calculatedAttempts = (playerStats.totalBrandGuesses + playerStats.totalModelGuesses) / playerStats.gamesPlayed;
+                avgAttempts = Math.round(calculatedAttempts * 10) / 10;
+            }
+
+            // averageTime n'existe pas dans Player.js, mais on a averageResponseTime
+            let avgTime = 'N/A';
+            if (isValidNumber(playerStats.averageResponseTime) && playerStats.averageResponseTime > 0) {
+                avgTime = formatTime(Math.round(playerStats.averageResponseTime));
+            }
 
             // NOUVEAU: Obtenir le niveau du joueur
             const playerLevel = LevelSystem.getPlayerLevel(playerStats.totalDifficultyPoints);
@@ -73,7 +95,7 @@ module.exports = {
                 .setThumbnail(targetUser.displayAvatarURL({ dynamic: true }));
 
             // NOUVEAU: Ajouter le niveau en premier
-            let levelText = `*${playerLevel.title}**\n*${playerLevel.description}*\n\n`;
+            let levelText = `*${playerLevel.title}*\n*${playerLevel.description}*\n\n`;
 
             if (!progressInfo.isMaxLevel) {
                 const progressBar = LevelSystem.generateProgressBar(progressInfo.progressPercentage);
@@ -90,16 +112,16 @@ module.exports = {
                 inline: false
             });
 
-            // Ajouter les statistiques de base
+            // Ajouter les statistiques de base avec vérifications
             statsEmbed.addFields(
                 {
                     name: '🏁 Résultats',
-                    value: `**Parties:** ${playerStats.gamesPlayed}\n**Victoires:** ${playerStats.gamesWon}\n**Taux de réussite:** ${successRate}%`,
+                    value: `**Parties:** ${playerStats.gamesPlayed || 0}\n**Victoires:** ${playerStats.gamesWon || 0}\n**Taux de réussite:** ${successRate}%`,
                     inline: true
                 },
                 {
                     name: '🏆 Points & Classement',
-                    value: `**Points de difficulté:** ${points}\n**Classement:** #${playerStats.ranking || 'N/A'}\n**Série actuelle:** ${playerStats.currentStreak}`,
+                    value: `**Points de difficulté:** ${points}\n**Classement:** #${playerStats.ranking || 'N/A'}\n**Série actuelle:** ${playerStats.currentStreak || 0}`,
                     inline: true
                 },
                 {
@@ -109,7 +131,7 @@ module.exports = {
                 }
             );
 
-            // Ajouter les détails de devinettes
+            // Ajouter les détails de devinettes avec vérifications
             if (playerStats.totalBrandGuesses > 0 || playerStats.totalModelGuesses > 0) {
                 const brandAccuracy = playerStats.totalBrandGuesses > 0
                     ? Math.round((playerStats.correctBrandGuesses / playerStats.totalBrandGuesses) * 100)
@@ -120,14 +142,14 @@ module.exports = {
 
                 statsEmbed.addFields({
                     name: '🎯 Précision des devinettes',
-                    value: `**Marques:** ${playerStats.correctBrandGuesses}/${playerStats.totalBrandGuesses} (${brandAccuracy}%)\n**Modèles:** ${playerStats.correctModelGuesses}/${playerStats.totalModelGuesses} (${modelAccuracy}%)`,
+                    value: `**Marques:** ${playerStats.correctBrandGuesses || 0}/${playerStats.totalBrandGuesses || 0} (${brandAccuracy}%)\n**Modèles:** ${playerStats.correctModelGuesses || 0}/${playerStats.totalModelGuesses || 0} (${modelAccuracy}%)`,
                     inline: false
                 });
             }
 
             // Footer avec informations supplémentaires
             statsEmbed.setFooter({
-                text: `Meilleure série: ${playerStats.bestStreak} • Membre depuis: ${new Date(playerStats.createdAt).toLocaleDateString('fr-FR')}`
+                text: `Meilleure série: ${playerStats.bestStreak || 0} • Membre depuis: ${new Date(playerStats.createdAt).toLocaleDateString('fr-FR')}`
             });
 
             await interaction.editReply({ embeds: [statsEmbed] });
@@ -146,6 +168,13 @@ module.exports = {
         }
     }
 };
+
+/**
+ * Vérifie si une valeur est un nombre valide
+ */
+function isValidNumber(value) {
+    return typeof value === 'number' && !isNaN(value) && isFinite(value);
+}
 
 /**
  * Formate une durée en secondes en format lisible
