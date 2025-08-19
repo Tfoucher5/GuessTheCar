@@ -253,7 +253,7 @@ class GameEngine extends EventEmitter {
             gameState.userId,
             gameState.car,
             {
-                guildId: gameState.guildId,
+                guildId: gameState.guildId, // ✅ AJOUTER cette ligne !
                 attemptsMake: attemptsMake,
                 attemptsModel: attemptsModel,
                 duration: Math.floor(timeSpent / 1000)

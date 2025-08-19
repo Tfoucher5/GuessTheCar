@@ -280,6 +280,7 @@ class PlayerManager {
             // Enregistrer la voiture trouvée (ignore si déjà trouvée grâce à UNIQUE KEY)
             await this.playerRepository.recordCarFound({
                 userId,
+                guildId: gameStats.guildId || null, // ✅ AJOUTER le guildId ici !
                 carId: car.id,
                 brandId: car.brandId,
                 attemptsUsed: gameStats.attemptsMake + gameStats.attemptsModel,
@@ -288,12 +289,18 @@ class PlayerManager {
 
             logger.info('Car found recorded:', {
                 userId,
+                guildId: gameStats.guildId, // ✅ Logger aussi le guildId
                 car: car.getFullName(),
                 attempts: gameStats.attemptsMake + gameStats.attemptsModel,
                 time: gameStats.duration
             });
         } catch (error) {
-            logger.error('Error recording car found:', { userId, carId: car.id, error });
+            logger.error('Error recording car found:', {
+                userId,
+                guildId: gameStats.guildId, // ✅ Logger le guildId en cas d'erreur
+                carId: car.id,
+                error
+            });
             // Ne pas faire échouer le jeu si l'enregistrement rate
         }
     }
