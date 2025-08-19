@@ -289,14 +289,16 @@ class GameEmbedBuilder {
     }
 
     /**
- * Crée un embed de démarrage de partie
- */
+     * Crée un embed de démarrage de partie
+     */
     static createGameStartEmbed(car, gameState) {
         const difficultyText = car.getDifficultyText();
+        const country = car.country || 'Inconnu';
 
         return this.createGameEmbed(gameState, {
             title: `🚗 Nouvelle partie - Difficulté: **${difficultyText}**`,
             description: 'C\'est parti ! Devine la **marque** de la voiture.\n\n' +
+                `🌍 **Pays d'origine:** ${country}\n\n` +
                 '• Tape `!indice` pour obtenir des indices\n' +
                 '• Tape `!change` pour changer de voiture (3 fois max)\n' +
                 '• Tape `!terminer` pour mettre fin à la partie\n' +

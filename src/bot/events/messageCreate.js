@@ -82,9 +82,15 @@ async function handleChangeCommand(message, gameState) {
     try {
         const result = await gameEngine.changeCar(message.channelId);
 
-        const changeEmbed = EmbedBuilder.createGameEmbed(gameState, {
+        // Récupérer le gameState mis à jour pour avoir la nouvelle voiture
+        const updatedGameState = gameEngine.getActiveGame(message.channelId);
+        const newCar = updatedGameState.car;
+        const country = newCar.country || 'Inconnu';
+
+        const changeEmbed = EmbedBuilder.createGameEmbed(updatedGameState, {
             title: '🔄 Nouvelle voiture',
             description: 'Voiture changée ! Devine la **marque** de la nouvelle voiture.\n\n' +
+                `🌍 **Pays d'origine:** ${country}\n\n` +
                 `*Changements restants: ${result.changesRemaining}*`
         });
 

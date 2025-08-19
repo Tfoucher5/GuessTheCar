@@ -169,13 +169,7 @@ class GameState {
     getMakeHintMessage() {
         let hints = [];
 
-        // Indice du pays (toujours disponible en premier)
-        if (!this.hintsUsed.country) {
-            hints.push(`🌍 Pays d'origine: ${this.car.country || 'Inconnu'}`);
-            this.hintsUsed.country = true;
-        }
-
-        // Indice de la longueur
+        // Indice de la longueur (premier indice, le pays est déjà affiché au début)
         if (!this.hintsUsed.makeLength) {
             hints.push(`📏 La marque contient ${this.car.makeLength} lettres`);
             this.hintsUsed.makeLength = true;

@@ -59,11 +59,11 @@ class Car {
      * Propriétés utilisées dans GameState pour les indices
      */
     get makeLength() {
-        return this.brand ? this.brand.length : 0;
+        return this.brand ? this.brand.replace(/\s/g, '').length : 0;
     }
 
     get modelLength() {
-        return this.model ? this.model.length : 0;
+        return this.model ? this.model.replace(/\s/g, '').length : 0;
     }
 
     get firstLetter() {
