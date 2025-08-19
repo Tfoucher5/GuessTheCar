@@ -24,19 +24,21 @@ module.exports = {
             const targetUser = interaction.options.getUser('joueur') || interaction.user;
             const userId = targetUser.id;
             const username = targetUser.username;
+            const guildId = interaction.guild?.id;
 
             logger.info('Stats command executed:', {
                 requesterId: interaction.user.id,
                 targetUserId: userId,
-                guild: interaction.guild?.name
+                guild: interaction.guild?.name,
+                guildId
             });
 
             // Récupérer les statistiques du joueur avec son classement
-            const playerStats = await playerManager.getPlayerWithRanking(userId);
+            const playerStats = await playerManager.getPlayerWithRanking(userId, guildId);
 
             if (!playerStats) {
                 // Créer le joueur s'il n'existe pas
-                await playerManager.findOrCreatePlayer(userId, username);
+                await playerManager.findOrCreatePlayer(userId, username, guildId);
 
                 const noStatsEmbed = new EmbedBuilder()
                     .setColor('#FFA500')
@@ -146,7 +148,7 @@ module.exports = {
                 });
             }
 
-            const collectionStats = await playerManager.getPlayerCollection(userId);
+            const collectionStats = await playerManager.getPlayerCollection(userId, guildId);
 
             if (collectionStats && collectionStats.carsFound > 0) {
                 const completionPercentage = Math.round((collectionStats.carsFound / collectionStats.totalCars) * 100 * 10) / 10;
@@ -171,7 +173,7 @@ module.exports = {
             statsHelper.logCommand('stats', interaction.user.id);
 
         } catch (error) {
-            logger.error('Error in stats command:', { userId: interaction.user.id, error });
+            logger.error('Error in stats command:', { userId: interaction.user.id,guildId: interaction.guild?.id, error });
 
             const errorEmbed = new EmbedBuilder()
                 .setColor('#FF0000')

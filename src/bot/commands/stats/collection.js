@@ -13,12 +13,14 @@ module.exports = {
         try {
             await interaction.deferReply();
 
-            const leaderboard = await playerManager.getCollectionLeaderboard(10);
-            const userStats = await playerManager.getPlayerCollection(interaction.user.id);
+            const guildId = interaction.guild?.id;
+
+            const leaderboard = await playerManager.getCollectionLeaderboard(10, guildId);
+            const userStats = await playerManager.getPlayerCollection(interaction.user.id, guildId);
 
             const collectionEmbed = new EmbedBuilder()
                 .setColor('#FF6B35')
-                .setTitle('🏁 Classement des Collectionneurs')
+                .setTitle(`🏁 Classement des collections de ${interaction.guild?.name}`)
                 .setDescription('**Qui a découvert le plus de voitures ?**\n');
 
             if (leaderboard.length === 0) {
@@ -49,8 +51,8 @@ module.exports = {
                 collectionEmbed.addFields({
                     name: '📊 Votre Collection',
                     value: `**Voitures:** ${userStats.carsFound}/${userStats.totalCars} (${completionPercentage}%)\n` +
-                           `**Marques:** ${userStats.brandsFound}/${userStats.totalBrands}\n` +
-                           `**Progression:** ${this.getProgressBar(completionPercentage)}`,
+                        `**Marques:** ${userStats.brandsFound}/${userStats.totalBrands}\n` +
+                        `**Progression:** ${this.getProgressBar(completionPercentage)}`,
                     inline: false
                 });
             } else {
@@ -66,7 +68,7 @@ module.exports = {
             statsHelper.logCommand('collection', interaction.user.id);
 
         } catch (error) {
-            logger.error('Error in collection command:', error);
+            logger.error('Error in collection command:', { guildId: interaction.guild?.id, error });
             // Gestion d'erreur...
         }
     },

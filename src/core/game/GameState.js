@@ -2,11 +2,12 @@ const gameConfig = require('../../shared/config/game');
 const { validateUserId, validateUsername } = require('../../shared/utils/validation');
 
 class GameState {
-    constructor(car, userId, username, threadId) {
+    constructor(car, userId, username, threadId, guildId = null) {
         // Validation des entrées
         this.userId = validateUserId(userId);
         this.username = validateUsername(username);
         this.threadId = threadId;
+        this.guildId = guildId;
         this.attemptsMake = 0;
 
         // Données de la voiture
@@ -317,6 +318,7 @@ class GameState {
             userId: this.userId,
             username: this.username,
             threadId: this.threadId,
+            guildId: this.guildId,
             car: this.car.toJSON(),
             step: this.step,
             attempts: this.attempts,

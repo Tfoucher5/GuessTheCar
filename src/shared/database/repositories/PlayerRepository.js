@@ -14,7 +14,7 @@ class PlayerRepository extends BaseRepository {
     async create(userId, username) {
         const query = `
             INSERT INTO user_scores (
-                user_id, 
+                user_id,
                 username, 
                 total_points, 
                 total_difficulty_points, 
@@ -53,34 +53,60 @@ class PlayerRepository extends BaseRepository {
     }
 
     /**
-     * Trouve un joueur par user_id
-     */
-    async findByUserId(userId) {
-        const query = 'SELECT * FROM user_scores WHERE user_id = ?';
-        const results = await executeQuery(query, [userId]);
+ * Trouve un joueur par userId ET guildId
+ */
+    async findByUserIdAndGuild(userId, guildId = null) {
+        let query = 'SELECT * FROM user_scores WHERE user_id = ?';
+        let params = [userId];
 
-        if (results.length === 0) {
-            return null;
+        if (guildId) {
+            query += ' AND guild_id = ?';
+            params.push(guildId);
+        } else {
+            query += ' AND guild_id IS NULL';
         }
 
-        return Player.fromDatabase(results[0]);
+        const results = await executeQuery(query, params);
+        return results.length > 0 ? Player.fromDatabase(results[0]) : null;
     }
 
     /**
-     * Trouve ou crée un joueur
+     * Trouve ou crée un joueur pour un serveur spécifique
      */
-    async findOrCreate(userId, username) {
-        let player = await this.findByUserId(userId);
+    async findOrCreate(userId, username, guildId = null) {
+        // MODIFIÉ: Rechercher par userId ET guildId
+        const player = await this.findByUserIdAndGuild(userId, guildId);
 
-        if (!player) {
-            player = await this.create(userId, username);
-        } else if (player.username !== username) {
-            // Mettre à jour le nom d'utilisateur si changé
-            await this.updateUsername(userId, username);
-            player.username = username;
+        if (player) {
+            // Mettre à jour le username si nécessaire
+            if (player.username !== username) {
+                await this.updatePlayerStats(userId, { username }, guildId);
+                player.username = username;
+            }
+            return player;
         }
 
-        return player;
+        // Créer nouveau joueur pour ce serveur
+        const newPlayerData = {
+            user_id: userId,
+            guild_id: guildId,
+            username: username,
+            total_points: 0,
+            total_difficulty_points: 0,
+            games_played: 0,
+            games_won: 0,
+            correct_brand_guesses: 0,
+            correct_model_guesses: 0,
+            total_brand_guesses: 0,
+            total_model_guesses: 0,
+            best_streak: 0,
+            current_streak: 0,
+            best_time: null,
+            average_response_time: null
+        };
+
+        const result = await this.create(newPlayerData);
+        return Player.fromDatabase(result);
     }
 
     /**
@@ -92,48 +118,37 @@ class PlayerRepository extends BaseRepository {
     }
 
     /**
-     * Met à jour les statistiques d'un joueur
-     */
-    async updatePlayerStats(userId, playerData) {
-        const query = `
-            UPDATE user_scores SET
-                username = ?,
-                total_points = ?,
-                total_difficulty_points = ?,
-                games_played = ?,
-                games_won = ?,
-                correct_brand_guesses = ?,
-                correct_model_guesses = ?,
-                total_brand_guesses = ?,
-                total_model_guesses = ?,
-                best_streak = ?,
-                current_streak = ?,
-                best_time = ?,
-                average_response_time = ?,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE user_id = ?
-        `;
+ * Met à jour les stats d'un joueur pour un serveur spécifique
+ */
+    async updatePlayerStats(userId, data, guildId = null) {
+        const cleanData = this.cleanData(data, [
+            'username', 'total_points', 'total_difficulty_points', 'games_played',
+            'games_won', 'correct_brand_guesses', 'correct_model_guesses',
+            'total_brand_guesses', 'total_model_guesses', 'best_streak',
+            'current_streak', 'best_time', 'average_response_time'
+        ]);
 
-        const params = [
-            playerData.username,
-            playerData.totalPoints || 0,
-            playerData.totalDifficultyPoints || 0,
-            playerData.gamesPlayed || 0,
-            playerData.gamesWon || 0,
-            playerData.correctBrandGuesses || 0,
-            playerData.correctModelGuesses || 0,
-            playerData.totalBrandGuesses || 0,
-            playerData.totalModelGuesses || 0,
-            playerData.bestStreak || 0,
-            playerData.currentStreak || 0,
-            playerData.bestTime || null,
-            playerData.averageResponseTime || 0,
-            userId
-        ];
+        const setClause = Object.keys(cleanData).map(key => `${key} = ?`).join(', ');
+        let whereClause = 'user_id = ?';
+        let values = [...Object.values(cleanData), userId];
 
-        await executeQuery(query, params);
-        return await this.findByUserId(userId);
+        if (guildId) {
+            whereClause += ' AND guild_id = ?';
+            values.push(guildId);
+        } else {
+            whereClause += ' AND guild_id IS NULL';
+        }
+
+        const query = `UPDATE user_scores SET ${setClause} WHERE ${whereClause}`;
+        const result = await executeQuery(query, values);
+
+        if (result.affectedRows === 0) {
+            throw new Error(`Player with userId ${userId} and guildId ${guildId} not found`);
+        }
+
+        return await this.findByUserIdAndGuild(userId, guildId);
     }
+
 
     /**
      * ✅ NOUVELLE MÉTHODE - Enregistre une session de jeu
@@ -215,20 +230,30 @@ class PlayerRepository extends BaseRepository {
     }
 
     /**
-     * Obtient le classement des joueurs
+    * Classement par serveur
      */
-    async getLeaderboard(limit = 10) {
-        const query = `
-            SELECT 
-                us.*,
-                ROW_NUMBER() OVER (ORDER BY us.total_points DESC, us.games_won DESC) as ranking
-            FROM user_scores us
-            WHERE us.games_played > 0
-            ORDER BY us.total_points DESC, us.games_won DESC
-            LIMIT ?
-        `;
+    async getLeaderboard(limit = 10, guildId = null) {
+        let query = `
+        SELECT 
+            us.*,
+            ROW_NUMBER() OVER (ORDER BY us.total_points DESC, us.games_won DESC) as ranking
+        FROM user_scores us
+        WHERE us.games_played > 0
+    `;
 
-        const results = await executeQuery(query, [limit]);
+        let params = [];
+
+        if (guildId) {
+            query += ' AND us.guild_id = ?';
+            params.push(guildId);
+        } else {
+            query += ' AND us.guild_id IS NULL';
+        }
+
+        query += ' ORDER BY us.total_points DESC, us.games_won DESC LIMIT ?';
+        params.push(limit);
+
+        const results = await executeQuery(query, params);
         return results.map(row => ({
             ...Player.fromDatabase(row),
             ranking: row.ranking
@@ -236,33 +261,27 @@ class PlayerRepository extends BaseRepository {
     }
 
     /**
-     * Obtient les statistiques d'un joueur avec son classement
-     */
-    async getPlayerWithRanking(userId) {
-        const query = `
-            SELECT 
-                us.*,
-                (
-                    SELECT COUNT(*) + 1 
-                    FROM user_scores us2 
-                    WHERE us2.total_points > us.total_points
-                    OR (us2.total_points = us.total_points AND us2.games_won > us.games_won)
-                ) as ranking,
-                CASE 
-                    WHEN us.total_points >= 100 THEN 'Expert'
-                    WHEN us.total_points >= 50 THEN 'Avancé'
-                    WHEN us.total_points >= 20 THEN 'Intermédiaire'
-                    ELSE 'Débutant'
-                END as skill_level,
-                CASE 
-                    WHEN us.total_brand_guesses > 0 THEN ROUND((us.correct_brand_guesses / us.total_brand_guesses) * 100, 1)
-                    ELSE 0 
-                END as success_rate
-            FROM user_scores us
-            WHERE us.user_id = ?
-        `;
+ * Stats avec ranking par serveur
+ */
+    async getPlayerWithRanking(userId, guildId = null) {
+        let rankingCondition = guildId ?
+            'WHERE us2.guild_id = ? AND (us2.total_points > us.total_points OR (us2.total_points = us.total_points AND us2.games_won > us.games_won))' :
+            'WHERE us2.guild_id IS NULL AND (us2.total_points > us.total_points OR (us2.total_points = us.total_points AND us2.games_won > us.games_won))';
 
-        const results = await executeQuery(query, [userId]);
+        let whereClause = guildId ?
+            'WHERE us.user_id = ? AND us.guild_id = ?' :
+            'WHERE us.user_id = ? AND us.guild_id IS NULL';
+
+        const query = `
+        SELECT 
+            us.*,
+            (SELECT COUNT(*) + 1 FROM user_scores us2 ${rankingCondition}) as ranking
+        FROM user_scores us
+        ${whereClause}
+    `;
+
+        const params = guildId ? [guildId, userId, guildId] : [userId];
+        const results = await executeQuery(query, params);
 
         if (results.length === 0) {
             return null;
@@ -271,9 +290,7 @@ class PlayerRepository extends BaseRepository {
         const row = results[0];
         return {
             ...Player.fromDatabase(row),
-            ranking: row.ranking,
-            skillLevel: row.skill_level,
-            successRate: parseFloat(row.success_rate) || 0
+            ranking: row.ranking
         };
     }
     /**

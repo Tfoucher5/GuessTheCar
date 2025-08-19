@@ -9,20 +9,21 @@ class PlayerManager {
     }
 
     /**
-     * Trouve ou crée un joueur
-     */
-    async findOrCreatePlayer(userId, username) {
+ * Trouve ou crée un joueur POUR UN SERVEUR SPÉCIFIQUE
+ */
+    async findOrCreatePlayer(userId, username, guildId = null) {
         try {
             if (!userId || !username) {
                 throw new ValidationError('User ID et username requis');
             }
 
-            const player = await this.playerRepository.findOrCreate(userId, username);
-            logger.debug('Player found or created:', { userId, username });
+            // MODIFIÉ: Rechercher par userId ET guildId
+            const player = await this.playerRepository.findOrCreate(userId, username, guildId);
+            logger.debug('Player found or created:', { userId, username, guildId });
 
             return player;
         } catch (error) {
-            logger.error('Error finding or creating player:', { userId, username, error });
+            logger.error('Error finding or creating player:', { userId, username, guildId, error });
             throw error;
         }
     }
@@ -38,6 +39,7 @@ class PlayerManager {
             // Créer les données de session de jeu
             const gameSession = {
                 userId: userId,
+                guildId: gameStats.guildId || null, // AJOUTÉ
                 carId: gameStats.carId || null,
                 startedAt: gameStats.startedAt || new Date(),
                 endedAt: new Date(),
@@ -54,7 +56,6 @@ class PlayerManager {
                 pointsEarned: basePoints || 0,
                 difficultyPointsEarned: difficultyPoints || 0
             };
-
             // ✅ Sauvegarder la session de jeu
             await this.playerRepository.saveGameSession(gameSession);
 
@@ -62,6 +63,7 @@ class PlayerManager {
             const newStats = {
                 userId: player.userId,
                 username: player.username,
+                guildId: gameStats.guildId,
                 totalPoints: player.totalPoints + (basePoints || 0),
                 totalDifficultyPoints: player.totalDifficultyPoints + (difficultyPoints || 0),
                 gamesPlayed: player.gamesPlayed + 1,
@@ -102,10 +104,10 @@ class PlayerManager {
             }
 
             // ✅ Sauvegarder les statistiques mises à jour
-            const updatedPlayer = await this.playerRepository.updatePlayerStats(userId, newStats);
+            const updatedPlayer = await this.playerRepository.updatePlayerStats(userId, newStats, gameStats.guildId);
 
             logger.info('Player score updated:', {
-                userId,
+                userId, guildId: gameStats.guildId,
                 basePoints,
                 difficultyPoints,
                 isComplete,
@@ -125,35 +127,51 @@ class PlayerManager {
     }
 
     /**
-     * Obtient les statistiques d'un joueur avec son classement
-     */
-    async getPlayerWithRanking(userId) {
+ * Obtient le classement POUR UN SERVEUR SPÉCIFIQUE
+ */
+    async getLeaderboard(limit = 10, guildId = null) {
         try {
-            const playerStats = await this.playerRepository.getPlayerWithRanking(userId);
-
-            if (!playerStats) {
-                logger.warn('Player not found for ranking:', { userId });
-                return null;
-            }
-
-            return playerStats;
+            const leaderboard = await this.playerRepository.getLeaderboard(limit, guildId);
+            return leaderboard;
         } catch (error) {
-            logger.error('Error getting player with ranking:', { userId, error });
-            throw error;
+            logger.error('Error getting leaderboard:', { limit, guildId, error });
+            return [];
         }
     }
 
     /**
-     * Obtient le classement général
+     * Obtient les stats d'un joueur POUR UN SERVEUR SPÉCIFIQUE
      */
-    async getLeaderboard(limit = 10) {
+    async getPlayerWithRanking(userId, guildId = null) {
         try {
-            const leaderboard = await this.playerRepository.getLeaderboard(limit);
-            logger.debug('Leaderboard retrieved:', { count: leaderboard.length });
+            const playerStats = await this.playerRepository.getPlayerWithRanking(userId, guildId);
+            return playerStats;
+        } catch (error) {
+            logger.error('Error getting player with ranking:', { userId, guildId, error });
+            return null;
+        }
+    }
+
+    /**
+     * Collection par serveur
+     */
+    async getPlayerCollection(userId, guildId = null) {
+        try {
+            const collectionStats = await this.playerRepository.getPlayerCollection(userId, guildId);
+            return collectionStats;
+        } catch (error) {
+            logger.error('Error getting player collection:', { userId, guildId, error });
+            return null;
+        }
+    }
+
+    async getCollectionLeaderboard(limit = 10, guildId = null) {
+        try {
+            const leaderboard = await this.playerRepository.getCollectionLeaderboard(limit, guildId);
             return leaderboard;
         } catch (error) {
-            logger.error('Error getting leaderboard:', { error });
-            throw error;
+            logger.error('Error getting collection leaderboard:', { limit, guildId, error });
+            return [];
         }
     }
 
@@ -268,32 +286,6 @@ class PlayerManager {
         } catch (error) {
             logger.error('Error recording car found:', { userId, carId: car.id, error });
             // Ne pas faire échouer le jeu si l'enregistrement rate
-        }
-    }
-
-    /**
-     * Obtient les statistiques de collection d'un joueur
-     */
-    async getPlayerCollection(userId) {
-        try {
-            const collectionStats = await this.playerRepository.getPlayerCollection(userId);
-            return collectionStats;
-        } catch (error) {
-            logger.error('Error getting player collection:', { userId, error });
-            return null;
-        }
-    }
-
-    /**
-     * Obtient le classement des collectionneurs
-     */
-    async getCollectionLeaderboard(limit = 10) {
-        try {
-            const leaderboard = await this.playerRepository.getCollectionLeaderboard(limit);
-            return leaderboard;
-        } catch (error) {
-            logger.error('Error getting collection leaderboard:', { limit, error });
-            return [];
         }
     }
 }

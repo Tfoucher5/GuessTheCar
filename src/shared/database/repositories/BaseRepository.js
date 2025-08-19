@@ -69,6 +69,9 @@ class BaseRepository {
         Object.keys(data).forEach(key => {
             if (data[key] !== undefined) {
                 cleanData[key] = data[key];
+            } else {
+                // Ne pas inclure les clés undefined dans l'INSERT
+                // ou les convertir en null si nécessaire
             }
         });
 

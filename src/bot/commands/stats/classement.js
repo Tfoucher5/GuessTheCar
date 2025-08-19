@@ -23,21 +23,23 @@ module.exports = {
             await interaction.deferReply();
 
             const limit = interaction.options.getInteger('limite') || 10;
+            const guildId = interaction.guild?.id;
 
             logger.info('Leaderboard command executed:', {
                 userId: interaction.user.id,
                 guild: interaction.guild?.name,
+                guildId,
                 limit
             });
 
             // Récupérer le classement
-            const leaderboard = await playerManager.getLeaderboard(limit);
+            const leaderboard = await playerManager.getLeaderboard(limit, guildId);
 
             if (!leaderboard || leaderboard.length === 0) {
                 const noDataEmbed = new EmbedBuilder()
                     .setColor('#FFA500')
                     .setTitle('📊 Classement')
-                    .setDescription('Aucune donnée de classement disponible.\nSoyez le premier à jouer avec `/guesscar` !');
+                    .setDescription(`Aucune donnée de classement pour **${interaction.guild?.name}**.\nSoyez le premier à jouer avec \`/guesscar\` !`);
 
                 await interaction.editReply({ embeds: [noDataEmbed] });
                 return;
@@ -45,7 +47,7 @@ module.exports = {
 
             const leaderboardEmbed = new EmbedBuilder()
                 .setColor('#FFD700')
-                .setTitle('🏆 Classement des Champions')
+                .setTitle(`🏆 Classement de ${interaction.guild?.name}`)
                 .setDescription(`**Top ${Math.min(limit, leaderboard.length)} des meilleurs joueurs**`);
 
             let leaderboardText = '';
@@ -95,7 +97,7 @@ module.exports = {
 
             if (!requesterInTop) {
                 try {
-                    const requesterStats = await playerManager.getPlayerWithRanking(interaction.user.id);
+                    const requesterStats = await playerManager.getPlayerWithRanking(interaction.user.id, guildId);
 
                     if (requesterStats && requesterStats.ranking) {
                         const totalPoints = Math.round((requesterStats.totalPoints || 0) * 10) / 10;
@@ -142,7 +144,7 @@ module.exports = {
             await interaction.editReply({ embeds: [leaderboardEmbed] });
 
         } catch (error) {
-            logger.error('Error in classement command:', { userId: interaction.user.id, error });
+            logger.error('Error in classement command:', { userId: interaction.user.id,guildId: interaction.guild?.id, error });
 
             const errorEmbed = new EmbedBuilder()
                 .setColor('#FF0000')

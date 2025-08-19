@@ -37,7 +37,8 @@ module.exports = {
             const gameState = await gameEngine.startGame(
                 interaction.user.id,
                 interaction.user.username,
-                thread.id
+                thread.id,
+                interaction.guild?.id
             );
 
             // Créer l'embed de démarrage

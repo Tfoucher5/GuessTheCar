@@ -26,45 +26,37 @@ class GameEngine extends EventEmitter {
     }
 
     /**
-     * Démarre une nouvelle partie
-     */
-    async startGame(userId, username, threadId) {
+ * Démarre une nouvelle partie avec guildId
+ */
+    async startGame(userId, username, threadId, guildId = null) {
         try {
-            // Vérifier s'il y a déjà une partie active pour ce joueur
             const existingGame = this.findActiveGameByUser(userId);
             if (existingGame) {
                 throw new GameError('Vous avez déjà une partie en cours');
             }
 
-            // Obtenir une voiture aléatoire
             const car = await this.carService.getValidRandomCar();
 
-            // Créer l'état du jeu
-            const gameState = new GameState(car, userId, username, threadId);
+            // MODIFIÉ: Passer guildId au GameState
+            const gameState = new GameState(car, userId, username, threadId, guildId);
 
-            // Configurer le timeout
             this.setupGameTimeout(gameState);
-
-            // Stocker la partie active
             this.activeGames.set(threadId, gameState);
 
-            // Émettre l'événement de début de partie
             this.emit('gameStarted', {
                 gameState: gameState.toJSON(),
                 car: car.toJSON()
             });
 
             logger.info('Game started:', {
-                userId,
-                username,
-                threadId,
+                userId, username, threadId, guildId,
                 car: car.getFullName(),
                 difficulty: car.getDifficultyText()
             });
 
             return gameState;
         } catch (error) {
-            logger.error('Error starting game:', { userId, username, threadId, error });
+            logger.error('Error starting game:', { userId, username, threadId, guildId, error });
             throw error;
         }
     }
@@ -206,39 +198,35 @@ class GameEngine extends EventEmitter {
     // Remplacer la méthode endGameWithSuccess dans GameEngine.js
 
     /**
-     * Termine le jeu avec succès complet
-     */
+ * Termine le jeu avec succès - MODIFIÉ pour inclure guildId
+ */
     async endGameWithSuccess(gameState) {
         const timeSpent = gameState.getTimeSpent();
-
-        // Calculer les statistiques correctes
         const attemptsMake = gameState.attemptsMake || 1;
         const attemptsModel = gameState.attempts;
         const totalAttempts = attemptsMake + attemptsModel;
 
-        // NOUVEAU: Calculer le score avec le système amélioré
+        // Calculer le score amélioré
         let score;
         try {
             score = gameState.calculateEnhancedScore();
-            console.log('Enhanced Score:', JSON.stringify(score, null, 2)); // Log temporaire pour debug
         } catch (error) {
-            // Fallback vers l'ancien système si erreur
-            console.log('Falling back to old scoring system:', error.message);
             score = gameState.calculateFullSuccessScore();
             score.difficultyName = gameState.car.getDifficultyText();
             score.carName = gameState.car.getFullName();
         }
 
-        // Mettre à jour les scores du joueur - utiliser le score total du nouveau système
         const scoreToSave = score.totalPoints || (score.basePoints + score.difficultyPoints);
 
+        // MODIFIÉ: Inclure guildId dans les gameStats
         await this.playerManager.updatePlayerScore(
             gameState.userId,
             gameState.username,
-            scoreToSave, // Utiliser le score total amélioré
-            0, // Les bonus sont déjà inclus dans totalPoints
+            scoreToSave,
+            0,
             true,
             {
+                guildId: gameState.guildId, // AJOUTÉ
                 carId: gameState.car.id,
                 startedAt: new Date(gameState.startTime),
                 duration: Math.floor(timeSpent / 1000),
@@ -250,10 +238,12 @@ class GameEngine extends EventEmitter {
             }
         );
 
+        // MODIFIÉ: Inclure guildId pour recordCarFound
         await this.playerManager.recordCarFound(
             gameState.userId,
             gameState.car,
             {
+                guildId: gameState.guildId, // AJOUTÉ
                 attemptsMake: attemptsMake,
                 attemptsModel: attemptsModel,
                 duration: Math.floor(timeSpent / 1000)
@@ -261,8 +251,6 @@ class GameEngine extends EventEmitter {
         );
 
         await this.logGameAction('complete', gameState);
-
-        // Nettoyer la partie
         this.cleanupGame(gameState.threadId);
 
         return {
@@ -270,7 +258,7 @@ class GameEngine extends EventEmitter {
             isCorrect: true,
             success: true,
             feedback: `🎉 Félicitations !\nVous avez trouvé la **${gameState.car.getFullName()}** !`,
-            score, // Passer le score amélioré (avec achievements et bonus)
+            score,
             timeSpent,
             attempts: totalAttempts,
             car: gameState.car
