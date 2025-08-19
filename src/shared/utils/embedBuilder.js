@@ -33,24 +33,40 @@ class GameEmbedBuilder {
     }
 
     /**
-     * Crée un embed de victoire
-     */
+ * Crée un embed de victoire (version améliorée avec nouveau système de points)
+ */
     static createWinEmbed(score, timeSpent, attempts, car = null) {
+        // Si on reçoit un score amélioré (nouveau système)
+        if (score && score.achievements && score.bonuses) {
+            const display = this.formatEnhancedScoreDisplay(score);
+
+            const embed = new EmbedBuilder()
+                .setColor('#00FF00')
+                .setTitle(display.title)
+                .setDescription(display.description);
+
+            display.fields.forEach(field => {
+                embed.addFields(field);
+            });
+
+            return embed.setTimestamp();
+        }
+
+        // Fallback vers l'ancien système si pas de score amélioré
         const difficultyText = car ? car.getDifficultyText() :
             (score.difficultyName || score.difficulty || 'Inconnue');
 
-        // Afficher le nom complet de la voiture (marque + modèle)
         const carName = car ? car.getFullName() :
             (score.carName || 'Voiture inconnue');
 
         const embed = new EmbedBuilder()
             .setColor('#00FF00')
             .setTitle('🎉 Félicitations !')
-            .setDescription(`Vous avez trouvé la **${carName}** !`) // Changé ici
+            .setDescription(`Vous avez trouvé la **${carName}** !`)
             .addFields(
                 {
                     name: '🚗 Voiture',
-                    value: `**${carName}**`, // Ajouté ce champ
+                    value: `**${carName}**`,
                     inline: false
                 },
                 {
@@ -85,6 +101,77 @@ class GameEmbedBuilder {
             .setTimestamp();
 
         return embed;
+    }
+
+    /**
+     * Formate l'affichage du score amélioré
+     */
+    static formatEnhancedScoreDisplay(score) {
+        let display = {
+            title: '',
+            description: '',
+            fields: []
+        };
+
+        // Titre selon les achievements
+        if (score.achievements.includes('👑 MAÎTRE ABSOLU')) {
+            display.title = '👑 PERFORMANCE LÉGENDAIRE !';
+        } else if (score.achievements.length >= 3) {
+            display.title = '🌟 PERFORMANCE EXCEPTIONNELLE !';
+        } else if (score.achievements.length >= 2) {
+            display.title = '⭐ EXCELLENTE PERFORMANCE !';
+        } else if (score.achievements.length >= 1) {
+            display.title = '🎯 BELLE PERFORMANCE !';
+        } else {
+            display.title = '🎉 Félicitations !';
+        }
+
+        // Description principale
+        display.description = `Vous avez trouvé la **${score.details.carName}** !\n`;
+        display.description += `**Points totaux:** ${score.totalPoints}`;
+
+        // Achievements
+        if (score.achievements.length > 0) {
+            display.fields.push({
+                name: '🏆 Exploits Débloqués',
+                value: score.achievements.join('\n'),
+                inline: false
+            });
+        }
+
+        // Détails des bonus
+        if (Object.keys(score.bonuses).length > 0) {
+            let bonusText = '';
+            Object.values(score.bonuses).forEach(bonus => {
+                if (bonus.name) {
+                    bonusText += `**${bonus.name}**: ${bonus.description} (x${bonus.multiplier})\n`;
+                }
+            });
+
+            if (bonusText) {
+                display.fields.push({
+                    name: '💎 Bonus Obtenus',
+                    value: bonusText,
+                    inline: false
+                });
+            }
+        }
+
+        // Stats de performance
+        display.fields.push({
+            name: '📊 Performance',
+            value: `**Temps:** ${score.details.timeSpent}s\n**Essais:** ${score.details.totalAttempts}\n**Difficulté:** ${score.details.difficulty}`,
+            inline: true
+        });
+
+        // Points de base
+        display.fields.push({
+            name: '🎯 Détail des Points',
+            value: `**Base:** ${score.basePoints}\n**Total avec bonus:** ${score.totalPoints}`,
+            inline: true
+        });
+
+        return display;
     }
 
     /**

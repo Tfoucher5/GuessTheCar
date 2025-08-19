@@ -242,6 +242,36 @@ class GameState {
     }
 
     /**
+     * Calcule le score avec le nouveau système amélioré
+     */
+    calculateEnhancedScore() {
+        const EnhancedScoreCalculator = require('../../shared/utils/EnhancedScoreCalculator');
+        const calculator = new EnhancedScoreCalculator();
+
+        // Calculer le nombre total d'essais
+        let totalAttempts = this.attempts;
+        if (this.step === 'model') {
+            totalAttempts += this.attemptsMake || 0;
+        }
+
+        // Calculer le nombre d'indices utilisés
+        const hintsUsed = Object.values(this.hintsUsed).filter(used => used).length;
+
+        const gameData = {
+            car: this.car,
+            timeSpent: this.getTimeSpent(),
+            totalAttempts: totalAttempts,
+            hintsUsed: hintsUsed,
+            carChanges: this.carChangesCount,
+            isComplete: this.step === 'model', // Si on est à l'étape modèle, la marque a été trouvée
+            makeFound: this.step === 'model' || !this.makeFailed,
+            modelFound: this.step === 'model' && this.attempts > 0 // Modèle trouvé si on a fini l'étape
+        };
+
+        return calculator.calculateEnhancedScore(gameData);
+    }
+
+    /**
  * Calcule le score pour une victoire complète (marque + modèle)
  */
     calculateFullSuccessScore() {

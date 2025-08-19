@@ -244,6 +244,58 @@ class PlayerManager {
             throw error;
         }
     }
+
+    /**
+     * Enregistre qu'un joueur a trouvé une voiture spécifique
+     */
+    async recordCarFound(userId, car, gameStats) {
+        try {
+            // Enregistrer la voiture trouvée (ignore si déjà trouvée grâce à UNIQUE KEY)
+            await this.playerRepository.recordCarFound({
+                userId,
+                carId: car.id,
+                brandId: car.brandId,
+                attemptsUsed: gameStats.attemptsMake + gameStats.attemptsModel,
+                timeTaken: gameStats.duration
+            });
+
+            logger.info('Car found recorded:', {
+                userId,
+                car: car.getFullName(),
+                attempts: gameStats.attemptsMake + gameStats.attemptsModel,
+                time: gameStats.duration
+            });
+        } catch (error) {
+            logger.error('Error recording car found:', { userId, carId: car.id, error });
+            // Ne pas faire échouer le jeu si l'enregistrement rate
+        }
+    }
+
+    /**
+     * Obtient les statistiques de collection d'un joueur
+     */
+    async getPlayerCollection(userId) {
+        try {
+            const collectionStats = await this.playerRepository.getPlayerCollection(userId);
+            return collectionStats;
+        } catch (error) {
+            logger.error('Error getting player collection:', { userId, error });
+            return null;
+        }
+    }
+
+    /**
+     * Obtient le classement des collectionneurs
+     */
+    async getCollectionLeaderboard(limit = 10) {
+        try {
+            const leaderboard = await this.playerRepository.getCollectionLeaderboard(limit);
+            return leaderboard;
+        } catch (error) {
+            logger.error('Error getting collection leaderboard:', { limit, error });
+            return [];
+        }
+    }
 }
 
 module.exports = PlayerManager;

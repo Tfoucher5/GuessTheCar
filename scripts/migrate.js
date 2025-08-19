@@ -40,7 +40,7 @@ async function createDatabase() {
 
         // Table des marques AVEC country
         await connection.execute(`
-            CREATE TABLE brands (
+            CREATE TABLE IF NOT EXISTS brands (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 name VARCHAR(50) NOT NULL,
                 country VARCHAR(50) NOT NULL DEFAULT 'Inconnu',
@@ -55,7 +55,7 @@ async function createDatabase() {
 
         // Table des modèles SANS FK
         await connection.execute(`
-            CREATE TABLE models (
+            CREATE TABLE IF NOT EXISTS models (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 brand_id INT NOT NULL,
                 name VARCHAR(100) NOT NULL,
@@ -73,7 +73,7 @@ async function createDatabase() {
 
         // Table des scores utilisateurs
         await connection.execute(`
-            CREATE TABLE user_scores (
+            CREATE TABLE IF NOT EXISTS user_scores (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 user_id VARCHAR(20) NOT NULL UNIQUE,
                 username VARCHAR(32) NOT NULL,
@@ -98,6 +98,23 @@ async function createDatabase() {
             )
         `);
         console.log('✅ Table user_scores créée');
+
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS user_cars_found (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id VARCHAR(255) NOT NULL,
+                car_id INT NOT NULL,
+                brand_id INT NOT NULL,
+                found_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                attempts_used INT DEFAULT 0,
+                time_taken INT DEFAULT 0, -- en secondes
+                INDEX idx_user_id (user_id),
+                INDEX idx_car_id (car_id),
+                INDEX idx_brand_id (brand_id),
+                UNIQUE KEY unique_user_car (user_id, car_id)
+            );
+        `);
+        console.log('✅ Table user_cars_found créée');
 
         // Table des sessions SANS FK
         await connection.execute(`
@@ -129,7 +146,7 @@ async function createDatabase() {
 
         // Vue pour le classement
         await connection.execute(`
-            CREATE OR REPLACE VIEW leaderboard_view AS
+            CREATE OR REPLACE VIEW IF NOT EXISTS leaderboard_view AS
             SELECT
                 us.*,
                 RANK() OVER (

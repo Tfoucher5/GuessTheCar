@@ -7490,3 +7490,239 @@
 {"changesUsed":1,"level":"info","message":"Car changed in game:","newCar":"GMC Hummer EV","service":"guess-the-car-bot","threadId":"1407362042888720575","timestamp":"2025-08-19T13:55:38.692Z","userId":"573543227525824516"}
 {"abandoned":true,"basePoints":12.5,"difficultyPoints":2,"gamesPlayed":121,"gamesWon":54,"isComplete":false,"level":"info","message":"Player score updated:","newTotal":161.5,"service":"guess-the-car-bot","timeout":false,"timestamp":"2025-08-19T13:56:34.268Z","userId":"573543227525824516"}
 {"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-19T13:59:31.891Z"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:04:31.902Z"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:09:31.915Z"}
+{"level":"info","message":"SIGINT received, shutting down gracefully","service":"guess-the-car-bot","timestamp":"2025-08-19T14:13:07.880Z"}
+{"apiUrl":"http://localhost:3000/api","enabled":true,"level":"info","message":"StatsHelper initialized:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:13:11.982Z"}
+{"level":"info","message":"🚀 Starting Guess The Car Bot Application...","service":"guess-the-car-bot","timestamp":"2025-08-19T14:13:11.984Z"}
+{"level":"info","message":"✅ Database pool initialized","service":"guess-the-car-bot","timestamp":"2025-08-19T14:13:12.046Z"}
+{"level":"info","message":"✅ Database connected","service":"guess-the-car-bot","timestamp":"2025-08-19T14:13:12.047Z"}
+{"level":"info","message":"Loaded 3 events","service":"guess-the-car-bot","timestamp":"2025-08-19T14:13:12.479Z"}
+{"level":"info","message":"✅ API Server running on port 3001","service":"guess-the-car-bot","timestamp":"2025-08-19T14:13:12.500Z"}
+{"level":"info","message":"✅ Discord Bot connected","service":"guess-the-car-bot","timestamp":"2025-08-19T14:13:13.172Z"}
+{"level":"info","message":"✅ GameEngine instance found from messageCreate module","service":"guess-the-car-bot","timestamp":"2025-08-19T14:13:13.172Z"}
+{"level":"info","message":"📊 Stats synchronization started (every 5 minutes)","service":"guess-the-car-bot","timestamp":"2025-08-19T14:13:13.173Z"}
+{"level":"info","message":"🎉 Application started successfully!","service":"guess-the-car-bot","timestamp":"2025-08-19T14:13:13.173Z"}
+{"level":"info","message":"Bot Discord prêt! Connecté en tant que GuessTheCar#6976","service":"guess-the-car-bot","timestamp":"2025-08-19T14:13:13.181Z"}
+{"level":"info","message":"Bot présent sur 2 serveurs","service":"guess-the-car-bot","timestamp":"2025-08-19T14:13:13.182Z"}
+{"level":"info","message":"Bot connecté à 16 canaux","service":"guess-the-car-bot","timestamp":"2025-08-19T14:13:13.182Z"}
+{"level":"info","message":"Bot peut voir 3 utilisateurs","service":"guess-the-car-bot","timestamp":"2025-08-19T14:13:13.182Z"}
+{"level":"info","message":"Discord Bot connecté: GuessTheCar#6976","service":"guess-the-car-bot","timestamp":"2025-08-19T14:13:13.183Z"}
+{"level":"info","message":"Bot présent sur 2 serveurs","service":"guess-the-car-bot","timestamp":"2025-08-19T14:13:13.183Z"}
+{"level":"info","message":"Loaded 5 commands","service":"guess-the-car-bot","timestamp":"2025-08-19T14:13:13.188Z"}
+{"level":"info","message":"Registering 5 unique commands with Discord...","service":"guess-the-car-bot","timestamp":"2025-08-19T14:13:13.189Z"}
+{"level":"info","message":"✅ Successfully registered 5 application commands","service":"guess-the-car-bot","timestamp":"2025-08-19T14:13:13.454Z"}
+{"level":"info","message":"Commandes Discord chargées et enregistrées avec succès","service":"guess-the-car-bot","timestamp":"2025-08-19T14:13:13.454Z"}
+{"command":"guesscar","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:13:29.559Z","user":"t3sk0"}
+{"car":"Buick Enclave","difficulty":"Moyen","level":"info","message":"Game started:","service":"guess-the-car-bot","threadId":"1407366863880454176","timestamp":"2025-08-19T14:13:30.148Z","userId":"573543227525824516","username":"t3sk0"}
+{"guildId":"1223242015249141800","level":"info","message":"New game started via command:","service":"guess-the-car-bot","threadId":"1407366863880454176","timestamp":"2025-08-19T14:13:30.603Z","userId":"573543227525824516","username":"t3sk0"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:13:43.194Z"}
+{"abandoned":true,"basePoints":7.5,"difficultyPoints":1,"gamesPlayed":122,"gamesWon":54,"isComplete":false,"level":"info","message":"Player score updated:","newTotal":162.5,"service":"guess-the-car-bot","timeout":false,"timestamp":"2025-08-19T14:13:50.463Z","userId":"573543227525824516"}
+{"command":"guesscar","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:14:14.216Z","user":"t3sk0"}
+{"car":"BMW X1","difficulty":"Moyen","level":"info","message":"Game started:","service":"guess-the-car-bot","threadId":"1407367051294543975","timestamp":"2025-08-19T14:14:14.981Z","userId":"573543227525824516","username":"t3sk0"}
+{"guildId":"1223242015249141800","level":"info","message":"New game started via command:","service":"guess-the-car-bot","threadId":"1407367051294543975","timestamp":"2025-08-19T14:14:15.479Z","userId":"573543227525824516","username":"t3sk0"}
+{"abandoned":false,"basePoints":15,"difficultyPoints":2,"gamesPlayed":123,"gamesWon":55,"isComplete":true,"level":"info","message":"Player score updated:","newTotal":164.5,"service":"guess-the-car-bot","timeout":false,"timestamp":"2025-08-19T14:15:24.881Z","userId":"573543227525824516"}
+{"command":"guesscar","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:16:40.933Z","user":"t3sk0"}
+{"car":"McLaren 570S","difficulty":"Difficile","level":"info","message":"Game started:","service":"guess-the-car-bot","threadId":"1407367666766975147","timestamp":"2025-08-19T14:16:41.885Z","userId":"573543227525824516","username":"t3sk0"}
+{"guildId":"1223242015249141800","level":"info","message":"New game started via command:","service":"guess-the-car-bot","threadId":"1407367666766975147","timestamp":"2025-08-19T14:16:42.366Z","userId":"573543227525824516","username":"t3sk0"}
+{"abandoned":false,"basePoints":25,"difficultyPoints":4,"gamesPlayed":124,"gamesWon":56,"isComplete":true,"level":"info","message":"Player score updated:","newTotal":168.5,"service":"guess-the-car-bot","timeout":false,"timestamp":"2025-08-19T14:17:23.768Z","userId":"573543227525824516"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:18:13.189Z"}
+{"level":"info","message":"SIGINT received, shutting down gracefully","service":"guess-the-car-bot","timestamp":"2025-08-19T14:21:04.777Z"}
+{"apiUrl":"http://localhost:3000/api","enabled":true,"level":"info","message":"StatsHelper initialized:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:21:06.173Z"}
+{"level":"info","message":"🚀 Starting Guess The Car Bot Application...","service":"guess-the-car-bot","timestamp":"2025-08-19T14:21:06.176Z"}
+{"level":"info","message":"✅ Database pool initialized","service":"guess-the-car-bot","timestamp":"2025-08-19T14:21:06.234Z"}
+{"level":"info","message":"✅ Database connected","service":"guess-the-car-bot","timestamp":"2025-08-19T14:21:06.234Z"}
+{"level":"info","message":"Loaded 3 events","service":"guess-the-car-bot","timestamp":"2025-08-19T14:21:06.660Z"}
+{"level":"info","message":"✅ API Server running on port 3001","service":"guess-the-car-bot","timestamp":"2025-08-19T14:21:06.682Z"}
+{"level":"info","message":"✅ Discord Bot connected","service":"guess-the-car-bot","timestamp":"2025-08-19T14:21:07.438Z"}
+{"level":"info","message":"✅ GameEngine instance found from messageCreate module","service":"guess-the-car-bot","timestamp":"2025-08-19T14:21:07.439Z"}
+{"level":"info","message":"📊 Stats synchronization started (every 5 minutes)","service":"guess-the-car-bot","timestamp":"2025-08-19T14:21:07.439Z"}
+{"level":"info","message":"🎉 Application started successfully!","service":"guess-the-car-bot","timestamp":"2025-08-19T14:21:07.439Z"}
+{"level":"info","message":"Bot Discord prêt! Connecté en tant que GuessTheCar#6976","service":"guess-the-car-bot","timestamp":"2025-08-19T14:21:07.446Z"}
+{"level":"info","message":"Bot présent sur 2 serveurs","service":"guess-the-car-bot","timestamp":"2025-08-19T14:21:07.447Z"}
+{"level":"info","message":"Bot connecté à 16 canaux","service":"guess-the-car-bot","timestamp":"2025-08-19T14:21:07.447Z"}
+{"level":"info","message":"Bot peut voir 3 utilisateurs","service":"guess-the-car-bot","timestamp":"2025-08-19T14:21:07.447Z"}
+{"level":"info","message":"Discord Bot connecté: GuessTheCar#6976","service":"guess-the-car-bot","timestamp":"2025-08-19T14:21:07.448Z"}
+{"level":"info","message":"Bot présent sur 2 serveurs","service":"guess-the-car-bot","timestamp":"2025-08-19T14:21:07.448Z"}
+{"level":"info","message":"Loaded 5 commands","service":"guess-the-car-bot","timestamp":"2025-08-19T14:21:07.454Z"}
+{"level":"info","message":"Registering 5 unique commands with Discord...","service":"guess-the-car-bot","timestamp":"2025-08-19T14:21:07.455Z"}
+{"level":"info","message":"✅ Successfully registered 5 application commands","service":"guess-the-car-bot","timestamp":"2025-08-19T14:21:07.770Z"}
+{"level":"info","message":"Commandes Discord chargées et enregistrées avec succès","service":"guess-the-car-bot","timestamp":"2025-08-19T14:21:07.770Z"}
+{"command":"guesscar","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:21:12.005Z","user":"t3sk0"}
+{"car":"Pagani Roadster BC","difficulty":"Difficile","level":"info","message":"Game started:","service":"guess-the-car-bot","threadId":"1407368803293073604","timestamp":"2025-08-19T14:21:12.590Z","userId":"573543227525824516","username":"t3sk0"}
+{"guildId":"1223242015249141800","level":"info","message":"New game started via command:","service":"guess-the-car-bot","threadId":"1407368803293073604","timestamp":"2025-08-19T14:21:13.024Z","userId":"573543227525824516","username":"t3sk0"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:21:37.458Z"}
+{"abandoned":false,"basePoints":46.8,"difficultyPoints":0,"gamesPlayed":125,"gamesWon":57,"isComplete":true,"level":"info","message":"Player score updated:","newTotal":168.5,"service":"guess-the-car-bot","timeout":false,"timestamp":"2025-08-19T14:22:03.419Z","userId":"573543227525824516"}
+{"command":"stats","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:22:50.324Z","user":"t3sk0"}
+{"guild":"Shyish","level":"info","message":"Stats command executed:","requesterId":"573543227525824516","service":"guess-the-car-bot","targetUserId":"573543227525824516","timestamp":"2025-08-19T14:22:50.847Z"}
+{"command":"guesscar","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:22:56.724Z","user":"t3sk0"}
+{"car":"Rivian Max Pack","difficulty":"Difficile","level":"info","message":"Game started:","service":"guess-the-car-bot","threadId":"1407369243137150976","timestamp":"2025-08-19T14:22:57.457Z","userId":"573543227525824516","username":"t3sk0"}
+{"guildId":"1223242015249141800","level":"info","message":"New game started via command:","service":"guess-the-car-bot","threadId":"1407369243137150976","timestamp":"2025-08-19T14:22:58.333Z","userId":"573543227525824516","username":"t3sk0"}
+{"abandoned":false,"basePoints":58.5,"difficultyPoints":0,"gamesPlayed":126,"gamesWon":58,"isComplete":true,"level":"info","message":"Player score updated:","newTotal":168.5,"service":"guess-the-car-bot","timeout":false,"timestamp":"2025-08-19T14:23:26.611Z","userId":"573543227525824516"}
+{"command":"stats","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:23:40.851Z","user":"t3sk0"}
+{"guild":"Shyish","level":"info","message":"Stats command executed:","requesterId":"573543227525824516","service":"guess-the-car-bot","targetUserId":"573543227525824516","timestamp":"2025-08-19T14:23:41.255Z"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:26:07.445Z"}
+{"level":"info","message":"SIGINT received, shutting down gracefully","service":"guess-the-car-bot","timestamp":"2025-08-19T14:26:50.956Z"}
+{"apiUrl":"http://localhost:3000/api","enabled":true,"level":"info","message":"StatsHelper initialized:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:26:52.390Z"}
+{"level":"info","message":"🚀 Starting Guess The Car Bot Application...","service":"guess-the-car-bot","timestamp":"2025-08-19T14:26:52.392Z"}
+{"level":"info","message":"✅ Database pool initialized","service":"guess-the-car-bot","timestamp":"2025-08-19T14:26:52.449Z"}
+{"level":"info","message":"✅ Database connected","service":"guess-the-car-bot","timestamp":"2025-08-19T14:26:52.449Z"}
+{"level":"info","message":"Loaded 3 events","service":"guess-the-car-bot","timestamp":"2025-08-19T14:26:52.873Z"}
+{"level":"info","message":"✅ API Server running on port 3001","service":"guess-the-car-bot","timestamp":"2025-08-19T14:26:52.897Z"}
+{"level":"info","message":"✅ Discord Bot connected","service":"guess-the-car-bot","timestamp":"2025-08-19T14:26:53.567Z"}
+{"level":"info","message":"✅ GameEngine instance found from messageCreate module","service":"guess-the-car-bot","timestamp":"2025-08-19T14:26:53.569Z"}
+{"level":"info","message":"📊 Stats synchronization started (every 5 minutes)","service":"guess-the-car-bot","timestamp":"2025-08-19T14:26:53.569Z"}
+{"level":"info","message":"🎉 Application started successfully!","service":"guess-the-car-bot","timestamp":"2025-08-19T14:26:53.570Z"}
+{"level":"info","message":"Bot Discord prêt! Connecté en tant que GuessTheCar#6976","service":"guess-the-car-bot","timestamp":"2025-08-19T14:26:53.573Z"}
+{"level":"info","message":"Bot présent sur 2 serveurs","service":"guess-the-car-bot","timestamp":"2025-08-19T14:26:53.573Z"}
+{"level":"info","message":"Bot connecté à 16 canaux","service":"guess-the-car-bot","timestamp":"2025-08-19T14:26:53.574Z"}
+{"level":"info","message":"Bot peut voir 3 utilisateurs","service":"guess-the-car-bot","timestamp":"2025-08-19T14:26:53.574Z"}
+{"level":"info","message":"Discord Bot connecté: GuessTheCar#6976","service":"guess-the-car-bot","timestamp":"2025-08-19T14:26:53.574Z"}
+{"level":"info","message":"Bot présent sur 2 serveurs","service":"guess-the-car-bot","timestamp":"2025-08-19T14:26:53.574Z"}
+{"level":"info","message":"Loaded 5 commands","service":"guess-the-car-bot","timestamp":"2025-08-19T14:26:53.581Z"}
+{"level":"info","message":"Registering 5 unique commands with Discord...","service":"guess-the-car-bot","timestamp":"2025-08-19T14:26:53.581Z"}
+{"level":"info","message":"✅ Successfully registered 5 application commands","service":"guess-the-car-bot","timestamp":"2025-08-19T14:26:53.885Z"}
+{"level":"info","message":"Commandes Discord chargées et enregistrées avec succès","service":"guess-the-car-bot","timestamp":"2025-08-19T14:26:53.888Z"}
+{"command":"stats","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:27:03.640Z","user":"t3sk0"}
+{"guild":"Shyish","level":"info","message":"Stats command executed:","requesterId":"573543227525824516","service":"guess-the-car-bot","targetUserId":"573543227525824516","timestamp":"2025-08-19T14:27:04.089Z"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:27:23.581Z"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:31:53.575Z"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:36:53.581Z"}
+{"level":"info","message":"SIGINT received, shutting down gracefully","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:03.088Z"}
+{"apiUrl":"http://localhost:3000/api","enabled":true,"level":"info","message":"StatsHelper initialized:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:05.113Z"}
+{"level":"info","message":"🚀 Starting Guess The Car Bot Application...","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:05.116Z"}
+{"level":"info","message":"✅ Database pool initialized","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:05.173Z"}
+{"level":"info","message":"✅ Database connected","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:05.174Z"}
+{"level":"info","message":"Loaded 3 events","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:05.594Z"}
+{"level":"info","message":"✅ API Server running on port 3001","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:05.615Z"}
+{"level":"info","message":"✅ Discord Bot connected","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:06.270Z"}
+{"level":"info","message":"✅ GameEngine instance found from messageCreate module","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:06.271Z"}
+{"level":"info","message":"📊 Stats synchronization started (every 5 minutes)","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:06.271Z"}
+{"level":"info","message":"🎉 Application started successfully!","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:06.271Z"}
+{"level":"info","message":"Bot Discord prêt! Connecté en tant que GuessTheCar#6976","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:06.273Z"}
+{"level":"info","message":"Bot présent sur 2 serveurs","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:06.274Z"}
+{"level":"info","message":"Bot connecté à 16 canaux","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:06.274Z"}
+{"level":"info","message":"Bot peut voir 3 utilisateurs","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:06.274Z"}
+{"level":"info","message":"Discord Bot connecté: GuessTheCar#6976","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:06.274Z"}
+{"level":"info","message":"Bot présent sur 2 serveurs","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:06.274Z"}
+{"level":"info","message":"Loaded 6 commands","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:06.282Z"}
+{"level":"info","message":"Registering 6 unique commands with Discord...","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:06.283Z"}
+{"level":"info","message":"✅ Successfully registered 6 application commands","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:06.626Z"}
+{"level":"info","message":"Commandes Discord chargées et enregistrées avec succès","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:06.627Z"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:36.279Z"}
+{"command":"collection","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:37.561Z","user":"t3sk0"}
+{"error":{},"level":"error","limit":10,"message":"Error getting collection leaderboard:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:38.053Z"}
+{"error":{},"level":"error","message":"Error getting player collection:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:38.054Z","userId":"573543227525824516"}
+{"command":"stats","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:57.082Z","user":"t3sk0"}
+{"guild":"Shyish","level":"info","message":"Stats command executed:","requesterId":"573543227525824516","service":"guess-the-car-bot","targetUserId":"573543227525824516","timestamp":"2025-08-19T14:37:57.412Z"}
+{"error":{},"level":"error","message":"Error getting player collection:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:37:57.416Z","userId":"573543227525824516"}
+{"command":"guesscar","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:38:07.252Z","user":"t3sk0"}
+{"car":"BYD Yuan","difficulty":"Facile","level":"info","message":"Game started:","service":"guess-the-car-bot","threadId":"1407373061845680259","timestamp":"2025-08-19T14:38:07.934Z","userId":"573543227525824516","username":"t3sk0"}
+{"guildId":"1223242015249141800","level":"info","message":"New game started via command:","service":"guess-the-car-bot","threadId":"1407373061845680259","timestamp":"2025-08-19T14:38:08.774Z","userId":"573543227525824516","username":"t3sk0"}
+{"abandoned":true,"basePoints":5,"difficultyPoints":0.5,"gamesPlayed":127,"gamesWon":58,"isComplete":false,"level":"info","message":"Player score updated:","newTotal":169,"service":"guess-the-car-bot","timeout":false,"timestamp":"2025-08-19T14:38:32.142Z","userId":"573543227525824516"}
+{"command":"stats","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:38:42.812Z","user":"t3sk0"}
+{"guild":"Shyish","level":"info","message":"Stats command executed:","requesterId":"573543227525824516","service":"guess-the-car-bot","targetUserId":"573543227525824516","timestamp":"2025-08-19T14:38:43.302Z"}
+{"error":{},"level":"error","message":"Error getting player collection:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:38:43.304Z","userId":"573543227525824516"}
+{"command":"collection","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:38:47.714Z","user":"t3sk0"}
+{"error":{},"level":"error","limit":10,"message":"Error getting collection leaderboard:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:38:48.151Z"}
+{"error":{},"level":"error","message":"Error getting player collection:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:38:48.151Z","userId":"573543227525824516"}
+{"command":"guesscar","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:38:56.051Z","user":"t3sk0"}
+{"car":"Lincoln Corsair","difficulty":"Moyen","level":"info","message":"Game started:","service":"guess-the-car-bot","threadId":"1407373266548555856","timestamp":"2025-08-19T14:38:56.791Z","userId":"573543227525824516","username":"t3sk0"}
+{"guildId":"1223242015249141800","level":"info","message":"New game started via command:","service":"guess-the-car-bot","threadId":"1407373266548555856","timestamp":"2025-08-19T14:38:57.318Z","userId":"573543227525824516","username":"t3sk0"}
+{"abandoned":true,"basePoints":7.5,"difficultyPoints":1,"gamesPlayed":128,"gamesWon":58,"isComplete":false,"level":"info","message":"Player score updated:","newTotal":170,"service":"guess-the-car-bot","timeout":false,"timestamp":"2025-08-19T14:39:40.267Z","userId":"573543227525824516"}
+{"command":"guesscar","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:39:48.752Z","user":"t3sk0"}
+{"car":"Lancia Phedra","difficulty":"Moyen","level":"info","message":"Game started:","service":"guess-the-car-bot","threadId":"1407373486866960596","timestamp":"2025-08-19T14:39:49.317Z","userId":"573543227525824516","username":"t3sk0"}
+{"guildId":"1223242015249141800","level":"info","message":"New game started via command:","service":"guess-the-car-bot","threadId":"1407373486866960596","timestamp":"2025-08-19T14:39:49.893Z","userId":"573543227525824516","username":"t3sk0"}
+{"abandoned":false,"basePoints":7.5,"difficultyPoints":1,"gamesPlayed":129,"gamesWon":58,"isComplete":false,"level":"info","message":"Player score updated:","newTotal":171,"service":"guess-the-car-bot","timeout":false,"timestamp":"2025-08-19T14:41:04.061Z","userId":"573543227525824516"}
+{"command":"collection","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:41:14.248Z","user":"t3sk0"}
+{"error":{},"level":"error","limit":10,"message":"Error getting collection leaderboard:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:41:14.562Z"}
+{"error":{},"level":"error","message":"Error getting player collection:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:41:14.563Z","userId":"573543227525824516"}
+{"command":"stats","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:41:21.085Z","user":"t3sk0"}
+{"guild":"Shyish","level":"info","message":"Stats command executed:","requesterId":"573543227525824516","service":"guess-the-car-bot","targetUserId":"573543227525824516","timestamp":"2025-08-19T14:41:21.417Z"}
+{"error":{},"level":"error","message":"Error getting player collection:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:41:21.419Z","userId":"573543227525824516"}
+{"command":"guesscar","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:41:25.842Z","user":"t3sk0"}
+{"car":"Toyota Yaris","difficulty":"Facile","level":"info","message":"Game started:","service":"guess-the-car-bot","threadId":"1407373894901305457","timestamp":"2025-08-19T14:41:26.639Z","userId":"573543227525824516","username":"t3sk0"}
+{"guildId":"1223242015249141800","level":"info","message":"New game started via command:","service":"guess-the-car-bot","threadId":"1407373894901305457","timestamp":"2025-08-19T14:41:27.241Z","userId":"573543227525824516","username":"t3sk0"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:42:06.288Z"}
+{"abandoned":false,"basePoints":18.7,"difficultyPoints":0,"gamesPlayed":130,"gamesWon":59,"isComplete":true,"level":"info","message":"Player score updated:","newTotal":171,"service":"guess-the-car-bot","timeout":false,"timestamp":"2025-08-19T14:42:06.726Z","userId":"573543227525824516"}
+{"carId":8,"error":{},"level":"error","message":"Error recording car found:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:42:06.726Z","userId":"573543227525824516"}
+{"command":"collection","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:42:17.180Z","user":"t3sk0"}
+{"error":{},"level":"error","limit":10,"message":"Error getting collection leaderboard:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:42:17.651Z"}
+{"error":{},"level":"error","message":"Error getting player collection:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:42:17.651Z","userId":"573543227525824516"}
+{"command":"stats","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:42:29.590Z","user":"t3sk0"}
+{"guild":"Shyish","level":"info","message":"Stats command executed:","requesterId":"573543227525824516","service":"guess-the-car-bot","targetUserId":"573543227525824516","timestamp":"2025-08-19T14:42:29.931Z"}
+{"error":{},"level":"error","message":"Error getting player collection:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:42:29.932Z","userId":"573543227525824516"}
+{"level":"info","message":"SIGINT received, shutting down gracefully","service":"guess-the-car-bot","timestamp":"2025-08-19T14:44:23.755Z"}
+{"apiUrl":"http://localhost:3000/api","enabled":true,"level":"info","message":"StatsHelper initialized:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:44:26.031Z"}
+{"level":"info","message":"🚀 Starting Guess The Car Bot Application...","service":"guess-the-car-bot","timestamp":"2025-08-19T14:44:26.033Z"}
+{"level":"info","message":"✅ Database pool initialized","service":"guess-the-car-bot","timestamp":"2025-08-19T14:44:26.091Z"}
+{"level":"info","message":"✅ Database connected","service":"guess-the-car-bot","timestamp":"2025-08-19T14:44:26.092Z"}
+{"level":"info","message":"Loaded 3 events","service":"guess-the-car-bot","timestamp":"2025-08-19T14:44:26.526Z"}
+{"level":"info","message":"✅ API Server running on port 3001","service":"guess-the-car-bot","timestamp":"2025-08-19T14:44:26.547Z"}
+{"level":"info","message":"✅ Discord Bot connected","service":"guess-the-car-bot","timestamp":"2025-08-19T14:44:27.253Z"}
+{"level":"info","message":"✅ GameEngine instance found from messageCreate module","service":"guess-the-car-bot","timestamp":"2025-08-19T14:44:27.254Z"}
+{"level":"info","message":"📊 Stats synchronization started (every 5 minutes)","service":"guess-the-car-bot","timestamp":"2025-08-19T14:44:27.255Z"}
+{"level":"info","message":"🎉 Application started successfully!","service":"guess-the-car-bot","timestamp":"2025-08-19T14:44:27.255Z"}
+{"level":"info","message":"Bot Discord prêt! Connecté en tant que GuessTheCar#6976","service":"guess-the-car-bot","timestamp":"2025-08-19T14:44:27.260Z"}
+{"level":"info","message":"Bot présent sur 2 serveurs","service":"guess-the-car-bot","timestamp":"2025-08-19T14:44:27.261Z"}
+{"level":"info","message":"Bot connecté à 16 canaux","service":"guess-the-car-bot","timestamp":"2025-08-19T14:44:27.261Z"}
+{"level":"info","message":"Bot peut voir 3 utilisateurs","service":"guess-the-car-bot","timestamp":"2025-08-19T14:44:27.261Z"}
+{"level":"info","message":"Discord Bot connecté: GuessTheCar#6976","service":"guess-the-car-bot","timestamp":"2025-08-19T14:44:27.261Z"}
+{"level":"info","message":"Bot présent sur 2 serveurs","service":"guess-the-car-bot","timestamp":"2025-08-19T14:44:27.261Z"}
+{"level":"info","message":"Loaded 6 commands","service":"guess-the-car-bot","timestamp":"2025-08-19T14:44:27.268Z"}
+{"level":"info","message":"Registering 6 unique commands with Discord...","service":"guess-the-car-bot","timestamp":"2025-08-19T14:44:27.269Z"}
+{"level":"info","message":"✅ Successfully registered 6 application commands","service":"guess-the-car-bot","timestamp":"2025-08-19T14:44:27.670Z"}
+{"level":"info","message":"Commandes Discord chargées et enregistrées avec succès","service":"guess-the-car-bot","timestamp":"2025-08-19T14:44:27.670Z"}
+{"command":"guesscar","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:44:30.618Z","user":"t3sk0"}
+{"car":"Pagani Roadster BC","difficulty":"Difficile","level":"info","message":"Game started:","service":"guess-the-car-bot","threadId":"1407374670830895195","timestamp":"2025-08-19T14:44:31.482Z","userId":"573543227525824516","username":"t3sk0"}
+{"guildId":"1223242015249141800","level":"info","message":"New game started via command:","service":"guess-the-car-bot","threadId":"1407374670830895195","timestamp":"2025-08-19T14:44:32.194Z","userId":"573543227525824516","username":"t3sk0"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:44:57.262Z"}
+{"abandoned":false,"basePoints":36,"difficultyPoints":0,"gamesPlayed":131,"gamesWon":60,"isComplete":true,"level":"info","message":"Player score updated:","newTotal":171,"service":"guess-the-car-bot","timeout":false,"timestamp":"2025-08-19T14:45:29.809Z","userId":"573543227525824516"}
+{"carId":395,"error":{},"level":"error","message":"Error recording car found:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:45:29.809Z","userId":"573543227525824516"}
+{"command":"collection","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:45:54.794Z","user":"t3sk0"}
+{"error":{},"level":"error","limit":10,"message":"Error getting collection leaderboard:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:45:55.239Z"}
+{"error":{},"level":"error","message":"Error getting player collection:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:45:55.239Z","userId":"573543227525824516"}
+{"level":"info","message":"SIGINT received, shutting down gracefully","service":"guess-the-car-bot","timestamp":"2025-08-19T14:48:34.803Z"}
+{"apiUrl":"http://localhost:3000/api","enabled":true,"level":"info","message":"StatsHelper initialized:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:48:36.231Z"}
+{"level":"info","message":"🚀 Starting Guess The Car Bot Application...","service":"guess-the-car-bot","timestamp":"2025-08-19T14:48:36.233Z"}
+{"level":"info","message":"✅ Database pool initialized","service":"guess-the-car-bot","timestamp":"2025-08-19T14:48:36.291Z"}
+{"level":"info","message":"✅ Database connected","service":"guess-the-car-bot","timestamp":"2025-08-19T14:48:36.292Z"}
+{"level":"info","message":"Loaded 3 events","service":"guess-the-car-bot","timestamp":"2025-08-19T14:48:36.699Z"}
+{"level":"info","message":"✅ API Server running on port 3001","service":"guess-the-car-bot","timestamp":"2025-08-19T14:48:36.719Z"}
+{"level":"info","message":"✅ Discord Bot connected","service":"guess-the-car-bot","timestamp":"2025-08-19T14:48:37.567Z"}
+{"level":"info","message":"✅ GameEngine instance found from messageCreate module","service":"guess-the-car-bot","timestamp":"2025-08-19T14:48:37.567Z"}
+{"level":"info","message":"📊 Stats synchronization started (every 5 minutes)","service":"guess-the-car-bot","timestamp":"2025-08-19T14:48:37.568Z"}
+{"level":"info","message":"🎉 Application started successfully!","service":"guess-the-car-bot","timestamp":"2025-08-19T14:48:37.568Z"}
+{"level":"info","message":"Bot Discord prêt! Connecté en tant que GuessTheCar#6976","service":"guess-the-car-bot","timestamp":"2025-08-19T14:48:37.572Z"}
+{"level":"info","message":"Bot présent sur 2 serveurs","service":"guess-the-car-bot","timestamp":"2025-08-19T14:48:37.572Z"}
+{"level":"info","message":"Bot connecté à 16 canaux","service":"guess-the-car-bot","timestamp":"2025-08-19T14:48:37.572Z"}
+{"level":"info","message":"Bot peut voir 3 utilisateurs","service":"guess-the-car-bot","timestamp":"2025-08-19T14:48:37.573Z"}
+{"level":"info","message":"Discord Bot connecté: GuessTheCar#6976","service":"guess-the-car-bot","timestamp":"2025-08-19T14:48:37.573Z"}
+{"level":"info","message":"Bot présent sur 2 serveurs","service":"guess-the-car-bot","timestamp":"2025-08-19T14:48:37.573Z"}
+{"level":"info","message":"Loaded 6 commands","service":"guess-the-car-bot","timestamp":"2025-08-19T14:48:37.580Z"}
+{"level":"info","message":"Registering 6 unique commands with Discord...","service":"guess-the-car-bot","timestamp":"2025-08-19T14:48:37.580Z"}
+{"level":"info","message":"✅ Successfully registered 6 application commands","service":"guess-the-car-bot","timestamp":"2025-08-19T14:48:37.929Z"}
+{"level":"info","message":"Commandes Discord chargées et enregistrées avec succès","service":"guess-the-car-bot","timestamp":"2025-08-19T14:48:37.929Z"}
+{"command":"guesscar","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:48:53.477Z","user":"t3sk0"}
+{"car":"Maserati 3200 GT","difficulty":"Difficile","level":"info","message":"Game started:","service":"guess-the-car-bot","threadId":"1407375772955574352","timestamp":"2025-08-19T14:48:54.421Z","userId":"573543227525824516","username":"t3sk0"}
+{"guildId":"1223242015249141800","level":"info","message":"New game started via command:","service":"guess-the-car-bot","threadId":"1407375772955574352","timestamp":"2025-08-19T14:48:54.968Z","userId":"573543227525824516","username":"t3sk0"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:49:07.581Z"}
+{"abandoned":true,"basePoints":12.5,"difficultyPoints":2,"gamesPlayed":132,"gamesWon":60,"isComplete":false,"level":"info","message":"Player score updated:","newTotal":173,"service":"guess-the-car-bot","timeout":false,"timestamp":"2025-08-19T14:49:36.172Z","userId":"573543227525824516"}
+{"command":"guesscar","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:49:44.440Z","user":"t3sk0"}
+{"car":"VinFast VF8","difficulty":"Moyen","level":"info","message":"Game started:","service":"guess-the-car-bot","threadId":"1407375985329836105","timestamp":"2025-08-19T14:49:44.909Z","userId":"573543227525824516","username":"t3sk0"}
+{"guildId":"1223242015249141800","level":"info","message":"New game started via command:","service":"guess-the-car-bot","threadId":"1407375985329836105","timestamp":"2025-08-19T14:49:45.529Z","userId":"573543227525824516","username":"t3sk0"}
+{"changesUsed":1,"level":"info","message":"Car changed in game:","newCar":"Hummer EV SUV","service":"guess-the-car-bot","threadId":"1407375985329836105","timestamp":"2025-08-19T14:50:17.131Z","userId":"573543227525824516"}
+{"abandoned":false,"basePoints":12.5,"difficultyPoints":2,"gamesPlayed":133,"gamesWon":60,"isComplete":false,"level":"info","message":"Player score updated:","newTotal":175,"service":"guess-the-car-bot","timeout":false,"timestamp":"2025-08-19T14:51:59.855Z","userId":"573543227525824516"}
+{"command":"guesscar","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:52:18.543Z","user":"t3sk0"}
+{"car":"Geely Coolray","difficulty":"Facile","level":"info","message":"Game started:","service":"guess-the-car-bot","threadId":"1407376635916849172","timestamp":"2025-08-19T14:52:20.086Z","userId":"573543227525824516","username":"t3sk0"}
+{"guildId":"1223242015249141800","level":"info","message":"New game started via command:","service":"guess-the-car-bot","threadId":"1407376635916849172","timestamp":"2025-08-19T14:52:20.966Z","userId":"573543227525824516","username":"t3sk0"}
+{"abandoned":true,"basePoints":5,"difficultyPoints":0.5,"gamesPlayed":134,"gamesWon":60,"isComplete":false,"level":"info","message":"Player score updated:","newTotal":175.5,"service":"guess-the-car-bot","timeout":false,"timestamp":"2025-08-19T14:52:44.721Z","userId":"573543227525824516"}
+{"command":"guesscar","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:53:23.412Z","user":"t3sk0"}
+{"car":"Honda Insight","difficulty":"Moyen","level":"info","message":"Game started:","service":"guess-the-car-bot","threadId":"1407376904331198465","timestamp":"2025-08-19T14:53:24.089Z","userId":"573543227525824516","username":"t3sk0"}
+{"guildId":"1223242015249141800","level":"info","message":"New game started via command:","service":"guess-the-car-bot","threadId":"1407376904331198465","timestamp":"2025-08-19T14:53:24.733Z","userId":"573543227525824516","username":"t3sk0"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:53:37.585Z"}
+{"abandoned":false,"basePoints":18,"difficultyPoints":0,"gamesPlayed":135,"gamesWon":61,"isComplete":true,"level":"info","message":"Player score updated:","newTotal":175.5,"service":"guess-the-car-bot","timeout":false,"timestamp":"2025-08-19T14:55:17.705Z","userId":"573543227525824516"}
+{"carId":80,"error":{},"level":"error","message":"Error recording car found:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:55:17.705Z","userId":"573543227525824516"}
+{"command":"collection","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:55:50.401Z","user":"t3sk0"}
+{"error":{},"level":"error","limit":10,"message":"Error getting collection leaderboard:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:55:50.766Z"}
+{"error":{},"level":"error","message":"Error getting player collection:","service":"guess-the-car-bot","timestamp":"2025-08-19T14:55:50.766Z","userId":"573543227525824516"}

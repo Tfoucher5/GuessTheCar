@@ -100,7 +100,7 @@ module.exports = {
                 const progressBar = LevelSystem.generateProgressBar(progressInfo.progressPercentage);
                 levelText += `**Progression:** ${progressBar} ${Math.round(progressInfo.progressPercentage)}%\n`;
                 levelText += `**Prochain niveau:** ${progressInfo.nextLevelTitle}\n`;
-                levelText += `**Points nécessaires:** ${progressInfo.pointsNeeded}`;
+                levelText += `**Points nécessaires:** ${Math.round(progressInfo.pointsNeeded * 10) / 10}`;
             } else {
                 levelText += progressInfo.message;
             }
@@ -142,6 +142,21 @@ module.exports = {
                 statsEmbed.addFields({
                     name: '🎯 Précision des devinettes',
                     value: `**Marques:** ${playerStats.correctBrandGuesses || 0}/${playerStats.totalBrandGuesses || 0} (${brandAccuracy}%)\n**Modèles:** ${playerStats.correctModelGuesses || 0}/${playerStats.totalModelGuesses || 0} (${modelAccuracy}%)`,
+                    inline: false
+                });
+            }
+
+            const collectionStats = await playerManager.getPlayerCollection(userId);
+
+            if (collectionStats && collectionStats.carsFound > 0) {
+                const completionPercentage = Math.round((collectionStats.carsFound / collectionStats.totalCars) * 100 * 10) / 10;
+                const brandCompletionPercentage = Math.round((collectionStats.brandsFound / collectionStats.totalBrands) * 100 * 10) / 10;
+
+                statsEmbed.addFields({
+                    name: '🏁 Collection Automobile',
+                    value: `**Voitures trouvées:** ${collectionStats.carsFound}/${collectionStats.totalCars} (${completionPercentage}%)\n` +
+                        `**Marques découvertes:** ${collectionStats.brandsFound}/${collectionStats.totalBrands} (${brandCompletionPercentage}%)\n` +
+                        '**Objectif:** Découvrir toutes les voitures !',
                     inline: false
                 });
             }

@@ -276,6 +276,71 @@ class PlayerRepository extends BaseRepository {
             successRate: parseFloat(row.success_rate) || 0
         };
     }
+    /**
+     * Enregistre qu'un joueur a trouvé une voiture
+     */
+    async recordCarFound(data) {
+        const query = `
+        INSERT IGNORE INTO user_cars_found 
+        (user_id, car_id, brand_id, attempts_used, time_taken)
+        VALUES (?, ?, ?, ?, ?)
+    `;
+
+        return await this.db.execute(query, [
+            data.userId,
+            data.carId,
+            data.brandId,
+            data.attemptsUsed,
+            data.timeTaken
+        ]);
+    }
+
+    /**
+     * Obtient les statistiques de collection d'un joueur
+     */
+    async getPlayerCollection(userId) {
+        const query = `
+        SELECT 
+            COUNT(DISTINCT ucf.car_id) as carsFound,
+            COUNT(DISTINCT ucf.brand_id) as brandsFound,
+            (SELECT COUNT(*) FROM models) as totalCars,
+            (SELECT COUNT(*) FROM brands) as totalBrands,
+            AVG(ucf.attempts_used) as avgAttempts,
+            AVG(ucf.time_taken) as avgTime,
+            MIN(ucf.found_at) as firstCarDate,
+            MAX(ucf.found_at) as lastCarDate
+        FROM user_cars_found ucf
+        WHERE ucf.user_id = ?
+    `;
+
+        const [results] = await this.db.execute(query, [userId]);
+        return results[0];
+    }
+
+    /**
+     * Obtient le classement des collectionneurs
+     */
+    async getCollectionLeaderboard(limit) {
+        const query = `
+        SELECT 
+            us.username,
+            us.user_id,
+            COUNT(DISTINCT ucf.car_id) as carsFound,
+            COUNT(DISTINCT ucf.brand_id) as brandsFound,
+            (SELECT COUNT(*) FROM models) as totalCars,
+            (SELECT COUNT(*) FROM brands) as totalBrands,
+            ROUND((COUNT(DISTINCT ucf.car_id) / (SELECT COUNT(*) FROM models)) * 100, 1) as completionPercentage
+        FROM user_scores us
+        LEFT JOIN user_cars_found ucf ON us.user_id = ucf.user_id
+        WHERE COUNT(DISTINCT ucf.car_id) > 0
+        GROUP BY us.user_id, us.username
+        ORDER BY carsFound DESC, brandsFound DESC
+        LIMIT ?
+    `;
+
+        const [results] = await this.db.execute(query, [limit]);
+        return results;
+    }
 }
 
 module.exports = PlayerRepository;

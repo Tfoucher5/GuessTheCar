@@ -203,6 +203,8 @@ class GameEngine extends EventEmitter {
         }
     }
 
+    // Remplacer la méthode endGameWithSuccess dans GameEngine.js
+
     /**
      * Termine le jeu avec succès complet
      */
@@ -214,19 +216,27 @@ class GameEngine extends EventEmitter {
         const attemptsModel = gameState.attempts;
         const totalAttempts = attemptsMake + attemptsModel;
 
-        // Calculer le score AVEC les infos de difficulté
-        const score = gameState.calculateFullSuccessScore();
+        // NOUVEAU: Calculer le score avec le système amélioré
+        let score;
+        try {
+            score = gameState.calculateEnhancedScore();
+            console.log('Enhanced Score:', JSON.stringify(score, null, 2)); // Log temporaire pour debug
+        } catch (error) {
+            // Fallback vers l'ancien système si erreur
+            console.log('Falling back to old scoring system:', error.message);
+            score = gameState.calculateFullSuccessScore();
+            score.difficultyName = gameState.car.getDifficultyText();
+            score.carName = gameState.car.getFullName();
+        }
 
-        // AJOUT: Inclure les infos de difficulté dans le score
-        score.difficultyName = gameState.car.getDifficultyText();
-        score.carName = gameState.car.getFullName();
+        // Mettre à jour les scores du joueur - utiliser le score total du nouveau système
+        const scoreToSave = score.totalPoints || (score.basePoints + score.difficultyPoints);
 
-        // Mettre à jour les scores du joueur
         await this.playerManager.updatePlayerScore(
             gameState.userId,
             gameState.username,
-            score.basePoints,
-            score.difficultyPoints,
+            scoreToSave, // Utiliser le score total amélioré
+            0, // Les bonus sont déjà inclus dans totalPoints
             true,
             {
                 carId: gameState.car.id,
@@ -240,6 +250,16 @@ class GameEngine extends EventEmitter {
             }
         );
 
+        await this.playerManager.recordCarFound(
+            gameState.userId,
+            gameState.car,
+            {
+                attemptsMake: attemptsMake,
+                attemptsModel: attemptsModel,
+                duration: Math.floor(timeSpent / 1000)
+            }
+        );
+
         await this.logGameAction('complete', gameState);
 
         // Nettoyer la partie
@@ -250,10 +270,10 @@ class GameEngine extends EventEmitter {
             isCorrect: true,
             success: true,
             feedback: `🎉 Félicitations !\nVous avez trouvé la **${gameState.car.getFullName()}** !`,
-            score,
+            score, // Passer le score amélioré (avec achievements et bonus)
             timeSpent,
             attempts: totalAttempts,
-            car: gameState.car // AJOUT: Passer l'objet car
+            car: gameState.car
         };
     }
 
