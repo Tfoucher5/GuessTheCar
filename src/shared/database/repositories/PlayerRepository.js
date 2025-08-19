@@ -221,10 +221,10 @@ class PlayerRepository extends BaseRepository {
         const query = `
             SELECT 
                 us.*,
-                ROW_NUMBER() OVER (ORDER BY us.total_difficulty_points DESC, us.games_won DESC) as ranking
+                ROW_NUMBER() OVER (ORDER BY us.total_points DESC, us.games_won DESC) as ranking
             FROM user_scores us
             WHERE us.games_played > 0
-            ORDER BY us.total_difficulty_points DESC, us.games_won DESC
+            ORDER BY us.total_points DESC, us.games_won DESC
             LIMIT ?
         `;
 
@@ -245,13 +245,13 @@ class PlayerRepository extends BaseRepository {
                 (
                     SELECT COUNT(*) + 1 
                     FROM user_scores us2 
-                    WHERE us2.total_difficulty_points > us.total_difficulty_points
-                    OR (us2.total_difficulty_points = us.total_difficulty_points AND us2.games_won > us.games_won)
+                    WHERE us2.total_points > us.total_points
+                    OR (us2.total_points = us.total_points AND us2.games_won > us.games_won)
                 ) as ranking,
                 CASE 
-                    WHEN us.total_difficulty_points >= 100 THEN 'Expert'
-                    WHEN us.total_difficulty_points >= 50 THEN 'Avancé'
-                    WHEN us.total_difficulty_points >= 20 THEN 'Intermédiaire'
+                    WHEN us.total_points >= 100 THEN 'Expert'
+                    WHEN us.total_points >= 50 THEN 'Avancé'
+                    WHEN us.total_points >= 20 THEN 'Intermédiaire'
                     ELSE 'Débutant'
                 END as skill_level,
                 CASE 
@@ -277,8 +277,8 @@ class PlayerRepository extends BaseRepository {
         };
     }
     /**
-     * Enregistre qu'un joueur a trouvé une voiture
-     */
+ * Enregistre qu'un joueur a trouvé une voiture
+ */
     async recordCarFound(data) {
         const query = `
         INSERT IGNORE INTO user_cars_found 
@@ -286,7 +286,7 @@ class PlayerRepository extends BaseRepository {
         VALUES (?, ?, ?, ?, ?)
     `;
 
-        return await this.db.execute(query, [
+        return await executeQuery(query, [  // CHANGÉ: executeQuery au lieu de this.db.execute
             data.userId,
             data.carId,
             data.brandId,
@@ -296,8 +296,8 @@ class PlayerRepository extends BaseRepository {
     }
 
     /**
-     * Obtient les statistiques de collection d'un joueur
-     */
+  * Obtient les statistiques de collection d'un joueur
+  */
     async getPlayerCollection(userId) {
         const query = `
         SELECT 
@@ -313,9 +313,12 @@ class PlayerRepository extends BaseRepository {
         WHERE ucf.user_id = ?
     `;
 
-        const [results] = await this.db.execute(query, [userId]);
+        const results = await executeQuery(query, [userId]);
         return results[0];
     }
+
+    // Dans src/shared/database/repositories/PlayerRepository.js
+    // Corriger la méthode getCollectionLeaderboard :
 
     /**
      * Obtient le classement des collectionneurs
@@ -332,13 +335,13 @@ class PlayerRepository extends BaseRepository {
             ROUND((COUNT(DISTINCT ucf.car_id) / (SELECT COUNT(*) FROM models)) * 100, 1) as completionPercentage
         FROM user_scores us
         LEFT JOIN user_cars_found ucf ON us.user_id = ucf.user_id
-        WHERE COUNT(DISTINCT ucf.car_id) > 0
         GROUP BY us.user_id, us.username
+        HAVING COUNT(DISTINCT ucf.car_id) > 0
         ORDER BY carsFound DESC, brandsFound DESC
         LIMIT ?
     `;
 
-        const [results] = await this.db.execute(query, [limit]);
+        const results = await executeQuery(query, [limit]);
         return results;
     }
 }

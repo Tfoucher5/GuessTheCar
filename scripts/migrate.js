@@ -31,9 +31,11 @@ async function createDatabase() {
         console.log('🧹 Suppression des anciennes tables...');
         await connection.execute('SET FOREIGN_KEY_CHECKS = 0');
         await connection.execute('DROP TABLE IF EXISTS game_sessions');
+        await connection.execute('DROP TABLE IF EXISTS user_cars_found');
         await connection.execute('DROP TABLE IF EXISTS user_scores');
         await connection.execute('DROP TABLE IF EXISTS models');
         await connection.execute('DROP TABLE IF EXISTS brands');
+        await connection.execute('DROP VIEW IF EXISTS leaderboard_view');
         await connection.execute('SET FOREIGN_KEY_CHECKS = 1');
 
         console.log('📋 Création des tables...');
@@ -71,11 +73,12 @@ async function createDatabase() {
         `);
         console.log('✅ Table models créée');
 
-        // Table des scores utilisateurs
+        // Table des scores utilisateurs AVEC guild_id
         await connection.execute(`
             CREATE TABLE IF NOT EXISTS user_scores (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id VARCHAR(20) NOT NULL UNIQUE,
+                user_id VARCHAR(20) NOT NULL,
+                guild_id VARCHAR(255) NULL,
                 username VARCHAR(32) NOT NULL,
                 total_points DECIMAL(10, 2) DEFAULT 0,
                 total_difficulty_points DECIMAL(10, 2) DEFAULT 0,
@@ -92,35 +95,44 @@ async function createDatabase() {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 INDEX idx_user_id (user_id),
+                INDEX idx_guild_id (guild_id),
+                INDEX idx_guild_user (guild_id, user_id),
+                INDEX idx_total_points (total_points DESC),
                 INDEX idx_total_difficulty_points (total_difficulty_points DESC),
                 INDEX idx_games_won (games_won DESC),
-                INDEX idx_updated_at (updated_at)
+                INDEX idx_updated_at (updated_at),
+                UNIQUE KEY unique_user_guild (user_id, guild_id)
             )
         `);
-        console.log('✅ Table user_scores créée');
+        console.log('✅ Table user_scores créée avec guild_id');
 
+        // Table user_cars_found AVEC guild_id
         await connection.execute(`
             CREATE TABLE IF NOT EXISTS user_cars_found (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 user_id VARCHAR(255) NOT NULL,
+                guild_id VARCHAR(255) NULL,
                 car_id INT NOT NULL,
                 brand_id INT NOT NULL,
                 found_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 attempts_used INT DEFAULT 0,
-                time_taken INT DEFAULT 0, -- en secondes
+                time_taken INT DEFAULT 0,
                 INDEX idx_user_id (user_id),
+                INDEX idx_guild_id (guild_id),
+                INDEX idx_guild_user (guild_id, user_id),
                 INDEX idx_car_id (car_id),
                 INDEX idx_brand_id (brand_id),
-                UNIQUE KEY unique_user_car (user_id, car_id)
-            );
+                UNIQUE KEY unique_user_guild_car (user_id, guild_id, car_id)
+            )
         `);
-        console.log('✅ Table user_cars_found créée');
+        console.log('✅ Table user_cars_found créée avec guild_id');
 
-        // Table des sessions SANS FK
+        // Table des sessions AVEC guild_id
         await connection.execute(`
-            CREATE TABLE game_sessions (
+            CREATE TABLE IF NOT EXISTS game_sessions (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 user_id VARCHAR(20) NOT NULL,
+                guild_id VARCHAR(255) NULL,
                 car_id INT NOT NULL,
                 started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 ended_at TIMESTAMP NULL,
@@ -137,30 +149,31 @@ async function createDatabase() {
                 points_earned DECIMAL(6, 2) DEFAULT 0,
                 difficulty_points_earned DECIMAL(6, 2) DEFAULT 0,
                 INDEX idx_user_id (user_id),
+                INDEX idx_guild_id (guild_id),
+                INDEX idx_guild_user (guild_id, user_id),
                 INDEX idx_started_at (started_at),
                 INDEX idx_car_id (car_id),
                 INDEX idx_completed (completed)
             )
         `);
-        console.log('✅ Table game_sessions créée');
+        console.log('✅ Table game_sessions créée avec guild_id');
 
-        // Vue pour le classement
+        // Vue corrigée pour le nouveau système de points
         await connection.execute(`
-            CREATE OR REPLACE VIEW IF NOT EXISTS leaderboard_view AS
+            CREATE OR REPLACE VIEW leaderboard_view AS
             SELECT
                 us.*,
                 RANK() OVER (
                     ORDER BY
-                        us.total_difficulty_points DESC,
+                        us.total_points DESC,
                         us.games_won DESC,
                         us.best_time ASC
                 ) as ranking,
                 CASE
-                    WHEN us.total_difficulty_points >= 50 THEN 'Maître'
-                    WHEN us.total_difficulty_points >= 25 THEN 'Expert'
-                    WHEN us.total_difficulty_points >= 15 THEN 'Avancé'
-                    WHEN us.total_difficulty_points >= 8 THEN 'Intermédiaire'
-                    WHEN us.total_difficulty_points >= 3 THEN 'Apprenti'
+                    WHEN us.total_points >= 100 THEN 'Expert'
+                    WHEN us.total_points >= 50 THEN 'Avancé'
+                    WHEN us.total_points >= 20 THEN 'Intermédiaire'
+                    WHEN us.total_points >= 10 THEN 'Apprenti'
                     ELSE 'Débutant'
                 END as skill_level,
                 CASE
@@ -182,17 +195,24 @@ async function createDatabase() {
                     0
                 ) as average_time_seconds
             FROM user_scores us
-            WHERE us.total_difficulty_points > 0
+            WHERE us.total_points > 0
         `);
-        console.log('✅ Vue leaderboard_view créée');
+        console.log('✅ Vue leaderboard_view créée (corrigée pour total_points)');
 
         console.log('\n🎉 Migration terminée avec succès!');
-        console.log('\n📊 Tables créées SANS contraintes FK:');
+        console.log('\n📊 Tables créées avec support multi-serveur:');
         console.log('- brands (avec country)');
-        console.log('- models (sans FK vers brands)');
-        console.log('- user_scores');
-        console.log('- game_sessions (sans FK vers models)');
-        console.log('- leaderboard_view (vue)');
+        console.log('- models');
+        console.log('- user_scores (avec guild_id + index optimisés)');
+        console.log('- user_cars_found (avec guild_id)');
+        console.log('- game_sessions (avec guild_id)');
+        console.log('- leaderboard_view (vue corrigée)');
+
+        console.log('\n🎯 Fonctionnalités activées:');
+        console.log('- ✅ Classements par serveur Discord');
+        console.log('- ✅ Collection de voitures par serveur');
+        console.log('- ✅ Nouveau système de points avec bonus');
+        console.log('- ✅ Index optimisés pour les performances');
 
         console.log('\n🚀 Prochaine étape: npm run seed');
 
