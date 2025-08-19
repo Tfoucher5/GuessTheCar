@@ -195,11 +195,11 @@ class GameEngine extends EventEmitter {
         }
     }
 
-    // Remplacer la méthode endGameWithSuccess dans GameEngine.js
-
     /**
  * Termine le jeu avec succès - MODIFIÉ pour inclure guildId
  */
+    // Correction simplifiée pour GameEngine.js
+
     async endGameWithSuccess(gameState) {
         const timeSpent = gameState.getTimeSpent();
         const attemptsMake = gameState.attemptsMake || 1;
@@ -210,23 +210,34 @@ class GameEngine extends EventEmitter {
         let score;
         try {
             score = gameState.calculateEnhancedScore();
+            console.log('Enhanced score calculated:', score);
         } catch (error) {
+            logger.warn('Error calculating enhanced score, falling back to simple score:', error.message);
             score = gameState.calculateFullSuccessScore();
             score.difficultyName = gameState.car.getDifficultyText();
             score.carName = gameState.car.getFullName();
+            console.log('Fallback score calculated:', score);
         }
 
-        const scoreToSave = score.totalPoints || (score.basePoints + score.difficultyPoints);
+        // ✅ SIMPLIFIÉ: Maintenant on a toujours basePoints ET difficultyPoints
+        const basePoints = score.basePoints || 0;
+        const difficultyPoints = score.difficultyPoints || 0;
 
-        // MODIFIÉ: Inclure guildId dans les gameStats
+        console.log('GameEngine.endGameWithSuccess - Score breakdown:', {
+            basePoints,
+            difficultyPoints,
+            totalPoints: score.totalPoints
+        });
+
+        // ✅ Passer les points séparément
         await this.playerManager.updatePlayerScore(
             gameState.userId,
             gameState.username,
-            scoreToSave,
-            0,
+            basePoints,
+            difficultyPoints,
             true,
             {
-                guildId: gameState.guildId, // AJOUTÉ
+                guildId: gameState.guildId,
                 carId: gameState.car.id,
                 startedAt: new Date(gameState.startTime),
                 duration: Math.floor(timeSpent / 1000),
@@ -238,12 +249,11 @@ class GameEngine extends EventEmitter {
             }
         );
 
-        // MODIFIÉ: Inclure guildId pour recordCarFound
         await this.playerManager.recordCarFound(
             gameState.userId,
             gameState.car,
             {
-                guildId: gameState.guildId, // AJOUTÉ
+                guildId: gameState.guildId,
                 attemptsMake: attemptsMake,
                 attemptsModel: attemptsModel,
                 duration: Math.floor(timeSpent / 1000)
@@ -277,17 +287,54 @@ class GameEngine extends EventEmitter {
             const attemptsModel = gameState.attempts;
             const totalAttempts = attemptsMake + attemptsModel;
 
-            const score = gameState.calculateFinalScore();
+            // ✅ CORRIGÉ: Utiliser le système amélioré pour le succès partiel aussi
+            let score;
+            try {
+                // Pour le succès partiel, on modifie les données du jeu
+                const partialGameData = {
+                    car: gameState.car,
+                    timeSpent: timeSpent,
+                    totalAttempts: totalAttempts,
+                    hintsUsed: Object.values(gameState.hintsUsed).filter(used => used).length,
+                    carChanges: gameState.carChangesCount,
+                    isComplete: false,  // ✅ Pas de succès complet
+                    makeFound: true,    // ✅ Marque trouvée
+                    modelFound: false   // ✅ Modèle pas trouvé
+                };
+
+                const EnhancedScoreCalculator = require('../../shared/utils/EnhancedScoreCalculator');
+                const calculator = new EnhancedScoreCalculator();
+                score = calculator.calculateEnhancedScore(partialGameData);
+
+                console.log('Enhanced partial score calculated:', score);
+            } catch (error) {
+                logger.warn('Error calculating enhanced partial score, falling back to simple score:', error.message);
+                score = gameState.calculateFinalScore();
+                console.log('Fallback partial score calculated:', score);
+            }
+
             score.difficultyName = gameState.car.getDifficultyText();
             score.carName = gameState.car.getFullName();
 
+            // ✅ SIMPLIFIÉ: Maintenant on a toujours basePoints ET difficultyPoints
+            const basePoints = score.basePoints || 0;
+            const difficultyPoints = score.difficultyPoints || 0;
+
+            console.log('GameEngine.endGameWithPartialSuccess - Score breakdown:', {
+                basePoints,
+                difficultyPoints,
+                totalPoints: score.totalPoints
+            });
+
+            // ✅ Passer les points séparément
             await this.playerManager.updatePlayerScore(
                 gameState.userId,
                 gameState.username,
-                score.basePoints,
-                score.difficultyPoints,
-                false,
+                basePoints,
+                difficultyPoints,
+                false, // Pas de succès complet
                 {
+                    guildId: gameState.guildId,
                     carId: gameState.car.id,
                     startedAt: new Date(gameState.startTime),
                     duration: Math.floor(timeSpent / 1000),
@@ -300,14 +347,13 @@ class GameEngine extends EventEmitter {
             );
 
             await this.logGameAction('complete', gameState);
-
             this.cleanupGame(gameState.threadId);
 
             return {
                 type: 'gameOver',
                 isCorrect: false,
                 success: false,
-                feedback: `⌛ Plus d'essais !\nLa voiture était la **${gameState.car.getFullName()}**.\n\nVous avez trouvé la marque, vous gagnez ${(score.basePoints + score.difficultyPoints).toFixed(1)} points totaux (${score.basePoints.toFixed(1)} + ${score.difficultyPoints.toFixed(1)} bonus) !`,
+                feedback: `⌛ Plus d'essais !\nLa voiture était la **${gameState.car.getFullName()}**.\n\nVous avez trouvé la marque, vous gagnez ${(basePoints + difficultyPoints).toFixed(1)} points totaux (${basePoints.toFixed(1)} + ${difficultyPoints.toFixed(1)} bonus) !`,
                 score,
                 timeSpent,
                 attempts: totalAttempts,
@@ -317,13 +363,16 @@ class GameEngine extends EventEmitter {
             // CAS 2: Marque ET modèle échoués - Échec total sans points
             const totalAttempts = gameConfig.MAX_ATTEMPTS + gameState.attempts;
 
+            console.log('GameEngine.endGameWithPartialSuccess - Total failure, no points');
+
             await this.playerManager.updatePlayerScore(
                 gameState.userId,
                 gameState.username,
-                0,
-                0,
+                0,  // Pas de points de base
+                0,  // Pas de points de difficulté
                 false,
                 {
+                    guildId: gameState.guildId,
                     carId: gameState.car.id,
                     startedAt: new Date(gameState.startTime),
                     duration: Math.floor(timeSpent / 1000),
@@ -336,20 +385,20 @@ class GameEngine extends EventEmitter {
             );
 
             await this.logGameAction('abandon', gameState);
-
             this.cleanupGame(gameState.threadId);
 
             return {
                 type: 'gameOver',
                 isCorrect: false,
                 success: false,
-                feedback: `😞 Dommage !\nLa voiture était la **${gameState.car.getFullName()}**.\n\nAucun point cette fois, mais essayez encore !`,
+                feedback: `😞 Plus d'essais !\nLa voiture était la **${gameState.car.getFullName()}**.\n\nAucun point gagné.`,
                 timeSpent,
                 attempts: totalAttempts,
                 car: gameState.car
             };
         }
     }
+
 
     /**
      * Change la voiture du jeu
@@ -440,14 +489,17 @@ class GameEngine extends EventEmitter {
             // Calculer les points de consolation si la marque a été trouvée
             let score = null;
             if (!gameState.makeFailed && gameState.isSearchingModel()) {
-                score = gameState.calculateFinalScore(); // CORRECTION: Utiliser la bonne méthode
+                score = gameState.calculateFinalScore();
+
+                // ✅ CORRIGÉ: Inclure guildId dans les gameStats
                 await this.playerManager.updatePlayerScore(
                     gameState.userId,
                     gameState.username,
                     score.basePoints,
                     score.difficultyPoints,
-                    false, // Pas de victoire complète
+                    false,
                     {
+                        guildId: gameState.guildId, // ✅ AJOUTÉ LE guildId ICI !
                         carId: gameState.car.id,
                         startedAt: new Date(gameState.startTime),
                         duration: Math.floor(gameState.getTimeSpent() / 1000),
@@ -461,13 +513,15 @@ class GameEngine extends EventEmitter {
                 );
             } else {
                 // Aucune marque trouvée - compter quand même la partie
+                // ✅ CORRIGÉ: Inclure guildId dans les gameStats
                 await this.playerManager.updatePlayerScore(
                     gameState.userId,
                     gameState.username,
-                    0, // Pas de points
-                    0, // Pas de points de difficulté
+                    0,
+                    0,
                     false,
                     {
+                        guildId: gameState.guildId, // ✅ AJOUTÉ LE guildId ICI !
                         carId: gameState.car.id,
                         startedAt: new Date(gameState.startTime),
                         duration: Math.floor(gameState.getTimeSpent() / 1000),
@@ -482,8 +536,6 @@ class GameEngine extends EventEmitter {
             }
 
             await this.logGameAction('abandon', gameState);
-
-            // Nettoyer la partie
             this.cleanupGame(threadId);
 
             return {
@@ -515,12 +567,13 @@ class GameEngine extends EventEmitter {
                 return;
             }
 
-            // TOUJOURS compter la partie comme jouée en cas de timeout
             let score = null;
 
             if (gameState.isSearchingModel() && !gameState.makeFailed) {
                 // Timeout après avoir trouvé la marque
                 score = gameState.calculateFinalScore();
+
+                // ✅ CORRIGÉ: Inclure guildId dans les gameStats
                 await this.playerManager.updatePlayerScore(
                     gameState.userId,
                     gameState.username,
@@ -528,6 +581,7 @@ class GameEngine extends EventEmitter {
                     score.difficultyPoints,
                     false,
                     {
+                        guildId: gameState.guildId, // ✅ AJOUTÉ LE guildId ICI !
                         carId: gameState.car.id,
                         startedAt: new Date(gameState.startTime),
                         duration: Math.floor(gameState.getTimeSpent() / 1000),
@@ -535,11 +589,13 @@ class GameEngine extends EventEmitter {
                         attemptsModel: gameState.attempts,
                         makeFound: true,
                         modelFound: false,
+                        completed: false,
                         timeout: true
                     }
                 );
             } else {
                 // Timeout sans avoir trouvé la marque
+                // ✅ CORRIGÉ: Inclure guildId dans les gameStats
                 await this.playerManager.updatePlayerScore(
                     gameState.userId,
                     gameState.username,
@@ -547,28 +603,36 @@ class GameEngine extends EventEmitter {
                     0,
                     false,
                     {
+                        guildId: gameState.guildId, // ✅ AJOUTÉ LE guildId ICI !
                         carId: gameState.car.id,
                         startedAt: new Date(gameState.startTime),
                         duration: Math.floor(gameState.getTimeSpent() / 1000),
-                        attemptsMake: gameState.attempts,
+                        attemptsMake: gameState.attemptsMake || gameState.attempts,
                         attemptsModel: 0,
                         makeFound: false,
                         modelFound: false,
+                        completed: false,
                         timeout: true
                     }
                 );
             }
 
-            await this.logGameAction('abandon', gameState);
-
-            // Nettoyer la partie
+            await this.logGameAction('timeout', gameState);
             this.cleanupGame(threadId);
+
+            this.emit('gameTimeout', {
+                threadId,
+                gameState: gameState.toJSON(),
+                score
+            });
 
             return {
                 type: 'timeout',
                 correctAnswer: gameState.car.getFullName(),
-                score
+                score,
+                timeSpent: gameState.getTimeSpent()
             };
+
         } catch (error) {
             logger.error('Error handling game timeout:', { threadId, error });
             throw error;

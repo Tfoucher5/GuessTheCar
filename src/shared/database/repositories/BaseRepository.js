@@ -153,8 +153,8 @@ class BaseRepository {
     }
 
     /**
-     * Supprime un enregistrement
-     */
+    * Supprime un enregistrement
+    */
     async delete(id) {
         const query = `DELETE FROM ${this.tableName} WHERE id = ?`;
         const result = await executeQuery(query, [id]);
@@ -192,13 +192,13 @@ class BaseRepository {
             query += ` WHERE ${whereClause}`;
         }
 
-        const result = await executeQuery(query, values);
-        return result[0].count;
+        const results = await executeQuery(query, values);
+        return results[0].count;
     }
 
     /**
-     * Vérifie si un enregistrement existe
-     */
+      * Vérifie si un enregistrement existe
+      */
     async exists(conditions) {
         const count = await this.count(conditions);
         return count > 0;

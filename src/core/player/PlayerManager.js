@@ -33,13 +33,18 @@ class PlayerManager {
      */
     async updatePlayerScore(userId, username, basePoints, difficultyPoints, isComplete, gameStats = {}) {
         try {
-            // Récupérer ou créer le joueur
-            let player = await this.findOrCreatePlayer(userId, username);
+            console.log('PlayerManager.updatePlayerScore called with:', {
+                userId, username, basePoints, difficultyPoints, isComplete,
+                guildId: gameStats.guildId
+            });
+
+            // ✅ CORRIGÉ: Passer le guildId lors de la recherche/création du joueur
+            let player = await this.findOrCreatePlayer(userId, username, gameStats.guildId);
 
             // Créer les données de session de jeu
             const gameSession = {
                 userId: userId,
-                guildId: gameStats.guildId || null, // AJOUTÉ
+                guildId: gameStats.guildId || null,
                 carId: gameStats.carId || null,
                 startedAt: gameStats.startedAt || new Date(),
                 endedAt: new Date(),
@@ -56,55 +61,59 @@ class PlayerManager {
                 pointsEarned: basePoints || 0,
                 difficultyPointsEarned: difficultyPoints || 0
             };
+
             // ✅ Sauvegarder la session de jeu
             await this.playerRepository.saveGameSession(gameSession);
 
-            // Calculer les nouvelles statistiques
+            // ✅ CORRIGÉ: Utiliser les noms de colonnes SQL (snake_case)
             const newStats = {
-                userId: player.userId,
-                username: player.username,
-                guildId: gameStats.guildId,
-                totalPoints: player.totalPoints + (basePoints || 0),
-                totalDifficultyPoints: player.totalDifficultyPoints + (difficultyPoints || 0),
-                gamesPlayed: player.gamesPlayed + 1,
-                gamesWon: player.gamesWon + (isComplete ? 1 : 0),
-                correctBrandGuesses: player.correctBrandGuesses + (gameStats.makeFound ? 1 : 0),
-                correctModelGuesses: player.correctModelGuesses + (gameStats.modelFound ? 1 : 0),
-                totalBrandGuesses: player.totalBrandGuesses + (gameStats.attemptsMake || 0),
-                totalModelGuesses: player.totalModelGuesses + (gameStats.attemptsModel || 0),
-                bestStreak: player.bestStreak,
-                currentStreak: player.currentStreak,
-                bestTime: player.bestTime,
-                averageResponseTime: player.averageResponseTime
+                // ❌ SUPPRIMÉ: userId, username, guildId ne sont PAS des colonnes à mettre à jour
+                total_points: player.totalPoints + (basePoints || 0),  // ✅ snake_case
+                total_difficulty_points: player.totalDifficultyPoints + (difficultyPoints || 0),  // ✅ snake_case
+                games_played: player.gamesPlayed + 1,  // ✅ snake_case
+                games_won: player.gamesWon + (isComplete ? 1 : 0),  // ✅ snake_case
+                correct_brand_guesses: player.correctBrandGuesses + (gameStats.makeFound ? 1 : 0),  // ✅ snake_case
+                correct_model_guesses: player.correctModelGuesses + (gameStats.modelFound ? 1 : 0),  // ✅ snake_case
+                total_brand_guesses: player.totalBrandGuesses + (gameStats.attemptsMake || 0),  // ✅ snake_case
+                total_model_guesses: player.totalModelGuesses + (gameStats.attemptsModel || 0)  // ✅ snake_case
             };
 
             // Gérer les streaks
             if (isComplete) {
-                newStats.currentStreak = player.currentStreak + 1;
-                if (newStats.currentStreak > player.bestStreak) {
-                    newStats.bestStreak = newStats.currentStreak;
+                newStats.current_streak = player.currentStreak + 1;  // ✅ snake_case
+                if (newStats.current_streak > player.bestStreak) {
+                    newStats.best_streak = newStats.current_streak;  // ✅ snake_case
                 }
             } else {
-                newStats.currentStreak = 0;
+                newStats.current_streak = 0;  // ✅ snake_case
             }
 
             // Mettre à jour le temps de réponse si disponible
             if (gameSession.durationSeconds && isComplete) {
                 // Mettre à jour le meilleur temps
                 if (!player.bestTime || gameSession.durationSeconds < player.bestTime) {
-                    newStats.bestTime = gameSession.durationSeconds;
+                    newStats.best_time = gameSession.durationSeconds;  // ✅ snake_case
                 }
 
                 // Mettre à jour le temps de réponse moyen
-                if (newStats.gamesWon > 1) {
-                    newStats.averageResponseTime = ((player.averageResponseTime * (newStats.gamesWon - 1)) + gameSession.durationSeconds) / newStats.gamesWon;
+                if (newStats.games_won > 1) {
+                    newStats.average_response_time = ((player.averageResponseTime * (newStats.games_won - 1)) + gameSession.durationSeconds) / newStats.games_won;  // ✅ snake_case
                 } else {
-                    newStats.averageResponseTime = gameSession.durationSeconds;
+                    newStats.average_response_time = gameSession.durationSeconds;  // ✅ snake_case
                 }
             }
 
-            // ✅ Sauvegarder les statistiques mises à jour
+            console.log('PlayerManager.updatePlayerScore - newStats to save:', newStats);
+
+            // ✅ Sauvegarder les statistiques mises à jour avec le bon guildId
             const updatedPlayer = await this.playerRepository.updatePlayerStats(userId, newStats, gameStats.guildId);
+
+            console.log('PlayerManager.updatePlayerScore - updatedPlayer:', {
+                totalPoints: updatedPlayer.totalPoints,
+                totalDifficultyPoints: updatedPlayer.totalDifficultyPoints,
+                gamesPlayed: updatedPlayer.gamesPlayed,
+                gamesWon: updatedPlayer.gamesWon
+            });
 
             logger.info('Player score updated:', {
                 userId, guildId: gameStats.guildId,
