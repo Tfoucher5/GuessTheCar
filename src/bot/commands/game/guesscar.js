@@ -11,9 +11,6 @@ module.exports = {
 
     async execute(interaction) {
         try {
-            if (global.statsReporter) {
-                await global.statsReporter.logCommand('guesscar', interaction);
-            }
             // Vérifier s'il y a déjà une partie active pour ce joueur
             const existingGame = gameEngine.findActiveGameByUser(interaction.user.id);
 

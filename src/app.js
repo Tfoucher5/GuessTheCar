@@ -1,6 +1,8 @@
 require('dotenv').config();
-const statsHelper = require('./shared/utils/StatsHelper');
 const logger = require('./shared/utils/logger');
+const statsHelper = require('./shared/utils/StatsHelper');
+global.statsReporter = statsHelper;
+console.log('📊 Stats reporting system initialized');
 
 let gameEngineInstance = null;
 let discordClient = null;

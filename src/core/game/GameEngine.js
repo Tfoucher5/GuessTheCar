@@ -7,8 +7,7 @@ const { validatePlayerGuess } = require('../../shared/utils/validation');
 const gameConfig = require('../../shared/config/game');
 const logger = require('../../shared/utils/logger');
 const { GameError } = require('../../shared/errors');
-const axios = require('axios');
-const API_URL = process.env.API_URL || 'http://localhost:3000';
+const statsHelper = require('../../shared/utils/StatsHelper');
 
 class GameEngine extends EventEmitter {
     constructor() {
@@ -20,12 +19,7 @@ class GameEngine extends EventEmitter {
 
     async logGameAction(action, gameState) {
         try {
-            await axios.post(`${API_URL}/bot/game`, {
-                action,
-                channelId: gameState.threadId,
-                user: gameState.userId,
-                timestamp: new Date().toISOString()
-            });
+            await statsHelper.logGame(action, gameState.threadId, gameState.userId);
         } catch (err) {
             logger.error('Failed to log game action to API', { action, err });
         }

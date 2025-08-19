@@ -18,9 +18,6 @@ module.exports = {
 
     async execute(interaction) {
         try {
-            if (global.statsReporter) {
-                await global.statsReporter.logCommand('stats', interaction);
-            }
             await interaction.deferReply();
 
             // Déterminer quel joueur afficher

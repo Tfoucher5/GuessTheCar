@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const EmbedBuilder = require('../../../shared/utils/embedBuilder');
 const logger = require('../../../shared/utils/logger');
+const statsHelper = require('../../../shared/utils/StatsHelper');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -9,9 +10,7 @@ module.exports = {
 
     async execute(interaction) {
         try {
-            if (global.statsReporter) {
-                await global.statsReporter.logCommand('aide', interaction);
-            }
+            statsHelper.logCommand('aide', interaction.user.id);
             // Créer l'embed d'aide
             const helpEmbed = EmbedBuilder.createHelpEmbed();
 

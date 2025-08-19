@@ -20,9 +20,6 @@ module.exports = {
 
     async execute(interaction) {
         try {
-            if (global.statsReporter) {
-                await global.statsReporter.logCommand('classement', interaction);
-            }
             await interaction.deferReply();
 
             const limit = interaction.options.getInteger('limite') || 10;
