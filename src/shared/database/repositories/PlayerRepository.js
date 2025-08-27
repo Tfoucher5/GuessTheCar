@@ -390,6 +390,236 @@ class PlayerRepository extends BaseRepository {
         const results = await executeQuery(query, params);
         return results;
     }
+
+    /**
+ * Classement mensuel - joueurs avec le plus de points ce mois-ci
+ */
+    async getMonthlyLeaderboard(limit = 10, guildId = null) {
+        let query = `
+        SELECT 
+            us.*,
+            ROW_NUMBER() OVER (ORDER BY monthly_points DESC, monthly_wins DESC) as ranking,
+            monthly_points,
+            monthly_wins,
+            monthly_games
+        FROM (
+            SELECT 
+                us.user_id,
+                us.username,
+                us.guild_id,
+                us.total_points,
+                us.total_difficulty_points,
+                us.games_played,
+                us.games_won,
+                us.correct_brand_guesses,
+                us.correct_model_guesses,
+                us.total_brand_guesses,
+                us.total_model_guesses,
+                us.best_streak,
+                us.current_streak,
+                us.best_time,
+                us.average_response_time,
+                us.created_at,
+                us.updated_at,
+                COALESCE(SUM(gs.points_earned + gs.difficulty_points_earned), 0) as monthly_points,
+                COALESCE(COUNT(CASE WHEN gs.completed = 1 THEN 1 END), 0) as monthly_wins,
+                COALESCE(COUNT(gs.id), 0) as monthly_games
+            FROM user_scores us
+            LEFT JOIN game_sessions gs ON us.user_id = gs.user_id 
+                AND gs.started_at >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
+                AND gs.started_at < DATE_FORMAT(CURDATE() + INTERVAL 1 MONTH, '%Y-%m-01')
+            WHERE us.games_played > 0
+    `;
+
+        let params = [];
+
+        if (guildId) {
+            query += ' AND us.guild_id = ? AND (gs.guild_id = ? OR gs.guild_id IS NULL)';
+            params.push(guildId, guildId);
+        } else {
+            query += ' AND us.guild_id IS NULL AND (gs.guild_id IS NULL OR gs.guild_id IS NULL)';
+        }
+
+        query += `
+            GROUP BY us.user_id, us.username, us.guild_id, us.total_points, us.total_difficulty_points,
+                     us.games_played, us.games_won, us.correct_brand_guesses, us.correct_model_guesses,
+                     us.total_brand_guesses, us.total_model_guesses, us.best_streak, us.current_streak,
+                     us.best_time, us.average_response_time, us.created_at, us.updated_at
+            HAVING monthly_games > 0
+        ) us
+        ORDER BY monthly_points DESC, monthly_wins DESC 
+        LIMIT ?
+    `;
+
+        params.push(limit);
+
+        const results = await executeQuery(query, params);
+        return results.map(row => ({
+            ...Player.fromDatabase(row),
+            ranking: row.ranking,
+            monthlyPoints: row.monthly_points,
+            monthlyWins: row.monthly_wins,
+            monthlyGames: row.monthly_games
+        }));
+    }
+
+    /**
+     * Classement par vitesse - temps moyen le plus bas (uniquement joueurs avec parties complètes)
+     */
+    async getSpeedLeaderboard(limit = 10, guildId = null) {
+        let query = `
+        SELECT 
+            us.*,
+            ROW_NUMBER() OVER (ORDER BY avg_completion_time ASC, us.games_won DESC) as ranking,
+            avg_completion_time,
+            completed_games
+        FROM (
+            SELECT 
+                us.*,
+                AVG(gs.duration_seconds) as avg_completion_time,
+                COUNT(gs.id) as completed_games
+            FROM user_scores us
+            INNER JOIN game_sessions gs ON us.user_id = gs.user_id 
+                AND gs.completed = 1 
+                AND gs.duration_seconds IS NOT NULL 
+                AND gs.duration_seconds > 0
+            WHERE us.games_won > 0
+    `;
+
+        let params = [];
+
+        if (guildId) {
+            query += ' AND us.guild_id = ? AND gs.guild_id = ?';
+            params.push(guildId, guildId);
+        } else {
+            query += ' AND us.guild_id IS NULL AND gs.guild_id IS NULL';
+        }
+
+        query += `
+            GROUP BY us.user_id
+            HAVING completed_games >= 3
+        ) us
+        ORDER BY avg_completion_time ASC, games_won DESC 
+        LIMIT ?
+    `;
+
+        params.push(limit);
+
+        const results = await executeQuery(query, params);
+        return results.map(row => ({
+            ...Player.fromDatabase(row),
+            ranking: row.ranking,
+            averageTime: row.avg_completion_time,
+            completedGames: row.completed_games
+        }));
+    }
+
+    /**
+     * Classement par précision - meilleur taux de réussite (minimum 5 parties)
+     */
+    async getPrecisionLeaderboard(limit = 10, guildId = null) {
+        let query = `
+        SELECT 
+            us.*,
+            ROW_NUMBER() OVER (ORDER BY success_rate DESC, us.games_played DESC) as ranking,
+            ROUND((us.games_won / us.games_played) * 100, 1) as success_rate
+        FROM user_scores us
+        WHERE us.games_played >= 5
+    `;
+
+        let params = [];
+
+        if (guildId) {
+            query += ' AND us.guild_id = ?';
+            params.push(guildId);
+        } else {
+            query += ' AND us.guild_id IS NULL';
+        }
+
+        query += `
+        ORDER BY success_rate DESC, us.games_played DESC 
+        LIMIT ?
+    `;
+
+        params.push(limit);
+
+        const results = await executeQuery(query, params);
+        return results.map(row => ({
+            ...Player.fromDatabase(row),
+            ranking: row.ranking,
+            successRate: row.success_rate
+        }));
+    }
+
+    /**
+     * Classement par séries - plus longues séries de victoires
+     */
+    async getStreaksLeaderboard(limit = 10, guildId = null) {
+        let query = `
+        SELECT 
+            us.*,
+            ROW_NUMBER() OVER (ORDER BY us.best_streak DESC, us.current_streak DESC, us.games_won DESC) as ranking
+        FROM user_scores us
+        WHERE us.best_streak > 0
+    `;
+
+        let params = [];
+
+        if (guildId) {
+            query += ' AND us.guild_id = ?';
+            params.push(guildId);
+        } else {
+            query += ' AND us.guild_id IS NULL';
+        }
+
+        query += `
+        ORDER BY us.best_streak DESC, us.current_streak DESC, us.games_won DESC 
+        LIMIT ?
+    `;
+
+        params.push(limit);
+
+        const results = await executeQuery(query, params);
+        return results.map(row => ({
+            ...Player.fromDatabase(row),
+            ranking: row.ranking
+        }));
+    }
+
+    /**
+     * Classement par activité - le plus de parties jouées
+     */
+    async getActivityLeaderboard(limit = 10, guildId = null) {
+        let query = `
+        SELECT 
+            us.*,
+            ROW_NUMBER() OVER (ORDER BY us.games_played DESC, us.games_won DESC) as ranking
+        FROM user_scores us
+        WHERE us.games_played > 0
+    `;
+
+        let params = [];
+
+        if (guildId) {
+            query += ' AND us.guild_id = ?';
+            params.push(guildId);
+        } else {
+            query += ' AND us.guild_id IS NULL';
+        }
+
+        query += `
+        ORDER BY us.games_played DESC, us.games_won DESC 
+        LIMIT ?
+    `;
+
+        params.push(limit);
+
+        const results = await executeQuery(query, params);
+        return results.map(row => ({
+            ...Player.fromDatabase(row),
+            ranking: row.ranking
+        }));
+    }
 }
 
 module.exports = PlayerRepository;

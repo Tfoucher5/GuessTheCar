@@ -149,6 +149,71 @@ class PlayerManager {
     }
 
     /**
+ * Classement mensuel (parties créées ce mois)
+ */
+    async getMonthlyLeaderboard(limit = 10, guildId = null) {
+        try {
+            const leaderboard = await this.playerRepository.getMonthlyLeaderboard(limit, guildId);
+            return leaderboard;
+        } catch (error) {
+            logger.error('Error getting monthly leaderboard:', { limit, guildId, error });
+            return [];
+        }
+    }
+
+    /**
+     * Classement par vitesse (temps moyen le plus bas)
+     */
+    async getSpeedLeaderboard(limit = 10, guildId = null) {
+        try {
+            const leaderboard = await this.playerRepository.getSpeedLeaderboard(limit, guildId);
+            return leaderboard;
+        } catch (error) {
+            logger.error('Error getting speed leaderboard:', { limit, guildId, error });
+            return [];
+        }
+    }
+
+    /**
+     * Classement par précision (meilleur taux de réussite)
+     */
+    async getPrecisionLeaderboard(limit = 10, guildId = null) {
+        try {
+            const leaderboard = await this.playerRepository.getPrecisionLeaderboard(limit, guildId);
+            return leaderboard;
+        } catch (error) {
+            logger.error('Error getting precision leaderboard:', { limit, guildId, error });
+            return [];
+        }
+    }
+
+    /**
+     * Classement par séries (plus longues séries de victoires)
+     */
+    async getStreaksLeaderboard(limit = 10, guildId = null) {
+        try {
+            const leaderboard = await this.playerRepository.getStreaksLeaderboard(limit, guildId);
+            return leaderboard;
+        } catch (error) {
+            logger.error('Error getting streaks leaderboard:', { limit, guildId, error });
+            return [];
+        }
+    }
+
+    /**
+     * Classement par activité (plus de parties jouées)
+     */
+    async getActivityLeaderboard(limit = 10, guildId = null) {
+        try {
+            const leaderboard = await this.playerRepository.getActivityLeaderboard(limit, guildId);
+            return leaderboard;
+        } catch (error) {
+            logger.error('Error getting activity leaderboard:', { limit, guildId, error });
+            return [];
+        }
+    }
+
+    /**
      * Obtient les stats d'un joueur POUR UN SERVEUR SPÉCIFIQUE
      */
     async getPlayerWithRanking(userId, guildId = null) {
