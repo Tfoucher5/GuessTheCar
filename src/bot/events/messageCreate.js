@@ -19,21 +19,6 @@ module.exports = {
         try {
             const userInput = message.content.toLowerCase().trim();
 
-            // Gérer les commandes spéciales pendant le jeu
-            switch (userInput) {
-            case '!indice':
-                await handleHintCommand(message, activeGame);
-                return;
-
-            case '!change':
-                await handleChangeCommand(message, activeGame);
-                return;
-
-            case '!terminer':
-                await handleEndCommand(message, activeGame);
-                return;
-            }
-
             // Traiter la réponse du joueur
             const result = await gameEngine.processGuess(message.channelId, message.content);
             await handleGameResult(message, result, activeGame);
@@ -56,177 +41,91 @@ module.exports = {
 };
 
 /**
- * Gère la commande d'indice
- */
-async function handleHintCommand(message, gameState) {
-    try {
-        const result = gameEngine.getHint(message.channelId);
-
-        const hintEmbed = EmbedBuilder.createGameEmbed(gameState, {
-            color: '#FFA500',
-            title: '💡 Indice',
-            description: result.message
-        });
-
-        await message.reply({ embeds: [hintEmbed] });
-    } catch (error) {
-        logger.error('Error handling hint command:', error);
-        await message.reply('Impossible d\'obtenir un indice pour le moment.');
-    }
-}
-
-/**
- * Gère la commande de changement de voiture
- */
-async function handleChangeCommand(message, gameState) {
-    try {
-        const result = await gameEngine.changeCar(message.channelId);
-
-        // Récupérer le gameState mis à jour pour avoir la nouvelle voiture
-        const updatedGameState = gameEngine.getActiveGame(message.channelId);
-        const newCar = updatedGameState.car;
-        const country = newCar.country || 'Inconnu';
-
-        const changeEmbed = EmbedBuilder.createGameEmbed(updatedGameState, {
-            title: '🔄 Nouvelle voiture',
-            description: 'Voiture changée ! Devine la **marque** de la nouvelle voiture.\n\n' +
-                `🌍 **Pays d'origine:** ${country}\n\n` +
-                `*Changements restants: ${result.changesRemaining}*`
-        });
-
-        await message.reply({ embeds: [changeEmbed] });
-    } catch (error) {
-        logger.error('Error handling change command:', error);
-
-        const errorEmbed = EmbedBuilder.createErrorEmbed(
-            'Erreur de changement',
-            error.message
-        );
-
-        await message.reply({ embeds: [errorEmbed] });
-    }
-}
-
-/**
- * Gère la commande de fin de partie (!terminer)
- */
-async function handleEndCommand(message, gameState) {
-    try {
-        // Utiliser abandonGame au lieu de endGame pour avoir le même comportement que /abandon
-        const result = await gameEngine.abandonGame(message.channelId);
-
-        // Utiliser le même embed que /abandon avec le nom complet
-        const abandonEmbed = EmbedBuilder.createAbandonEmbed(
-            gameState,
-            result.correctAnswer, // Maintenant contient marque + modèle
-            result.score
-        );
-
-        await message.reply({ embeds: [abandonEmbed] });
-
-        // Fermer le thread après un délai (même que /abandon)
-        setTimeout(async() => {
-            try {
-                if (message.channel.isThread()) {
-                    const closeEmbed = EmbedBuilder.createInfoEmbed(
-                        '🔒 Fermeture du fil',
-                        'Ce fil va être supprimé dans 1 minute.'
-                    );
-
-                    await message.channel.send({ embeds: [closeEmbed] });
-                    await message.channel.setLocked(true);
-
-                    setTimeout(async() => {
-                        try {
-                            await message.channel.delete();
-                        } catch (error) {
-                            logger.error('Error deleting thread:', error);
-                        }
-                    }, 60000); // 1 minute
-                }
-            } catch (error) {
-                logger.error('Error closing thread:', error);
-            }
-        }, 5000); // 5 secondes avant de commencer la fermeture
-
-    } catch (error) {
-        logger.error('Error handling end command:', error);
-        await message.reply('Impossible de terminer la partie pour le moment.');
-    }
-}
-
-/**
- * Gère le résultat d'une réponse de jeu
+ * Gère le résultat d'une réponse de jeu - Maintenant avec boutons mis à jour
  */
 async function handleGameResult(message, result, gameState) {
-    let embed;
+    let embedResponse;
     let shouldCloseThread = false;
+    let gameOverEmbed;
+    let warningEmbed;
 
     switch (result.type) {
-    case 'makeSuccess':
-        embed = EmbedBuilder.createGameEmbed(gameState, {
+    case 'makeSuccess': {
+        embedResponse = EmbedBuilder.createGameEmbedWithButtons(gameState, {
             title: '✅ Marque trouvée !',
             description: result.feedback
         });
         break;
+    }
 
-    case 'makeFailed':
-        embed = EmbedBuilder.createGameEmbed(gameState, {
+    case 'makeFailed': {
+        embedResponse = EmbedBuilder.createGameEmbedWithButtons(gameState, {
             color: '#FFA500',
             title: '⌛ Plus d\'essais pour la marque',
             description: result.feedback
         });
         break;
+    }
 
-    case 'gameComplete':
-        // Utiliser l'embed de victoire amélioré
-        embed = EmbedBuilder.createWinEmbed(
+    case 'gameComplete': {
+        // Utiliser l'embed de victoire sans boutons (partie finie)
+        const winEmbed = EmbedBuilder.createWinEmbed(
             result.score,
             result.timeSpent,
             result.attempts,
-            result.car  // L'objet car avec marque et modèle
+            result.car
         );
+        embedResponse = { embeds: [winEmbed] }; // Pas de boutons pour une partie terminée
         shouldCloseThread = true;
         break;
+    }
 
     case 'gameOver':
-        // Utiliser le nouvel embed de game over qui affiche marque + modèle
+    // Game over sans boutons
+    { let gameOverEmbed;
         if (result.car) {
-            embed = EmbedBuilder.createGameOverEmbed(
+            gameOverEmbed = EmbedBuilder.createGameOverEmbed(
                 gameState,
-                result.car.getFullName(), // Nom complet de la voiture
+                result.car.getFullName(),
                 result.score,
                 result.timeSpent,
                 result.attempts
             );
         } else {
-            // Fallback si pas d'objet car disponible
-            embed = EmbedBuilder.createGameEmbed(gameState, {
+            gameOverEmbed = EmbedBuilder.createGameEmbed(gameState, {
                 color: '#FFA500',
                 title: '⌛ Partie terminée',
                 description: result.feedback
             });
         }
+        embedResponse = { embeds: [gameOverEmbed] }; // Pas de boutons
         shouldCloseThread = true;
-        break;
+        break; }
 
     case 'incorrect':
     default:
-        embed = EmbedBuilder.createGameEmbed(gameState, {
+        // Mauvaise réponse - garde les boutons actifs
+        embedResponse = EmbedBuilder.createGameEmbedWithButtons(gameState, {
             color: '#FF0000',
             title: '❌ Mauvaise réponse',
             description: result.feedback
         });
         break;
+
     case 'validation_error':
-        embed = EmbedBuilder.createWarningEmbed(
-            'Caractères non autorisés',
-            result.feedback
-        );
-        break;
+    // Erreur de validation - garde les boutons actifs
+    { const warningEmbed = EmbedBuilder.createWarningEmbed(
+        'Caractères non autorisés',
+        result.feedback
+    );
+    embedResponse = {
+        embeds: [warningEmbed],
+        components: [EmbedBuilder.updateGameButtons(gameState)]
+    };
+    break; }
     }
 
-    await message.reply({ embeds: [embed] });
+    await message.reply(embedResponse);
 
     // Fermer le thread si la partie est terminée
     if (shouldCloseThread) {

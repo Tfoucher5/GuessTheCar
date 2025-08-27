@@ -1,3 +1,5 @@
+// src/bot/commands/game/guesscar.js - Version mise à jour avec boutons
+
 const { SlashCommandBuilder, ChannelType, MessageFlags } = require('discord.js');
 const { gameEngine } = require('../../events/messageCreate');
 const EmbedBuilder = require('../../../shared/utils/embedBuilder');
@@ -41,29 +43,29 @@ module.exports = {
                 interaction.guild?.id
             );
 
-            // Créer l'embed de démarrage
-            const gameStartEmbed = EmbedBuilder.createGameStartEmbed(gameState.car, gameState);
+            // ✅ MODIFIÉ: Créer l'embed de démarrage avec boutons
+            const gameStartResponse = EmbedBuilder.createGameStartEmbed(gameState.car, gameState);
 
-            // Envoyer l'embed dans le thread
-            await thread.send({ embeds: [gameStartEmbed] });
+            // Envoyer dans le thread avec les boutons
+            await thread.send(gameStartResponse);
 
             // Répondre à l'utilisateur
             const successEmbed = EmbedBuilder.createSuccessEmbed(
                 'Partie créée !',
-                `Votre partie a été créée dans ${thread}. Bonne chance !`
+                `Votre partie a été créée dans ${thread}.\nUtilisez les boutons pour interagir avec le jeu !`
             );
 
             await interaction.editReply({ embeds: [successEmbed] });
 
-            logger.info('New game started via command:', {
-                userId: interaction.user.id,
-                username: interaction.user.username,
+            logger.info('Game started:', {
+                car: gameState.car.getFullName(),
+                difficulty: gameState.car.getDifficultyText(),
                 threadId: thread.id,
-                guildId: interaction.guild?.id
+                userId: interaction.user.id,
+                username: interaction.user.username
             });
 
             statsHelper.logCommand('guesscar', interaction.user.id);
-            statsHelper.logGame('start', interaction.channel.id, interaction.user.id);
 
         } catch (error) {
             logger.error('Error in guesscar command:', {
@@ -73,7 +75,7 @@ module.exports = {
 
             const errorEmbed = EmbedBuilder.createErrorEmbed(
                 'Erreur',
-                'Une erreur est survenue lors de la création de la partie. Veuillez réessayer.'
+                'Impossible de créer une partie pour le moment. Veuillez réessayer.'
             );
 
             if (interaction.deferred) {

@@ -1,6 +1,35 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 class GameEmbedBuilder {
+
+    /**
+     * Crée l'ActionRow avec les boutons de jeu
+     */
+    static createGameButtons(gameState) {
+        // Déterminer si les boutons doivent être désactivés
+        const canUseHint = gameState.step === 'make' || gameState.step === 'model';
+        const canChangeCar = gameState.carChangesCount < 3; // MAX_CAR_CHANGES = 3
+
+        const hintButton = new ButtonBuilder()
+            .setCustomId(`game_hint_${gameState.threadId}`)
+            .setLabel('💡 Indice')
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(!canUseHint);
+
+        const changeButton = new ButtonBuilder()
+            .setCustomId(`game_change_${gameState.threadId}`)
+            .setLabel('🔄 Changer de voiture')
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(!canChangeCar);
+
+        const abandonButton = new ButtonBuilder()
+            .setCustomId(`game_abandon_${gameState.threadId}`)
+            .setLabel('🏳️ Abandonner')
+            .setStyle(ButtonStyle.Danger);
+
+        return new ActionRowBuilder().addComponents(hintButton, changeButton, abandonButton);
+    }
+
     /**
      * Crée un embed de jeu général
      */
@@ -30,6 +59,25 @@ class GameEmbedBuilder {
         }
 
         return embed;
+    }
+
+    /**
+ * Crée un embed de jeu général avec boutons
+ */
+    static createGameEmbedWithButtons(gameState, options = {}) {
+        const embed = this.createGameEmbed(gameState, options);
+
+        return {
+            embeds: [embed],
+            components: [this.createGameButtons(gameState)]
+        };
+    }
+
+    /**
+ * Met à jour les boutons selon l'état du jeu
+ */
+    static updateGameButtons(gameState) {
+        return this.createGameButtons(gameState);
     }
 
     /**
@@ -291,8 +339,8 @@ class GameEmbedBuilder {
     }
 
     /**
-     * Crée un embed d'aide
-     */
+ * Crée un embed d'aide mis à jour avec les boutons
+ */
     static createHelpEmbed() {
         return new EmbedBuilder()
             .setColor('#4169E1')
@@ -316,12 +364,18 @@ class GameEmbedBuilder {
                 '`/aide` - Afficher cette aide\n\n' +
 
                 '**🎮 Pendant la partie**\n' +
-                '`!indice` - Obtenir un indice\n' +
-                '`!change` - Changer de voiture (3 fois max)\n' +
-                '`!terminer` - Mettre fin à la partie\n\n' +
+                '• **💡 Bouton Indice** - Obtenir des indices\n' +
+                '• **🔄 Bouton Changer** - Changer de voiture (3 fois max)\n' +
+                '• **🏳️ Bouton Abandonner** - Mettre fin à la partie\n' +
+                '• **Tapez directement** votre réponse dans le chat\n\n' +
 
                 '**⏰ Timeout**\n' +
-                'Une partie est automatiquement abandonnée après 5 minutes d\'inactivité'
+                'Une partie est automatiquement abandonnée après 5 minutes d\'inactivité\n\n' +
+
+                '**✨ Nouveautés**\n' +
+                '• Interface avec boutons interactifs\n' +
+                '• Plus besoin de taper les commandes !\n' +
+                '• Confirmation d\'abandon pour éviter les erreurs'
             )
             .setTimestamp();
     }
@@ -376,22 +430,25 @@ class GameEmbedBuilder {
     }
 
     /**
-     * Crée un embed de démarrage de partie
+     * Crée un embed de démarrage de partie avec boutons
      */
     static createGameStartEmbed(car, gameState) {
         const difficultyText = car.getDifficultyText();
         const country = car.country || 'Inconnu';
 
-        return this.createGameEmbed(gameState, {
+        const embed = this.createGameEmbed(gameState, {
             title: `🚗 Nouvelle partie - Difficulté: **${difficultyText}**`,
             description: 'C\'est parti ! Devine la **marque** de la voiture.\n\n' +
                 `🌍 **Pays d'origine:** ${country}\n\n` +
-                '• Tape `!indice` pour obtenir des indices\n' +
-                '• Tape `!change` pour changer de voiture (3 fois max)\n' +
-                '• Tape `!terminer` pour mettre fin à la partie\n' +
-                '• Tu as 10 essais maximum !\n\n' +
+                '• Utilise les boutons ci-dessous pour interagir\n' +
+                '• Tu as 10 essais maximum pour chaque étape !\n\n' +
                 'La partie se termine automatiquement après 5 minutes d\'inactivité'
         });
+
+        return {
+            embeds: [embed],
+            components: [this.createGameButtons(gameState)]
+        };
     }
 
     /**

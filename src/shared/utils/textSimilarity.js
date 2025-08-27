@@ -111,7 +111,7 @@ function checkAnswer(userAnswer, correctAnswer) {
         return {
             isCorrect: false,
             similarity,
-            feedback: 'Pas tout à fait, continue à chercher !'
+            feedback: 'Pas du tout, continue à chercher !'
         };
     }
 }
