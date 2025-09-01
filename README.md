@@ -1,8 +1,4 @@
-# Guess The Car Bot v2.0
-
-Un bot Discord pour deviner les marques et modèles de voitures.
-
-## Installation[README.md](https://github.com/user-attachments/files/22072193/README.md)# 🚗 GuessTheCar — Bot Discord
+## 🚗 GuessTheCar — Bot Discord
 
 **GuessTheCar** est un bot Discord développé sur mesure pour proposer un jeu de devinettes automobile. Il est **disponible publiquement pour jouer**, mais son code source et sa logique interne sont **privés** et ne sont pas destinés à être modifiés ou réutilisés.
 
