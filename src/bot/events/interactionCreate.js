@@ -142,7 +142,7 @@ async function handleHintButton(interaction, threadId, gameState) {
 /**
  * Gère le bouton de changement de voiture
  */
-async function handleChangeButton(interaction, threadId, gameState) {
+async function handleChangeButton(interaction, threadId) {
     try {
         const result = await gameEngine.changeCar(threadId);
 

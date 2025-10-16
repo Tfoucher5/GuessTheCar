@@ -17,8 +17,6 @@ module.exports = {
         if (!activeGame || activeGame.userId !== message.author.id) return;
 
         try {
-            const userInput = message.content.toLowerCase().trim();
-
             // Traiter la réponse du joueur
             const result = await gameEngine.processGuess(message.channelId, message.content);
             await handleGameResult(message, result, activeGame);
@@ -46,8 +44,6 @@ module.exports = {
 async function handleGameResult(message, result, gameState) {
     let embedResponse;
     let shouldCloseThread = false;
-    let gameOverEmbed;
-    let warningEmbed;
 
     switch (result.type) {
     case 'makeSuccess': {

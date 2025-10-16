@@ -9495,3 +9495,55 @@
 {"command":"classement","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-27T20:06:34.183Z","user":"t3sk0"}
 {"guild":"Shyish","guildId":"1223242015249141800","level":"info","limit":10,"message":"Enhanced leaderboard command executed:","service":"guess-the-car-bot","timestamp":"2025-08-27T20:06:34.670Z","type":"monthly","userId":"573543227525824516"}
 {"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-27T20:09:52.446Z"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-27T20:14:52.459Z"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-27T20:19:52.461Z"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-27T20:24:52.465Z"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-27T20:29:52.468Z"}
+{"apiUrl":"http://localhost:3000/api","enabled":true,"level":"info","message":"StatsHelper initialized:","service":"guess-the-car-bot","timestamp":"2025-08-28T15:10:11.034Z"}
+{"level":"info","message":"🚀 Starting Guess The Car Bot Application...","service":"guess-the-car-bot","timestamp":"2025-08-28T15:10:11.038Z"}
+{"level":"info","message":"✅ Database pool initialized","service":"guess-the-car-bot","timestamp":"2025-08-28T15:10:11.168Z"}
+{"level":"info","message":"✅ Database connected","service":"guess-the-car-bot","timestamp":"2025-08-28T15:10:11.168Z"}
+{"level":"info","message":"Loaded 3 events","service":"guess-the-car-bot","timestamp":"2025-08-28T15:10:12.179Z"}
+{"level":"info","message":"✅ API Server running on port 3001","service":"guess-the-car-bot","timestamp":"2025-08-28T15:10:12.202Z"}
+{"level":"info","message":"✅ Discord Bot connected","service":"guess-the-car-bot","timestamp":"2025-08-28T15:10:13.108Z"}
+{"level":"info","message":"✅ GameEngine instance found from messageCreate module","service":"guess-the-car-bot","timestamp":"2025-08-28T15:10:13.108Z"}
+{"level":"info","message":"📊 Stats synchronization started (every 5 minutes)","service":"guess-the-car-bot","timestamp":"2025-08-28T15:10:13.109Z"}
+{"level":"info","message":"🎉 Application started successfully!","service":"guess-the-car-bot","timestamp":"2025-08-28T15:10:13.109Z"}
+{"level":"info","message":"Bot Discord prêt! Connecté en tant que GuessTheCar#6976","service":"guess-the-car-bot","timestamp":"2025-08-28T15:10:13.125Z"}
+{"level":"info","message":"Bot présent sur 2 serveurs","service":"guess-the-car-bot","timestamp":"2025-08-28T15:10:13.125Z"}
+{"level":"info","message":"Bot connecté à 17 canaux","service":"guess-the-car-bot","timestamp":"2025-08-28T15:10:13.126Z"}
+{"level":"info","message":"Bot peut voir 3 utilisateurs","service":"guess-the-car-bot","timestamp":"2025-08-28T15:10:13.126Z"}
+{"level":"info","message":"Discord Bot connecté: GuessTheCar#6976","service":"guess-the-car-bot","timestamp":"2025-08-28T15:10:13.126Z"}
+{"level":"info","message":"Bot présent sur 2 serveurs","service":"guess-the-car-bot","timestamp":"2025-08-28T15:10:13.126Z"}
+{"level":"info","message":"Loaded 6 commands","service":"guess-the-car-bot","timestamp":"2025-08-28T15:10:13.138Z"}
+{"level":"info","message":"Registering 6 unique commands with Discord...","service":"guess-the-car-bot","timestamp":"2025-08-28T15:10:13.138Z"}
+{"level":"info","message":"✅ Successfully registered 6 application commands","service":"guess-the-car-bot","timestamp":"2025-08-28T15:10:13.455Z"}
+{"level":"info","message":"Commandes Discord chargées et enregistrées avec succès","service":"guess-the-car-bot","timestamp":"2025-08-28T15:10:13.456Z"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-28T15:10:43.122Z"}
+{"command":"guesscar","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-28T15:12:13.096Z","user":"blitzen44"}
+{"car":"Peugeot Partner","difficulty":"Facile","guildId":"1223242015249141800","level":"info","message":"Game started:","service":"guess-the-car-bot","threadId":"1410643042066632915","timestamp":"2025-08-28T15:12:13.732Z","userId":"1223239281523556413","username":"blitzen44"}
+{"car":"Peugeot Partner","difficulty":"Facile","level":"info","message":"Game started:","service":"guess-the-car-bot","threadId":"1410643042066632915","timestamp":"2025-08-28T15:12:14.238Z","userId":"1223239281523556413","username":"blitzen44"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-28T15:15:13.120Z"}
+{"abandoned":false,"basePoints":18,"difficultyPoints":1,"gamesPlayed":82,"gamesWon":63,"guildId":"1223242015249141800","isComplete":true,"level":"info","message":"Player score updated:","newTotal":153.5,"service":"guess-the-car-bot","timeout":false,"timestamp":"2025-08-28T15:15:49.599Z","userId":"1223239281523556413"}
+{"attempts":3,"car":"Peugeot Partner","guildId":"1223242015249141800","level":"info","message":"Car found recorded:","service":"guess-the-car-bot","time":215,"timestamp":"2025-08-28T15:15:49.617Z","userId":"1223239281523556413"}
+{"command":"guesscar","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-28T15:16:42.922Z","user":"blitzen44"}
+{"car":"Skoda Rapid","difficulty":"Facile","guildId":"1223242015249141800","level":"info","message":"Game started:","service":"guess-the-car-bot","threadId":"1410644174331707443","timestamp":"2025-08-28T15:16:43.596Z","userId":"1223239281523556413","username":"blitzen44"}
+{"car":"Skoda Rapid","difficulty":"Facile","level":"info","message":"Game started:","service":"guess-the-car-bot","threadId":"1410644174331707443","timestamp":"2025-08-28T15:16:44.094Z","userId":"1223239281523556413","username":"blitzen44"}
+{"abandoned":false,"basePoints":17.3,"difficultyPoints":1,"gamesPlayed":83,"gamesWon":64,"guildId":"1223242015249141800","isComplete":true,"level":"info","message":"Player score updated:","newTotal":154.5,"service":"guess-the-car-bot","timeout":false,"timestamp":"2025-08-28T15:17:33.859Z","userId":"1223239281523556413"}
+{"attempts":5,"car":"Skoda Rapid","guildId":"1223242015249141800","level":"info","message":"Car found recorded:","service":"guess-the-car-bot","time":50,"timestamp":"2025-08-28T15:17:33.862Z","userId":"1223239281523556413"}
+{"command":"classement","guild":"Shyish","level":"info","message":"Command executed:","service":"guess-the-car-bot","timestamp":"2025-08-28T15:17:58.080Z","user":"blitzen44"}
+{"guild":"Shyish","guildId":"1223242015249141800","level":"info","limit":10,"message":"Enhanced leaderboard command executed:","service":"guess-the-car-bot","timestamp":"2025-08-28T15:17:58.418Z","type":"global","userId":"1223239281523556413"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-28T15:20:13.132Z"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-28T15:25:13.148Z"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-28T15:30:13.152Z"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-28T15:35:13.168Z"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-28T15:40:13.179Z"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-28T15:45:13.190Z"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-28T15:50:13.203Z"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-28T15:55:13.215Z"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-28T16:00:13.216Z"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-28T16:05:13.216Z"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-28T16:10:13.223Z"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-28T16:15:13.228Z"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-28T16:20:13.229Z"}
+{"error":"Request failed with status code 404","level":"warn","message":"Failed to get stats from API:","service":"guess-the-car-bot","timestamp":"2025-08-28T16:25:13.240Z"}

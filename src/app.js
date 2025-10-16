@@ -124,26 +124,6 @@ function getGameEngineInstance() {
 }
 
 /**
- * Test de connexion à l'API Stats au démarrage
- */
-async function testStatsConnection() {
-    try {
-        logger.info('🔍 Testing stats API connection...');
-
-        const result = await statsHelper.testConnection();
-
-        if (result.success) {
-            logger.info('✅ Stats API connected successfully');
-        } else {
-            logger.warn('⚠️ Stats API not available:', result.reason || result.error);
-            logger.info('📊 Bot will continue without stats tracking');
-        }
-    } catch (error) {
-        logger.warn('⚠️ Stats API connection failed:', error.message);
-    }
-}
-
-/**
  * Démarre la synchronisation automatique des stats
  */
 function startStatsSync() {
@@ -246,6 +226,7 @@ function setupGracefulShutdown() {
                 for (const { threadId } of activeGames) {
                     try {
                         await statsHelper.logGame('abandon', threadId);
+                    // eslint-disable-next-line no-unused-vars
                     } catch (error) {
                         // Ignore les erreurs de cleanup
                     }
@@ -286,40 +267,6 @@ function setupGracefulShutdown() {
         gracefulShutdown('unhandledRejection');
     });
 }
-
-/**
- * Force une synchronisation manuelle des stats (pour debug)
- */
-async function forceSyncStats() {
-    try {
-        logger.info('🔄 Forcing stats synchronization...');
-        await syncGameEngineStats();
-        logger.info('✅ Manual stats sync completed');
-    } catch (error) {
-        logger.error('❌ Manual stats sync failed:', error.message);
-    }
-}
-
-/**
- * Obtenir les stats actuelles (pour monitoring)
- */
-async function getCurrentStats() {
-    try {
-        const gameEngine = getGameEngineInstance();
-        const engineStats = gameEngine ? gameEngine.getEngineStats() : null;
-        const apiStats = await statsHelper.getStats();
-
-        return {
-            engine: engineStats,
-            api: apiStats,
-            timestamp: new Date().toISOString()
-        };
-    } catch (error) {
-        logger.error('Error getting current stats:', error.message);
-        return null;
-    }
-}
-
 
 // Gestion gracieuse de l'arrêt
 process.on('SIGTERM', () => {

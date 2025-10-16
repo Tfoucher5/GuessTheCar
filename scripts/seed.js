@@ -1,28 +1,21 @@
 #!/usr/bin/env node
 
 require('dotenv').config();
-const mysql = require('mysql2/promise');
+const { Pool } = require('pg');
 const fs = require('fs').promises;
 const path = require('path');
 
 async function seedDatabase() {
     console.log('🌱 Initialisation des données depuis data.sql...\n');
 
-    // Configuration simple
-    const connectionConfig = {
-        host: process.env.DB_HOST || 'localhost',
-        port: process.env.DB_PORT || 3306,
-        user: process.env.DB_USER || 'root',
-        database: process.env.DB_NAME || 'guessthecar',
-        multipleStatements: true
-    };
+    // Configuration PostgreSQL avec DATABASE_URL
+    const pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    });
 
-    if (process.env.DB_PASSWORD && process.env.DB_PASSWORD !== '') {
-        connectionConfig.password = process.env.DB_PASSWORD;
-    }
-
-    console.log('📡 Connexion à la base de données...');
-    const connection = await mysql.createConnection(connectionConfig);
+    console.log('📡 Connexion à Supabase/PostgreSQL...');
+    const client = await pool.connect();
 
     try {
         console.log('📂 Lecture du fichier data.sql...');
@@ -33,8 +26,18 @@ async function seedDatabase() {
 
         console.log('🔧 Traitement du SQL...');
 
-        // Exécuter directement le fichier SQL complet
-        // Diviser uniquement sur les vrais points-virgules de fin d'instruction
+        // Adapter le SQL pour PostgreSQL
+        // MySQL -> PostgreSQL conversions communes
+        dataContent = dataContent
+            // Remplacer les backticks MySQL par des guillemets doubles PostgreSQL
+            .replace(/`/g, '"')
+            // Remplacer AUTO_INCREMENT par SERIAL (si nécessaire)
+            .replace(/AUTO_INCREMENT/gi, '')
+            // Remplacer les ENGINE=InnoDB par rien
+            .replace(/ENGINE=InnoDB/gi, '')
+            .replace(/DEFAULT CHARSET=\w+/gi, '');
+
+        // Diviser les instructions SQL
         const statements = dataContent
             .split('\n')
             .filter(line => line.trim() && !line.trim().startsWith('--'))
@@ -52,7 +55,7 @@ async function seedDatabase() {
         for (const [index, statement] of statements.entries()) {
             try {
                 if (statement.trim()) {
-                    await connection.execute(statement);
+                    await client.query(statement);
                     successCount++;
 
                     // Afficher le progrès
@@ -86,21 +89,22 @@ async function seedDatabase() {
         // Vérification finale et statistiques
         console.log('\n📊 Vérification finale...');
 
-        const [brandCount] = await connection.execute('SELECT COUNT(*) as count FROM brands');
-        const [modelCount] = await connection.execute('SELECT COUNT(*) as count FROM models');
-        const [userCount] = await connection.execute('SELECT COUNT(*) as count FROM user_scores');
+        const brandCount = await client.query('SELECT COUNT(*) as count FROM brands');
+        const modelCount = await client.query('SELECT COUNT(*) as count FROM models');
+        const userCount = await client.query('SELECT COUNT(*) as count FROM user_scores');
 
         console.log(`\n🎯 Résultats finaux:`);
-        console.log(`- ${brandCount[0].count} marques`);
-        console.log(`- ${modelCount[0].count} modèles`);
-        console.log(`- ${userCount[0].count} utilisateurs`);
+        console.log(`- ${brandCount.rows[0].count} marques`);
+        console.log(`- ${modelCount.rows[0].count} modèles`);
+        console.log(`- ${userCount.rows[0].count} utilisateurs`);
 
-        if (brandCount[0].count === 0) {
+        if (brandCount.rows[0].count === 0) {
             console.log('\n❌ PROBLÈME: Aucune marque insérée !');
             console.log('💡 Solutions possibles:');
             console.log('1. Vérifier que database/data.sql existe');
             console.log('2. Vérifier que les noms de tables correspondent (brands/models)');
-            console.log('3. Vérifier les permissions MySQL');
+            console.log('3. Vérifier les permissions PostgreSQL');
+            console.log('4. Vérifier que le SQL est compatible PostgreSQL');
 
             // Debug: afficher les premières lignes du fichier
             const debugLines = dataContent.split('\n').slice(0, 20);
@@ -115,7 +119,7 @@ async function seedDatabase() {
             // Statistiques détaillées
             try {
                 console.log('\n🎮 Répartition par difficulté:');
-                const [diffStats] = await connection.execute(`
+                const diffStats = await client.query(`
                     SELECT difficulty_level, COUNT(*) as count 
                     FROM models 
                     WHERE difficulty_level IS NOT NULL
@@ -123,19 +127,19 @@ async function seedDatabase() {
                     ORDER BY difficulty_level
                 `);
 
-                diffStats.forEach(stat => {
+                diffStats.rows.forEach(stat => {
                     const level = stat.difficulty_level === 1 ? 'Facile' :
                         stat.difficulty_level === 2 ? 'Moyen' : 'Difficile';
                     console.log(`  - ${level}: ${stat.count} modèles`);
                 });
 
                 // Exemples de marques
-                const [sampleBrands] = await connection.execute('SELECT name FROM brands ORDER BY name LIMIT 10');
+                const sampleBrands = await client.query('SELECT name FROM brands ORDER BY name LIMIT 10');
                 console.log('\n🏭 Exemples de marques:');
-                sampleBrands.forEach(brand => console.log(`  - ${brand.name}`));
+                sampleBrands.rows.forEach(brand => console.log(`  - ${brand.name}`));
 
                 // Exemples de modèles
-                const [sampleModels] = await connection.execute(`
+                const sampleModels = await client.query(`
                     SELECT m.name, b.name as brand_name, m.difficulty_level
                     FROM models m 
                     JOIN brands b ON m.brand_id = b.id 
@@ -143,7 +147,7 @@ async function seedDatabase() {
                     LIMIT 10
                 `);
                 console.log('\n🚗 Exemples de modèles:');
-                sampleModels.forEach(model => {
+                sampleModels.rows.forEach(model => {
                     console.log(`  - ${model.brand_name} ${model.name} (difficulté ${model.difficulty_level})`);
                 });
 
@@ -160,7 +164,8 @@ async function seedDatabase() {
         console.error('Stack:', error.stack);
         throw error;
     } finally {
-        await connection.end();
+        client.release();
+        await pool.end();
     }
 }
 
