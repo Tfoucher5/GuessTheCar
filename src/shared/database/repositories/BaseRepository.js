@@ -1,5 +1,5 @@
 // src/shared/database/repositories/BaseRepository.js
-const { executeQuery } = require('../connection');
+const { supabase } = require('../connection');
 
 class NotFoundError extends Error {
     constructor(message) {
@@ -18,60 +18,77 @@ class BaseRepository {
      * Trouve tous les enregistrements
      */
     async findAll(conditions = {}, limit = null, offset = null) {
-        let query = `SELECT * FROM ${this.tableName}`;
-        let values = [];
-        let paramIndex = 1;
+        let query = supabase
+            .from(this.tableName)
+            .select('*');
 
-        if (Object.keys(conditions).length > 0) {
-            const whereClause = Object.keys(conditions)
-                .map(key => `${key} = $${paramIndex++}`)
-                .join(' AND ');
-            values = Object.values(conditions);
-            query += ` WHERE ${whereClause}`;
-        }
-
-        if (limit) {
-            query += ` LIMIT $${paramIndex++}`;
-            values.push(limit);
-            if (offset) {
-                query += ` OFFSET $${paramIndex++}`;
-                values.push(offset);
+        // Appliquer les conditions
+        Object.entries(conditions).forEach(([key, value]) => {
+            if (value === null) {
+                query = query.is(key, null);
+            } else {
+                query = query.eq(key, value);
             }
+        });
+
+        // Appliquer la limite et l'offset
+        if (limit) {
+            query = query.limit(limit);
+        }
+        if (offset) {
+            query = query.range(offset, offset + (limit || 10) - 1);
         }
 
-        const results = await executeQuery(query, values);
-        return results.rows;
+        const { data, error } = await query;
+        if (error) throw error;
+
+        return data || [];
     }
 
     /**
      * Trouve un enregistrement par ID
      */
     async findById(id) {
-        const query = `SELECT * FROM ${this.tableName} WHERE id = $1`;
-        const results = await executeQuery(query, [id]);
-        return results.rows.length > 0 ? results.rows[0] : null;
+        const { data, error } = await supabase
+            .from(this.tableName)
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error; // PGRST116 = not found
+        return data || null;
     }
 
     /**
      * Trouve un enregistrement selon des critères
      */
     async findOne(conditions) {
-        let paramIndex = 1;
-        const whereClause = Object.keys(conditions)
-            .map(key => `${key} = $${paramIndex++}`)
-            .join(' AND ');
-        const values = Object.values(conditions);
+        let query = supabase
+            .from(this.tableName)
+            .select('*');
 
-        const query = `SELECT * FROM ${this.tableName} WHERE ${whereClause} LIMIT 1`;
-        const results = await executeQuery(query, values);
-        return results.rows.length > 0 ? results.rows[0] : null;
+        // Appliquer les conditions
+        Object.entries(conditions).forEach(([key, value]) => {
+            if (value === null) {
+                query = query.is(key, null);
+            } else {
+                query = query.eq(key, value);
+            }
+        });
+
+        const { data, error } = await query
+            .limit(1)
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error;
+        return data || null;
     }
 
     /**
      * Crée un nouvel enregistrement
      */
     async create(data) {
-        // Filtrer les valeurs undefined et null pour les colonnes optionnelles
+        // Filtrer les valeurs undefined
         const cleanData = {};
         Object.keys(data).forEach(key => {
             if (data[key] !== undefined) {
@@ -79,25 +96,19 @@ class BaseRepository {
             }
         });
 
-        const columns = Object.keys(cleanData);
-        const values = Object.values(cleanData);
-        const placeholders = columns.map((_, i) => `$${i + 1}`);
-
-        const columnsStr = columns.join(', ');
-        const placeholdersStr = placeholders.join(', ');
-
-        const query = `INSERT INTO ${this.tableName} (${columnsStr}) VALUES (${placeholdersStr}) RETURNING *`;
-
         try {
-            const result = await executeQuery(query, values);
-            return result.rows[0];
+            const { data: result, error } = await supabase
+                .from(this.tableName)
+                .insert(cleanData)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return result;
         } catch (error) {
-            // Log pour debug
             console.error('BaseRepository.create error:', {
-                query,
-                values,
                 tableName: this.tableName,
-                columns: columnsStr,
+                data: cleanData,
                 error: error.message
             });
             throw error;
@@ -116,20 +127,21 @@ class BaseRepository {
             }
         });
 
-        let paramIndex = 1;
-        const setClause = Object.keys(cleanData)
-            .map(key => `${key} = $${paramIndex++}`)
-            .join(', ');
-        const values = [...Object.values(cleanData), id];
+        const { data: result, error } = await supabase
+            .from(this.tableName)
+            .update(cleanData)
+            .eq('id', id)
+            .select()
+            .single();
 
-        const query = `UPDATE ${this.tableName} SET ${setClause} WHERE id = $${paramIndex}`;
-        const result = await executeQuery(query, values);
-
-        if (result.rowCount === 0) {
-            throw new NotFoundError(`Record with id ${id} not found in ${this.tableName}`);
+        if (error) {
+            if (error.code === 'PGRST116') {
+                throw new NotFoundError(`Record with id ${id} not found in ${this.tableName}`);
+            }
+            throw error;
         }
 
-        return await this.findById(id);
+        return result;
     }
 
     /**
@@ -144,29 +156,38 @@ class BaseRepository {
             }
         });
 
-        let paramIndex = 1;
-        const setClause = Object.keys(cleanData)
-            .map(key => `${key} = $${paramIndex++}`)
-            .join(', ');
-        const whereClause = Object.keys(conditions)
-            .map(key => `${key} = $${paramIndex++}`)
-            .join(' AND ');
-        const values = [...Object.values(cleanData), ...Object.values(conditions)];
+        let query = supabase
+            .from(this.tableName)
+            .update(cleanData);
 
-        const query = `UPDATE ${this.tableName} SET ${setClause} WHERE ${whereClause}`;
-        const result = await executeQuery(query, values);
+        // Appliquer les conditions
+        Object.entries(conditions).forEach(([key, value]) => {
+            if (value === null) {
+                query = query.is(key, null);
+            } else {
+                query = query.eq(key, value);
+            }
+        });
 
-        return result.rowCount;
+        const { data: result, error, count } = await query
+            .select('*', { count: 'exact' });
+
+        if (error) throw error;
+        return count || 0;
     }
 
     /**
-    * Supprime un enregistrement
-    */
+     * Supprime un enregistrement
+     */
     async delete(id) {
-        const query = `DELETE FROM ${this.tableName} WHERE id = $1`;
-        const result = await executeQuery(query, [id]);
+        const { error, count } = await supabase
+            .from(this.tableName)
+            .delete({ count: 'exact' })
+            .eq('id', id);
 
-        if (result.rowCount === 0) {
+        if (error) throw error;
+
+        if (count === 0) {
             throw new NotFoundError(`Record with id ${id} not found in ${this.tableName}`);
         }
 
@@ -177,41 +198,51 @@ class BaseRepository {
      * Supprime selon des critères
      */
     async deleteWhere(conditions) {
-        let paramIndex = 1;
-        const whereClause = Object.keys(conditions)
-            .map(key => `${key} = $${paramIndex++}`)
-            .join(' AND ');
-        const values = Object.values(conditions);
+        let query = supabase
+            .from(this.tableName)
+            .delete({ count: 'exact' });
 
-        const query = `DELETE FROM ${this.tableName} WHERE ${whereClause}`;
-        const result = await executeQuery(query, values);
+        // Appliquer les conditions
+        Object.entries(conditions).forEach(([key, value]) => {
+            if (value === null) {
+                query = query.is(key, null);
+            } else {
+                query = query.eq(key, value);
+            }
+        });
 
-        return result.rowCount;
+        const { error, count } = await query;
+        if (error) throw error;
+
+        return count || 0;
     }
 
     /**
      * Compte les enregistrements
      */
     async count(conditions = {}) {
-        let query = `SELECT COUNT(*) as count FROM ${this.tableName}`;
-        let values = [];
-        let paramIndex = 1;
+        let query = supabase
+            .from(this.tableName)
+            .select('*', { count: 'exact', head: true });
 
-        if (Object.keys(conditions).length > 0) {
-            const whereClause = Object.keys(conditions)
-                .map(key => `${key} = $${paramIndex++}`)
-                .join(' AND ');
-            values = Object.values(conditions);
-            query += ` WHERE ${whereClause}`;
-        }
+        // Appliquer les conditions
+        Object.entries(conditions).forEach(([key, value]) => {
+            if (value === null) {
+                query = query.is(key, null);
+            } else {
+                query = query.eq(key, value);
+            }
+        });
 
-        const results = await executeQuery(query, values);
-        return parseInt(results.rows[0].count);
+        const { count, error } = await query;
+        if (error) throw error;
+
+        return count || 0;
     }
 
     /**
-      * Vérifie si un enregistrement existe
-      */
+     * Vérifie si un enregistrement existe
+     */
     async exists(conditions) {
         const count = await this.count(conditions);
         return count > 0;
