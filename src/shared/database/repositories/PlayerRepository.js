@@ -30,7 +30,8 @@ class PlayerRepository extends BaseRepository {
                 current_streak, 
                 best_time, 
                 average_response_time
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+            RETURNING *
         `;
 
         const params = [
@@ -55,35 +56,35 @@ class PlayerRepository extends BaseRepository {
             userId, username, guildId
         });
 
-        await executeQuery(query, params);
-        return await this.findByUserIdAndGuild(userId, guildId);
+        const result = await executeQuery(query, params);
+        return Player.fromDatabase(result.rows[0]);
     }
 
     /**
      * Trouve un joueur par userId ET guildId
      */
     async findByUserIdAndGuild(userId, guildId = null) {
-        let query = 'SELECT * FROM user_scores WHERE user_id = ?';
+        let query = 'SELECT * FROM user_scores WHERE user_id = $1';
         let params = [userId];
 
         if (guildId) {
-            query += ' AND guild_id = ?';
+            query += ' AND guild_id = $2';
             params.push(guildId);
         } else {
             query += ' AND guild_id IS NULL';
         }
 
         const results = await executeQuery(query, params);
-        return results.length > 0 ? Player.fromDatabase(results[0]) : null;
+        return results.rows.length > 0 ? Player.fromDatabase(results.rows[0]) : null;
     }
 
     /**
      * Trouve un joueur par userId (sans contrainte de serveur) - FALLBACK
      */
     async findByUserId(userId) {
-        const query = 'SELECT * FROM user_scores WHERE user_id = ? LIMIT 1';
+        const query = 'SELECT * FROM user_scores WHERE user_id = $1 LIMIT 1';
         const results = await executeQuery(query, [userId]);
-        return results.length > 0 ? Player.fromDatabase(results[0]) : null;
+        return results.rows.length > 0 ? Player.fromDatabase(results.rows[0]) : null;
     }
 
     /**
@@ -117,7 +118,7 @@ class PlayerRepository extends BaseRepository {
      * Met à jour le nom d'utilisateur
      */
     async updateUsername(userId, username) {
-        const query = 'UPDATE user_scores SET username = ? WHERE user_id = ?';
+        const query = 'UPDATE user_scores SET username = $1 WHERE user_id = $2';
         await executeQuery(query, [username, userId]);
     }
 
@@ -136,12 +137,15 @@ class PlayerRepository extends BaseRepository {
             throw new Error('No valid data provided for update');
         }
 
-        const setClause = Object.keys(cleanData).map(key => `${key} = ?`).join(', ');
-        let whereClause = 'user_id = ?';
+        let paramIndex = 1;
+        const setClause = Object.keys(cleanData)
+            .map(key => `${key} = $${paramIndex++}`)
+            .join(', ');
+        let whereClause = `user_id = $${paramIndex++}`;
         let values = [...Object.values(cleanData), userId];
 
         if (guildId) {
-            whereClause += ' AND guild_id = ?';
+            whereClause += ` AND guild_id = $${paramIndex++}`;
             values.push(guildId);
         } else {
             whereClause += ' AND guild_id IS NULL';
@@ -176,7 +180,7 @@ class PlayerRepository extends BaseRepository {
                 attempts_make, attempts_model, make_found, model_found,
                 completed, abandoned, timeout, car_changes_used, hints_used,
                 points_earned, difficulty_points_earned
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
         `;
 
         const params = [
@@ -188,11 +192,11 @@ class PlayerRepository extends BaseRepository {
             gameSession.durationSeconds,
             gameSession.attemptsMake || 0,
             gameSession.attemptsModel || 0,
-            gameSession.makeFound ? 1 : 0,
-            gameSession.modelFound ? 1 : 0,
-            gameSession.completed ? 1 : 0,
-            gameSession.abandoned ? 1 : 0,
-            gameSession.timeout ? 1 : 0,
+            gameSession.makeFound ? true : false,
+            gameSession.modelFound ? true : false,
+            gameSession.completed ? true : false,
+            gameSession.abandoned ? true : false,
+            gameSession.timeout ? true : false,
             gameSession.carChangesUsed || 0,
             JSON.stringify(gameSession.hintsUsed || {}),
             gameSession.pointsEarned || 0,
@@ -247,21 +251,22 @@ class PlayerRepository extends BaseRepository {
         `;
 
         let params = [];
+        let paramIndex = 1;
 
         if (guildId) {
-            query += ' AND us.guild_id = ?';
+            query += ` AND us.guild_id = $${paramIndex++}`;
             params.push(guildId);
         } else {
             query += ' AND us.guild_id IS NULL';
         }
 
-        query += ' ORDER BY us.total_points DESC, us.games_won DESC LIMIT ?';
+        query += ` ORDER BY us.total_points DESC, us.games_won DESC LIMIT $${paramIndex}`;
         params.push(limit);
 
         const results = await executeQuery(query, params);
-        return results.map(row => ({
+        return results.rows.map(row => ({
             ...Player.fromDatabase(row),
-            ranking: row.ranking
+            ranking: parseInt(row.ranking)
         }));
     }
 
@@ -270,12 +275,12 @@ class PlayerRepository extends BaseRepository {
      */
     async getPlayerWithRanking(userId, guildId = null) {
         let rankingCondition = guildId ?
-            'WHERE us2.guild_id = ? AND (us2.total_points > us.total_points OR (us2.total_points = us.total_points AND us2.games_won > us.games_won))' :
+            'WHERE us2.guild_id = $1 AND (us2.total_points > us.total_points OR (us2.total_points = us.total_points AND us2.games_won > us.games_won))' :
             'WHERE us2.guild_id IS NULL AND (us2.total_points > us.total_points OR (us2.total_points = us.total_points AND us2.games_won > us.games_won))';
 
         let whereClause = guildId ?
-            'WHERE us.user_id = ? AND us.guild_id = ?' :
-            'WHERE us.user_id = ? AND us.guild_id IS NULL';
+            'WHERE us.user_id = $2 AND us.guild_id = $3' :
+            'WHERE us.user_id = $1 AND us.guild_id IS NULL';
 
         const query = `
             SELECT 
@@ -288,14 +293,14 @@ class PlayerRepository extends BaseRepository {
         const params = guildId ? [guildId, userId, guildId] : [userId];
         const results = await executeQuery(query, params);
 
-        if (results.length === 0) {
+        if (results.rows.length === 0) {
             return null;
         }
 
-        const row = results[0];
+        const row = results.rows[0];
         return {
             ...Player.fromDatabase(row),
-            ranking: row.ranking
+            ranking: parseInt(row.ranking)
         };
     }
 
@@ -304,9 +309,10 @@ class PlayerRepository extends BaseRepository {
      */
     async recordCarFound(data) {
         const query = `
-            INSERT IGNORE INTO user_cars_found (
+            INSERT INTO user_cars_found (
                 user_id, guild_id, car_id, brand_id, attempts_used, time_taken
-            ) VALUES (?, ?, ?, ?, ?, ?)
+            ) VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (user_id, guild_id, car_id) DO NOTHING
         `;
 
         const params = [
@@ -336,20 +342,21 @@ class PlayerRepository extends BaseRepository {
                 MIN(ucf.found_at) as firstCarDate,
                 MAX(ucf.found_at) as lastCarDate
             FROM user_cars_found ucf
-            WHERE ucf.user_id = ?
+            WHERE ucf.user_id = $1
         `;
 
         let params = [userId];
+        let paramIndex = 2;
 
         if (guildId) {
-            query += ' AND ucf.guild_id = ?';
+            query += ` AND ucf.guild_id = $${paramIndex}`;
             params.push(guildId);
         } else {
             query += ' AND ucf.guild_id IS NULL';
         }
 
         const results = await executeQuery(query, params);
-        return results[0];
+        return results.rows[0];
     }
 
     /**
@@ -364,15 +371,16 @@ class PlayerRepository extends BaseRepository {
                 COUNT(DISTINCT ucf.brand_id) as brandsFound,
                 (SELECT COUNT(*) FROM models) as totalCars,
                 (SELECT COUNT(*) FROM brands) as totalBrands,
-                ROUND((COUNT(DISTINCT ucf.car_id) / (SELECT COUNT(*) FROM models)) * 100, 1) as completionPercentage
+                ROUND((COUNT(DISTINCT ucf.car_id)::numeric / (SELECT COUNT(*) FROM models)) * 100, 1) as completionPercentage
             FROM user_scores us
             LEFT JOIN user_cars_found ucf ON us.user_id = ucf.user_id
         `;
 
         let params = [];
+        let paramIndex = 1;
 
         if (guildId) {
-            query += ' AND us.guild_id = ? AND (ucf.guild_id = ? OR ucf.guild_id IS NULL)';
+            query += ` AND us.guild_id = $${paramIndex++} AND (ucf.guild_id = $${paramIndex++} OR ucf.guild_id IS NULL)`;
             params.push(guildId, guildId);
         } else {
             query += ' AND us.guild_id IS NULL AND (ucf.guild_id IS NULL OR ucf.guild_id IS NULL)';
@@ -382,18 +390,18 @@ class PlayerRepository extends BaseRepository {
             GROUP BY us.user_id, us.username
             HAVING COUNT(DISTINCT ucf.car_id) > 0
             ORDER BY carsFound DESC, brandsFound DESC
-            LIMIT ?
+            LIMIT $${paramIndex}
         `;
 
         params.push(limit);
 
         const results = await executeQuery(query, params);
-        return results;
+        return results.rows;
     }
 
     /**
- * Classement mensuel - joueurs avec le plus de points ce mois-ci
- */
+     * Classement mensuel - joueurs avec le plus de points ce mois-ci
+     */
     async getMonthlyLeaderboard(limit = 10, guildId = null) {
         let query = `
         SELECT 
@@ -422,19 +430,20 @@ class PlayerRepository extends BaseRepository {
                 us.created_at,
                 us.updated_at,
                 COALESCE(SUM(gs.points_earned + gs.difficulty_points_earned), 0) as monthly_points,
-                COALESCE(COUNT(CASE WHEN gs.completed = 1 THEN 1 END), 0) as monthly_wins,
+                COALESCE(COUNT(CASE WHEN gs.completed = true THEN 1 END), 0) as monthly_wins,
                 COALESCE(COUNT(gs.id), 0) as monthly_games
             FROM user_scores us
             LEFT JOIN game_sessions gs ON us.user_id = gs.user_id 
-                AND gs.started_at >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
-                AND gs.started_at < DATE_FORMAT(CURDATE() + INTERVAL 1 MONTH, '%Y-%m-01')
+                AND gs.started_at >= DATE_TRUNC('month', CURRENT_DATE)
+                AND gs.started_at < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'
             WHERE us.games_played > 0
     `;
 
         let params = [];
+        let paramIndex = 1;
 
         if (guildId) {
-            query += ' AND us.guild_id = ? AND (gs.guild_id = ? OR gs.guild_id IS NULL)';
+            query += ` AND us.guild_id = ${paramIndex++} AND (gs.guild_id = ${paramIndex++} OR gs.guild_id IS NULL)`;
             params.push(guildId, guildId);
         } else {
             query += ' AND us.guild_id IS NULL AND (gs.guild_id IS NULL OR gs.guild_id IS NULL)';
@@ -445,21 +454,21 @@ class PlayerRepository extends BaseRepository {
                      us.games_played, us.games_won, us.correct_brand_guesses, us.correct_model_guesses,
                      us.total_brand_guesses, us.total_model_guesses, us.best_streak, us.current_streak,
                      us.best_time, us.average_response_time, us.created_at, us.updated_at
-            HAVING monthly_games > 0
+            HAVING COUNT(gs.id) > 0
         ) us
         ORDER BY monthly_points DESC, monthly_wins DESC 
-        LIMIT ?
+        LIMIT ${paramIndex}
     `;
 
         params.push(limit);
 
         const results = await executeQuery(query, params);
-        return results.map(row => ({
+        return results.rows.map(row => ({
             ...Player.fromDatabase(row),
-            ranking: row.ranking,
-            monthlyPoints: row.monthly_points,
-            monthlyWins: row.monthly_wins,
-            monthlyGames: row.monthly_games
+            ranking: parseInt(row.ranking),
+            monthlyPoints: parseInt(row.monthly_points),
+            monthlyWins: parseInt(row.monthly_wins),
+            monthlyGames: parseInt(row.monthly_games)
         }));
     }
 
@@ -480,16 +489,17 @@ class PlayerRepository extends BaseRepository {
                 COUNT(gs.id) as completed_games
             FROM user_scores us
             INNER JOIN game_sessions gs ON us.user_id = gs.user_id 
-                AND gs.completed = 1 
+                AND gs.completed = true
                 AND gs.duration_seconds IS NOT NULL 
                 AND gs.duration_seconds > 0
             WHERE us.games_won > 0
     `;
 
         let params = [];
+        let paramIndex = 1;
 
         if (guildId) {
-            query += ' AND us.guild_id = ? AND gs.guild_id = ?';
+            query += ` AND us.guild_id = ${paramIndex++} AND gs.guild_id = ${paramIndex++}`;
             params.push(guildId, guildId);
         } else {
             query += ' AND us.guild_id IS NULL AND gs.guild_id IS NULL';
@@ -497,20 +507,20 @@ class PlayerRepository extends BaseRepository {
 
         query += `
             GROUP BY us.user_id
-            HAVING completed_games >= 3
+            HAVING COUNT(gs.id) >= 3
         ) us
         ORDER BY avg_completion_time ASC, games_won DESC 
-        LIMIT ?
+        LIMIT ${paramIndex}
     `;
 
         params.push(limit);
 
         const results = await executeQuery(query, params);
-        return results.map(row => ({
+        return results.rows.map(row => ({
             ...Player.fromDatabase(row),
-            ranking: row.ranking,
-            averageTime: row.avg_completion_time,
-            completedGames: row.completed_games
+            ranking: parseInt(row.ranking),
+            averageTime: parseFloat(row.avg_completion_time),
+            completedGames: parseInt(row.completed_games)
         }));
     }
 
@@ -522,15 +532,16 @@ class PlayerRepository extends BaseRepository {
         SELECT 
             us.*,
             ROW_NUMBER() OVER (ORDER BY success_rate DESC, us.games_played DESC) as ranking,
-            ROUND((us.games_won / us.games_played) * 100, 1) as success_rate
+            ROUND((us.games_won::numeric / us.games_played) * 100, 1) as success_rate
         FROM user_scores us
         WHERE us.games_played >= 5
     `;
 
         let params = [];
+        let paramIndex = 1;
 
         if (guildId) {
-            query += ' AND us.guild_id = ?';
+            query += ` AND us.guild_id = ${paramIndex++}`;
             params.push(guildId);
         } else {
             query += ' AND us.guild_id IS NULL';
@@ -538,16 +549,16 @@ class PlayerRepository extends BaseRepository {
 
         query += `
         ORDER BY success_rate DESC, us.games_played DESC 
-        LIMIT ?
+        LIMIT ${paramIndex}
     `;
 
         params.push(limit);
 
         const results = await executeQuery(query, params);
-        return results.map(row => ({
+        return results.rows.map(row => ({
             ...Player.fromDatabase(row),
-            ranking: row.ranking,
-            successRate: row.success_rate
+            ranking: parseInt(row.ranking),
+            successRate: parseFloat(row.success_rate)
         }));
     }
 
@@ -564,9 +575,10 @@ class PlayerRepository extends BaseRepository {
     `;
 
         let params = [];
+        let paramIndex = 1;
 
         if (guildId) {
-            query += ' AND us.guild_id = ?';
+            query += ` AND us.guild_id = ${paramIndex++}`;
             params.push(guildId);
         } else {
             query += ' AND us.guild_id IS NULL';
@@ -574,15 +586,15 @@ class PlayerRepository extends BaseRepository {
 
         query += `
         ORDER BY us.best_streak DESC, us.current_streak DESC, us.games_won DESC 
-        LIMIT ?
+        LIMIT ${paramIndex}
     `;
 
         params.push(limit);
 
         const results = await executeQuery(query, params);
-        return results.map(row => ({
+        return results.rows.map(row => ({
             ...Player.fromDatabase(row),
-            ranking: row.ranking
+            ranking: parseInt(row.ranking)
         }));
     }
 
@@ -599,9 +611,10 @@ class PlayerRepository extends BaseRepository {
     `;
 
         let params = [];
+        let paramIndex = 1;
 
         if (guildId) {
-            query += ' AND us.guild_id = ?';
+            query += ` AND us.guild_id = ${paramIndex++}`;
             params.push(guildId);
         } else {
             query += ' AND us.guild_id IS NULL';
@@ -609,15 +622,15 @@ class PlayerRepository extends BaseRepository {
 
         query += `
         ORDER BY us.games_played DESC, us.games_won DESC 
-        LIMIT ?
+        LIMIT ${paramIndex}
     `;
 
         params.push(limit);
 
         const results = await executeQuery(query, params);
-        return results.map(row => ({
+        return results.rows.map(row => ({
             ...Player.fromDatabase(row),
-            ranking: row.ranking
+            ranking: parseInt(row.ranking)
         }));
     }
 }
