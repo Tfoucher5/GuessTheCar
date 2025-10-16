@@ -1,33 +1,41 @@
-# Guess The Car Bot v2.0
+## 🚗 GuessTheCar — Bot Discord
 
-Un bot Discord pour deviner les marques et modèles de voitures.
+**GuessTheCar** est un bot Discord développé sur mesure pour proposer un jeu de devinettes automobile. Il est **disponible publiquement pour jouer**, mais son code source et sa logique interne sont **privés** et ne sont pas destinés à être modifiés ou réutilisés.
 
-## Installation
+---
 
-1. Clonez le repository
-2. Installez les dépendances: `npm install`
-3. Copiez `.env.example` vers `.env` et configurez vos variables
-4. Initialisez la base de données: `npm run migrate`
-5. Importez les données: `npm run seed`
-6. Démarrez l'application: `npm start`
+## 🎯 Objectif
 
-## Développement
+Permettre aux utilisateurs de Discord de tester leurs connaissances automobiles en devinant des marques et modèles de voitures à travers un jeu interactif, rapide et compétitif.
 
-- `npm run dev` - Mode développement avec rechargement automatique
-- `npm test` - Lance les tests
-- `npm run lint` - Vérifie le code
+---
 
-## Structure du projet
+## 🕹️ Fonctionnement global
 
-- `src/api/` - API REST
-- `src/bot/` - Bot Discord
-- `src/core/` - Logique métier
-- `src/shared/` - Code partagé
+- Les joueurs lancent une partie avec la commande `/guesscar`.
+- Le bot affiche une voiture à deviner (texte ou image selon le mode).
+- Les joueurs répondent directement dans le salon.
+- Le bot valide la réponse, attribue des points, et passe à la voiture suivante.
+- Les joueurs peuvent consulter :
+  - Leur **classement** (`/classement`)
+  - Leurs **statistiques** (`/stats`)
+  - Abandonner une partie (`/abandon`)
+- Un système de **classement dynamique** permet de suivre les meilleurs joueurs.
 
-## Commands Discord
+---
 
-- `/guesscar` - Démarre une partie
-- `/abandon` - Abandonne la partie
-- `/classement` - Affiche le classement  
-- `/stats` - Affiche les statistiques
-- `/aide` - Affiche l'aide
+## 🔒 Code source
+
+Ce projet est un **développement personnel**. Le code source n’est pas public et ne doit pas être modifié, copié ou redistribué. Le bot est hébergé et maintenu par son créateur, et seul ce dernier peut intervenir sur son fonctionnement interne.
+
+---
+
+## 📬 Comment y accéder ?
+
+Le bot est accessible sur Discord via une invitation (non listée publiquement). Si tu veux l’ajouter à ton serveur pour y jouer, contacte directement le développeur.
+
+---
+
+## 👨‍💻 Développeur
+
+Projet conçu et maintenu par **Théo Foucher**.
