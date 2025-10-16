@@ -1,57 +1,81 @@
 // src/shared/database/connection.js
 require('dotenv').config();
-const { Client } = require('pg');
+const { createClient } = require('@supabase/supabase-js');
 const logger = require('../utils/logger');
 
-let client = null;
+console.log('🔧 Initializing Supabase connection...');
 
-async function initializeDatabase() {
-    if (client) {
-        return client;
-    }
-
-    try {
-        client = new Client({
-            connectionString: process.env.DATABASE_URL,
-            ssl: { rejectUnauthorized: false }
-        });
-
-        await client.connect();
-        logger.info('✅ PostgreSQL database connected via Supabase');
-        return client;
-    } catch (error) {
-        logger.error('❌ Failed to connect to PostgreSQL:', error.message);
-        throw error;
-    }
+// Vérifier que les variables d'environnement sont définies
+if (!process.env.SUPABASE_URL) {
+    logger.error('❌ SUPABASE_URL manquant dans .env');
+    throw new Error('SUPABASE_URL manquant dans les variables d\'environnement');
 }
 
-async function executeQuery(query, params = []) {
-    try {
-        if (!client) {
-            await initializeDatabase();
+if (!process.env.SUPABASE_SERVICE_KEY) {
+    logger.error('❌ SUPABASE_SERVICE_KEY manquant dans .env');
+    throw new Error('SUPABASE_SERVICE_KEY manquant dans les variables d\'environnement');
+}
+
+logger.info('Environment variables loaded:', {
+    SUPABASE_URL: process.env.SUPABASE_URL ? '✅ Défini' : '❌ Manquant',
+    SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY ? '✅ Défini' : '❌ Manquant'
+});
+
+// Créer le client Supabase avec la clé de service pour bypass les RLS
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY,
+    {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false
         }
-        const res = await client.query(query, params);
-        return res.rows;
+    }
+);
+
+logger.info('✅ Supabase client created');
+
+// Fonction de test de connexion
+async function testConnection() {
+    try {
+        logger.info('🔍 Testing Supabase connection...');
+
+        const { count, error } = await supabase
+            .from('user_scores')
+            .select('*', { count: 'exact', head: true });
+
+        if (error) {
+            logger.error('❌ Connection test failed:', error);
+            throw error;
+        }
+
+        logger.info('✅ Supabase connection successful');
+        return true;
     } catch (error) {
-        logger.error('Database query error:', {
-            query: query.replace(/\s+/g, ' ').trim(),
-            params,
-            error: error.message
+        logger.error('❌ Supabase connection error:', {
+            message: error.message,
+            code: error.code,
+            details: error.details
         });
         throw error;
     }
 }
 
-async function closeDatabase() {
-    if (client) {
-        await client.end();
-        client = null;
-        logger.info('Database connection closed');
-    }
+// Fonction pour initialiser la base de données (compatibilité avec l'ancien code)
+async function initializeDatabase() {
+    await testConnection();
+    return supabase;
 }
 
+// Fonction pour fermer la connexion (pour compatibilité)
+async function closeDatabase() {
+    logger.info('ℹ️ Supabase uses connection pooling, no need to close');
+}
+
+// Export du client et des fonctions
 module.exports = {
+    supabase,
+    testConnection,
     initializeDatabase,
-    executeQuery,
     closeDatabase
 };

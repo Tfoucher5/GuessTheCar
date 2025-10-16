@@ -16,51 +16,84 @@ class PlayerRepository extends BaseRepository {
             userId, username, guildId
         });
 
-        const { data, error } = await supabase
-            .from('user_scores')
-            .insert({
-                user_id: userId,
-                username: username,
-                guild_id: guildId,
-                total_points: 0,
-                total_difficulty_points: 0,
-                games_played: 0,
-                games_won: 0,
-                correct_brand_guesses: 0,
-                correct_model_guesses: 0,
-                total_brand_guesses: 0,
-                total_model_guesses: 0,
-                best_streak: 0,
-                current_streak: 0,
-                best_time: null,
-                average_response_time: null
-            })
-            .select()
-            .single();
+        try {
+            const { data, error } = await supabase
+                .from('user_scores')
+                .insert({
+                    user_id: userId,
+                    username: username,
+                    guild_id: guildId,
+                    total_points: 0,
+                    total_difficulty_points: 0,
+                    games_played: 0,
+                    games_won: 0,
+                    correct_brand_guesses: 0,
+                    correct_model_guesses: 0,
+                    total_brand_guesses: 0,
+                    total_model_guesses: 0,
+                    best_streak: 0,
+                    current_streak: 0,
+                    best_time: null,
+                    average_response_time: null
+                })
+                .select()
+                .single();
 
-        if (error) throw error;
-        return Player.fromDatabase(data);
+            if (error) {
+                console.error('create error:', error);
+                throw error;
+            }
+
+            return Player.fromDatabase(data);
+        } catch (error) {
+            console.error('create catch error:', {
+                message: error.message,
+                code: error.code,
+                details: error.details,
+                hint: error.hint,
+                userId,
+                username,
+                guildId
+            });
+            throw error;
+        }
     }
 
     /**
      * Trouve un joueur par userId ET guildId
      */
     async findByUserIdAndGuild(userId, guildId = null) {
-        let query = supabase
-            .from('user_scores')
-            .select('*')
-            .eq('user_id', userId);
+        try {
+            let query = supabase
+                .from('user_scores')
+                .select('*')
+                .eq('user_id', userId);
 
-        if (guildId) {
-            query = query.eq('guild_id', guildId);
-        } else {
-            query = query.is('guild_id', null);
+            if (guildId) {
+                query = query.eq('guild_id', guildId);
+            } else {
+                query = query.is('guild_id', null);
+            }
+
+            const { data, error } = await query.maybeSingle();
+
+            if (error) {
+                console.error('findByUserIdAndGuild error:', error);
+                throw error;
+            }
+
+            return data ? Player.fromDatabase(data) : null;
+        } catch (error) {
+            console.error('findByUserIdAndGuild catch error:', {
+                message: error.message,
+                code: error.code,
+                details: error.details,
+                hint: error.hint,
+                userId,
+                guildId
+            });
+            throw error;
         }
-
-        const { data, error } = await query.single();
-
-        if (error && error.code !== 'PGRST116') throw error; // PGRST116 = not found
-        return data ? Player.fromDatabase(data) : null;
     }
 
     /**
@@ -250,32 +283,48 @@ class PlayerRepository extends BaseRepository {
      * Stats avec ranking par serveur
      */
     async getPlayerWithRanking(userId, guildId = null) {
-        const player = await this.findByUserIdAndGuild(userId, guildId);
-        if (!player) return null;
+        try {
+            const player = await this.findByUserIdAndGuild(userId, guildId);
+            if (!player) return null;
 
-        // Récupérer tous les joueurs pour calculer le ranking
-        let query = supabase
-            .from('user_scores')
-            .select('user_id, total_points, games_won')
-            .gt('games_played', 0)
-            .order('total_points', { ascending: false })
-            .order('games_won', { ascending: false });
+            // Récupérer tous les joueurs pour calculer le ranking
+            let query = supabase
+                .from('user_scores')
+                .select('user_id, total_points, games_won')
+                .gt('games_played', 0)
+                .order('total_points', { ascending: false })
+                .order('games_won', { ascending: false });
 
-        if (guildId) {
-            query = query.eq('guild_id', guildId);
-        } else {
-            query = query.is('guild_id', null);
+            if (guildId) {
+                query = query.eq('guild_id', guildId);
+            } else {
+                query = query.is('guild_id', null);
+            }
+
+            const { data, error } = await query;
+
+            if (error) {
+                console.error('getPlayerWithRanking error:', error);
+                throw error;
+            }
+
+            const ranking = data.findIndex(p => p.user_id === userId) + 1;
+
+            return {
+                ...player,
+                ranking
+            };
+        } catch (error) {
+            console.error('getPlayerWithRanking catch error:', {
+                message: error.message,
+                code: error.code,
+                details: error.details,
+                hint: error.hint,
+                userId,
+                guildId
+            });
+            throw error;
         }
-
-        const { data, error } = await query;
-        if (error) throw error;
-
-        const ranking = data.findIndex(p => p.user_id === userId) + 1;
-
-        return {
-            ...player,
-            ranking
-        };
     }
 
     /**

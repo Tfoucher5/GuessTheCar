@@ -48,53 +48,58 @@ class CarRepository extends BaseRepository {
     }
 
     /**
-     * Récupère une voiture aléatoire avec ses informations complètes
+     * Récupère une voiture aléatoire avec ses informations complètes (version sécurisée)
      */
     async getRandomCar() {
-        // Supabase ne supporte pas ORDER BY RANDOM() directement
-        // On récupère d'abord le nombre total de voitures
-        const { count } = await supabase
+        const { count, error: countError } = await supabase
             .from('models')
             .select('*', { count: 'exact', head: true });
 
-        if (!count || count === 0) return null;
+        if (countError) {
+            console.error('Supabase error counting cars:', countError);
+            throw new Error('Impossible de compter les voitures dans la base de données.');
+        }
+        if (!count || count === 0) {
+            return null;
+        }
 
-        // Générer un offset aléatoire
-        const randomOffset = Math.floor(Math.random() * count);
+        // --- Tentatives multiples pour éviter les données corrompues ---
+        for (let i = 0; i < 5; i++) { // On essaie jusqu'à 5 fois
+            const randomOffset = Math.floor(Math.random() * count);
 
-        // Récupérer une voiture à cet offset
-        const { data, error } = await supabase
-            .from('models')
-            .select(`
-                id,
-                name,
-                year,
-                difficulty_level,
-                image_url,
-                brand_id,
-                brands!inner (
-                    id,
-                    name,
-                    country
-                )
-            `)
-            .range(randomOffset, randomOffset)
-            .single();
+            const { data, error } = await supabase
+                .from('models')
+                .select(`
+                    id, name, year, difficulty_level, image_url, brand_id,
+                    brands (id, name, country) // On retire !inner pour une jointure externe
+                `)
+                .range(randomOffset, randomOffset)
+                .single();
 
-        if (error) throw error;
-        if (!data) return null;
+            // Si on a une voiture ET que sa marque existe, c'est bon !
+            if (data && data.brands) {
+                return Car.fromDatabase({
+                    id: data.id,
+                    model: data.name,
+                    modelDate: data.year,
+                    difficulty: data.difficulty_level,
+                    imageUrl: data.image_url,
+                    brandId: data.brands.id,
+                    brand: data.brands.name,
+                    country: data.brands.country
+                });
+            }
 
-        // Formater les données pour correspondre au format attendu
-        return Car.fromDatabase({
-            id: data.id,
-            model: data.name,
-            modelDate: data.year,
-            difficulty: data.difficulty_level,
-            imageUrl: data.image_url,
-            brandId: data.brands.id,
-            brand: data.brands.name,
-            country: data.brands.country
-        });
+            // Si on est ici, c'est que la voiture est invalide ou qu'il y a eu une erreur.
+            if (error) {
+                console.warn(`[Attempt ${i + 1}] Failed to fetch a valid random car. Error:`, error.message);
+            } else if (!data?.brands) {
+                console.warn(`[Attempt ${i + 1}] Fetched a car (id: ${data?.id}) but its brand is missing. Retrying...`);
+            }
+        }
+
+        // Si après 5 tentatives on n'a rien, on lève une erreur claire.
+        throw new Error('Impossible de récupérer une voiture valide depuis la base de données après plusieurs tentatives.');
     }
 
     /**
