@@ -17,6 +17,7 @@ module.exports = {
 
             const leaderboard = await playerManager.getCollectionLeaderboard(10, guildId);
             const userStats = await playerManager.getPlayerCollection(interaction.user.id, guildId);
+            const completionPercentage = Math.round((userStats.carsFound / userStats.totalCars) * 100 * 10) / 10;
 
             const collectionEmbed = new EmbedBuilder()
                 .setColor('#FF6B35')
@@ -33,8 +34,8 @@ module.exports = {
                     const medal = position === 1 ? '🥇' : position === 2 ? '🥈' : position === 3 ? '🥉' : '🏆';
 
                     leaderboardText += `${medal} **${player.username}**\n`;
-                    leaderboardText += `└ ${player.carsFound}/${player.totalCars} voitures (${player.completionPercentage}%)\n`;
-                    leaderboardText += `└ ${player.brandsFound}/${player.totalBrands} marques\n\n`;
+                    leaderboardText += `└ ${player.carsFound}/${userStats.totalCars} voitures (${completionPercentage}%)\n`;
+                    leaderboardText += `└ ${player.brandsFound}/${userStats.totalBrands} marques\n\n`;
                 });
 
                 collectionEmbed.addFields({
