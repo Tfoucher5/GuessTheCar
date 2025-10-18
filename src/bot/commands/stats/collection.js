@@ -32,9 +32,10 @@ module.exports = {
                 leaderboard.forEach((player, index) => {
                     const position = index + 1;
                     const medal = position === 1 ? '🥇' : position === 2 ? '🥈' : position === 3 ? '🥉' : '🏆';
+                    player.completionPercentage = Math.round((player.carsFound / userStats.totalCars) * 100 * 10) / 10;
 
                     leaderboardText += `${medal} **${player.username}**\n`;
-                    leaderboardText += `└ ${player.carsFound}/${userStats.totalCars} voitures (${completionPercentage}%)\n`;
+                    leaderboardText += `└ ${player.carsFound}/${userStats.totalCars} voitures (${player.completionPercentage}%)\n`;
                     leaderboardText += `└ ${player.brandsFound}/${userStats.totalBrands} marques\n\n`;
                 });
 
