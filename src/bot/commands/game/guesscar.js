@@ -1,4 +1,4 @@
-// src/bot/commands/game/guesscar.js - Version mise à jour avec boutons
+// src/bot/commands/game/guesscar.js - Version mise à jour avec boutons et mention
 
 const { SlashCommandBuilder, ChannelType, MessageFlags } = require('discord.js');
 const { gameEngine } = require('../../events/messageCreate');
@@ -46,8 +46,11 @@ module.exports = {
             // ✅ MODIFIÉ: Créer l'embed de démarrage avec boutons
             const gameStartResponse = EmbedBuilder.createGameStartEmbed(gameState.car, gameState);
 
-            // Envoyer dans le thread avec les boutons
-            await thread.send(gameStartResponse);
+            // Envoyer dans le thread avec les boutons ET la mention
+            await thread.send({
+                content: `<@${interaction.user.id}>`, // <-- La mention qui ajoute l'utilisateur au fil
+                ...gameStartResponse // Réutilise les embeds et boutons de la réponse
+            });
 
             // Répondre à l'utilisateur
             const successEmbed = EmbedBuilder.createSuccessEmbed(
