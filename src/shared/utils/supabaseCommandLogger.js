@@ -12,16 +12,16 @@ let supabase = null;
 // Initialiser le client Supabase
 function initSupabase() {
     if (!supabaseUrl || !supabaseKey) {
-        logger.warn('Supabase credentials not configured. Command logging will be disabled.');
+        logger.warn('⚠️ Supabase credentials not configured. Command logging will be disabled.');
         return null;
     }
 
     try {
         supabase = createClient(supabaseUrl, supabaseKey);
-        logger.info('Supabase client initialized for command logging');
+        logger.info('✅ Supabase client initialized for command logging');
         return supabase;
     } catch (error) {
-        logger.error('Failed to initialize Supabase client:', error);
+        logger.error('❌ Failed to initialize Supabase client:', error);
         return null;
     }
 }
@@ -45,18 +45,19 @@ async function logCommand(commandName, userId, guildId = null) {
     }
 
     try {
+        // ✅ CORRECTION : Utiliser les noms avec tirets comme dans ta table
         const { data, error } = await supabase
             .from('command_log')
             .insert([
                 {
-                    user_id: userId,
-                    command_name: commandName,
-                    guild_id: guildId
+                    'user-id': userId,        // ← Avec tiret
+                    'command_name': commandName,
+                    'guild-id': guildId       // ← Avec tiret
                 }
             ]);
 
         if (error) {
-            logger.error('Error logging command to Supabase:', {
+            logger.error('❌ Error logging command to Supabase:', {
                 error: error.message,
                 commandName,
                 userId,
@@ -65,7 +66,7 @@ async function logCommand(commandName, userId, guildId = null) {
             return false;
         }
 
-        logger.debug('Command logged to Supabase:', {
+        logger.info('✅ Command logged to Supabase:', {
             commandName,
             userId,
             guildId
@@ -74,7 +75,7 @@ async function logCommand(commandName, userId, guildId = null) {
         return true;
 
     } catch (error) {
-        logger.error('Exception while logging command to Supabase:', {
+        logger.error('❌ Exception while logging command to Supabase:', {
             error: error.message,
             commandName,
             userId,
@@ -104,7 +105,7 @@ async function getCommandStats(days = 30) {
 
         const { data, error } = await supabase
             .from('command_log')
-            .select('command_name, created_at')
+            .select('command_name, created_at, "user-id"')  // ✅ Avec tiret
             .gte('created_at', dateFrom.toISOString());
 
         if (error) {
@@ -117,7 +118,8 @@ async function getCommandStats(days = 30) {
             total: data.length,
             byCommand: {},
             today: 0,
-            thisWeek: 0
+            thisWeek: 0,
+            uniqueUsers: []
         };
 
         const today = new Date();
@@ -132,6 +134,11 @@ async function getCommandStats(days = 30) {
                 stats.byCommand[log.command_name] = 0;
             }
             stats.byCommand[log.command_name]++;
+
+            // Utilisateurs uniques
+            if (log['user-id'] && !stats.uniqueUsers.includes(log['user-id'])) {
+                stats.uniqueUsers.push(log['user-id']);
+            }
 
             // Aujourd'hui
             const logDate = new Date(log.created_at);
@@ -179,7 +186,7 @@ async function getUniqueUsers(days = 30) {
 
         const { data, error } = await supabase
             .from('command_log')
-            .select('user_id')
+            .select('"user-id"')  // ✅ Avec tiret
             .gte('created_at', dateFrom.toISOString());
 
         if (error) {
@@ -187,7 +194,7 @@ async function getUniqueUsers(days = 30) {
             return 0;
         }
 
-        const uniqueUsers = new Set(data.map(log => log.user_id));
+        const uniqueUsers = new Set(data.map(log => log['user-id']));
         return uniqueUsers.size;
 
     } catch (error) {
