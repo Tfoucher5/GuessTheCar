@@ -13,14 +13,16 @@ Permettre aux utilisateurs de Discord de tester leurs connaissances automobiles 
 ## 🕹️ Fonctionnement global
 
 - Les joueurs lancent une partie avec la commande `/guesscar`.
-- Le bot affiche une voiture à deviner (texte ou image selon le mode).
+- Le bot affiche le pays et le joueur doit deviner marque, puis modèle.
 - Les joueurs répondent directement dans le salon.
-- Le bot valide la réponse, attribue des points, et passe à la voiture suivante.
+- Le bot valide la réponse, donne des indices et attribue des points.
 - Les joueurs peuvent consulter :
   - Leur **classement** (`/classement`)
   - Leurs **statistiques** (`/stats`)
+  - Leurs **collection** (`/collection`)
+  - L'**aide** (`/aide`)
   - Abandonner une partie (`/abandon`)
-- Un système de **classement dynamique** permet de suivre les meilleurs joueurs.
+- Un système de **classement dynamique** permet de suivre les meilleurs joueurs sur différents critères.
 
 ---
 
@@ -32,8 +34,8 @@ Ce projet est un **développement personnel**. Le code source n’est pas public
 
 ## 📬 Comment y accéder ?
 
-Le bot est accessible sur Discord via une invitation (non listée publiquement). Si tu veux l’ajouter à ton serveur pour y jouer, contacte directement le développeur.
-
+Le bot est accessible sur Discord via une invitation 
+```https://discord.com/api/oauth2/authorize?client_id=1340380522655907852&permissions=8&scope=bot%20applications.commands```
 ---
 
 ## 👨‍💻 Développeur
