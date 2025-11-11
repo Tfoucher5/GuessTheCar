@@ -1,4 +1,4 @@
-// src/shared/utils/supabaseCommandLogger.js
+// src/shared/database/logging/supabaseCommandLogger.js
 
 const { createClient } = require('@supabase/supabase-js');
 const logger = require('./logger');

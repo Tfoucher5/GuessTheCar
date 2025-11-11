@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { Collection } = require('discord.js');
 const logger = require('../../shared/utils/logger');
-const supabaseCommandLogger = require('../../shared/utils/supabaseCommandLogger');
+const supabaseCommandLogger = require('../../shared/database/logging/supabaseCommandLogger');
 
 class CommandHandler {
     constructor(client) {

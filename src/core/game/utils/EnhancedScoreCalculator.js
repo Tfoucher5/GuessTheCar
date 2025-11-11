@@ -1,4 +1,4 @@
-// src/shared/utils/EnhancedScoreCalculator.js - Version sans difficultyPoints
+// src/core/game/utils/EnhancedScoreCalculator.js - Version sans difficultyPoints
 
 class EnhancedScoreCalculator {
     constructor() {

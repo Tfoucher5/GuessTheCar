@@ -1,6 +1,6 @@
 const { Events } = require('discord.js');
 const GameEngine = require('../../core/game/GameEngine');
-const EmbedBuilder = require('../../shared/utils/embedBuilder');
+const EmbedBuilder = require('../../bot/utils/embedBuilder');
 const logger = require('../../shared/utils/logger');
 
 // Instance globale du moteur de jeu
