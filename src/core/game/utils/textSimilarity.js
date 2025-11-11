@@ -1,4 +1,4 @@
-const gameConfig = require('../config/game');
+const gameConfig = require('../../shared/config/game');
 
 /**
  * Calcule la distance de Levenshtein entre deux chaînes

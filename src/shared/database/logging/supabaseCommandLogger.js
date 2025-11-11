@@ -1,7 +1,7 @@
 // src/shared/database/logging/supabaseCommandLogger.js
 
 const { createClient } = require('@supabase/supabase-js');
-const logger = require('./logger');
+const logger = require('../../utils/logger');
 
 // Configuration Supabase
 const supabaseUrl = process.env.SUPABASE_URL;
