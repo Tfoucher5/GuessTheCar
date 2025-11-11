@@ -150,7 +150,8 @@ module.exports = {
                 });
             }
 
-            const collectionStats = await playerManager.getPlayerCollection(userId, guildId);
+            // Collection inter-serveur : pas de guildId
+            const collectionStats = await playerManager.getPlayerCollection(userId, null);
 
             if (collectionStats && collectionStats.carsFound > 0) {
                 const completionPercentage = Math.round((collectionStats.carsFound / collectionStats.totalCars) * 100 * 10) / 10;

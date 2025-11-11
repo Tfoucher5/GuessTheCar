@@ -280,8 +280,9 @@ function formatPlayerStats(player, type) {
         return `${points} pts • ${player.gamesWon || 0}/${player.gamesPlayed || 0} • ${winRate}%`;
 
     case 'monthly':
-        // Pour le mensuel, on afficherait les stats du mois
-        return `${points} pts ce mois • ${player.gamesWon || 0} victoires`;
+        // Pour le mensuel, on affiche les stats du mois
+        const monthlyPoints = Math.round((player.monthlyPoints || 0) * 10) / 10;
+        return `${monthlyPoints} pts ce mois • ${player.monthlyWins || 0} victoires`;
 
     case 'speed':
     { const avgTime = player.averageTime && player.averageTime > 0 ?

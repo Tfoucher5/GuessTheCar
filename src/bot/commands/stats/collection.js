@@ -23,15 +23,14 @@ module.exports = {
         try {
             await interaction.deferReply();
 
-            const guildId = interaction.guild?.id;
-
-            const leaderboard = await playerManager.getCollectionLeaderboard(10, guildId);
-            const userStats = await playerManager.getPlayerCollection(interaction.user.id, guildId);
+            // Collection inter-serveur : pas de guildId
+            const leaderboard = await playerManager.getCollectionLeaderboard(10, null);
+            const userStats = await playerManager.getPlayerCollection(interaction.user.id, null);
             const completionPercentage = Math.round((userStats.carsFound / userStats.totalCars) * 100 * 10) / 10;
 
             const collectionEmbed = new EmbedBuilder()
                 .setColor('#FF6B35')
-                .setTitle(`🏁 Classement des collections de ${interaction.guild?.name}`)
+                .setTitle(`🏁 Classement des collections`)
                 .setDescription('**Qui a découvert le plus de voitures ?**\n');
 
             if (leaderboard.length === 0) {

@@ -92,7 +92,7 @@ class LevelSystem {
             return 100;
         }
 
-        const levelRange = level.maxPoints - level.minPoints + 1;
+        const levelRange = level.maxPoints - level.minPoints;
         const pointsInLevel = points - level.minPoints;
         return Math.min(100, Math.max(0, (pointsInLevel / levelRange) * 100));
     }
