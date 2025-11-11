@@ -7,7 +7,6 @@ const { validatePlayerGuess } = require('../../shared/utils/validation');
 const gameConfig = require('../../shared/config/game');
 const logger = require('../../shared/utils/logger');
 const { GameError } = require('../../shared/errors');
-const statsHelper = require('../../shared/utils/StatsHelper');
 
 class GameEngine extends EventEmitter {
     constructor() {
@@ -15,14 +14,6 @@ class GameEngine extends EventEmitter {
         this.carService = new CarService();
         this.playerManager = new PlayerManager();
         this.activeGames = new Map();
-    }
-
-    async logGameAction(action, gameState) {
-        try {
-            await statsHelper.logGame(action, gameState.threadId, gameState.userId);
-        } catch (err) {
-            logger.error('Failed to log game action to API', { action, err });
-        }
     }
 
     /**
@@ -257,7 +248,6 @@ class GameEngine extends EventEmitter {
             }
         );
 
-        await this.logGameAction('complete', gameState);
         this.cleanupGame(gameState.threadId);
 
         return {
@@ -340,7 +330,6 @@ class GameEngine extends EventEmitter {
                 }
             );
 
-            await this.logGameAction('complete', gameState);
             this.cleanupGame(gameState.threadId);
 
             return {
@@ -377,7 +366,6 @@ class GameEngine extends EventEmitter {
                 }
             );
 
-            await this.logGameAction('abandon', gameState);
             this.cleanupGame(gameState.threadId);
 
             return {
@@ -526,7 +514,6 @@ class GameEngine extends EventEmitter {
                 );
             }
 
-            await this.logGameAction('abandon', gameState);
             this.cleanupGame(threadId);
 
             return {
@@ -606,7 +593,6 @@ class GameEngine extends EventEmitter {
                 );
             }
 
-            await this.logGameAction('timeout', gameState);
             this.cleanupGame(threadId);
 
             this.emit('gameTimeout', {

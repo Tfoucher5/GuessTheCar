@@ -88,7 +88,6 @@ app.use((req, res, next) => {
 // Routes API publiques uniquement
 app.use('/api/bot', require('./routes/bot'));
 app.use('/api/health', require('./routes/health'));
-app.use('/api/stats', require('./routes/stats'));
 app.use('/api/cars', require('./routes/cars'));
 app.use('/api/leaderboard', require('./routes/leaderboard'));
 
@@ -111,7 +110,6 @@ app.get('/api', (req, res) => {
         timestamp: new Date().toISOString(),
         endpoints: {
             health: '/api/health',
-            stats: '/api/stats',
             cars: '/api/cars',
             leaderboard: '/api/leaderboard',
             documentation: '/api/docs'
@@ -129,11 +127,6 @@ app.get('/api/docs', (req, res) => {
                 path: '/api/health',
                 methods: ['GET'],
                 description: 'Vérification de l\'état du serveur'
-            },
-            stats: {
-                path: '/api/stats',
-                methods: ['GET'],
-                description: 'Statistiques publiques'
             },
             cars: {
                 path: '/api/cars',

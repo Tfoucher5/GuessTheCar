@@ -2,7 +2,6 @@ const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const PlayerManager = require('../../../core/player/PlayerManager');
 const LevelSystem = require('../../../core/levels/LevelSystem');
 const logger = require('../../../shared/utils/logger');
-const statsHelper = require('../../../shared/utils/StatsHelper');
 const playerManager = new PlayerManager();
 
 module.exports = {
@@ -173,7 +172,6 @@ module.exports = {
 
             await interaction.editReply({ embeds: [statsEmbed] });
 
-            statsHelper.logCommand('stats', interaction.user.id);
 
         } catch (error) {
             logger.error('Error in stats command:', { userId: interaction.user.id,guildId: interaction.guild?.id, error });

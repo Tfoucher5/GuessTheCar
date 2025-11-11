@@ -2,7 +2,6 @@ const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { gameEngine } = require('../../events/messageCreate');
 const EmbedBuilder = require('../../../shared/utils/embedBuilder');
 const logger = require('../../../shared/utils/logger');
-const statsHelper = require('../../../shared/utils/StatsHelper');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('abandon')
@@ -82,8 +81,6 @@ module.exports = {
                 correctAnswer: result.correctAnswer
             });
 
-            statsHelper.logCommand('abandon', interaction.user.id);
-            statsHelper.logGame('abandon', threadId, interaction.user.id);
 
         } catch (error) {
             logger.error('Error in abandon command:', {

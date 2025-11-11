@@ -4,7 +4,6 @@ const { SlashCommandBuilder, ChannelType, MessageFlags } = require('discord.js')
 const { gameEngine } = require('../../events/messageCreate');
 const EmbedBuilder = require('../../../shared/utils/embedBuilder');
 const logger = require('../../../shared/utils/logger');
-const statsHelper = require('../../../shared/utils/StatsHelper');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -68,7 +67,6 @@ module.exports = {
                 username: interaction.user.username
             });
 
-            statsHelper.logCommand('guesscar', interaction.user.id);
 
         } catch (error) {
             logger.error('Error in guesscar command:', {

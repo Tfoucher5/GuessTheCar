@@ -1,7 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const PlayerManager = require('../../../core/player/PlayerManager');
 const logger = require('../../../shared/utils/logger');
-const statsHelper = require('../../../shared/utils/StatsHelper');
 const playerManager = new PlayerManager();
 
 /**
@@ -82,7 +81,6 @@ module.exports = {
 
             await interaction.editReply({ embeds: [collectionEmbed] });
 
-            statsHelper.logCommand('collection', interaction.user.id);
 
         } catch (error) {
             logger.error('Error in collection command:', { guildId: interaction.guild?.id, error });

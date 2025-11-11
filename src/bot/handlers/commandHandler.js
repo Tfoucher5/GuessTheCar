@@ -4,7 +4,6 @@ const fs = require('fs');
 const path = require('path');
 const { Collection } = require('discord.js');
 const logger = require('../../shared/utils/logger');
-const statsHelper = require('../../shared/utils/StatsHelper');
 const supabaseCommandLogger = require('../../shared/utils/supabaseCommandLogger');
 
 class CommandHandler {
@@ -55,7 +54,7 @@ class CommandHandler {
         }
 
         try {
-            // Logger la commande dans Supabase ET dans l'API Node.js
+            // Logger la commande dans Supabase
             const commandName = interaction.commandName;
             const userId = interaction.user.id;
             const username = interaction.user.username;
@@ -65,17 +64,6 @@ class CommandHandler {
             // Logger dans Supabase (async, on n'attend pas)
             supabaseCommandLogger.logCommand(commandName, userId, guildId).catch(err => {
                 logger.error('Failed to log command to Supabase:', err);
-            });
-
-            // Logger dans l'API Node.js existante (pour compatibilité)
-            statsHelper.logCommand(
-                commandName,
-                userId,
-                username,
-                guildId,
-                guildName
-            ).catch(err => {
-                logger.error('Failed to log command to Node.js API:', err);
             });
 
             logger.info(`Command executed: ${commandName} by ${username} (${userId}) in ${guildName}`);
@@ -108,15 +96,6 @@ class CommandHandler {
             } catch (followUpError) {
                 logger.error('Failed to send error message to user:', followUpError);
             }
-
-            // Logger l'erreur dans l'API
-            statsHelper.logError(error, {
-                command: interaction.commandName,
-                user: interaction.user.id,
-                guild: interaction.guild?.id
-            }).catch(err => {
-                logger.error('Failed to log error to API:', err);
-            });
         }
     }
 

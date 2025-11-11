@@ -2,7 +2,6 @@ const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, Butt
 const PlayerManager = require('../../../core/player/PlayerManager');
 const LevelSystem = require('../../../core/levels/LevelSystem');
 const logger = require('../../../shared/utils/logger');
-const statsHelper = require('../../../shared/utils/StatsHelper');
 const playerManager = new PlayerManager();
 
 // Types de classements disponibles
@@ -93,7 +92,6 @@ module.exports = {
 
             await interaction.editReply({ embeds: [embed], components });
 
-            statsHelper.logCommand('classement', interaction.user.id);
 
             // Créer un collector pour gérer les boutons de navigation
             const collector = interaction.channel.createMessageComponentCollector({

@@ -1,8 +1,5 @@
 require('dotenv').config();
 const logger = require('./shared/utils/logger');
-const statsHelper = require('./shared/utils/StatsHelper');
-global.statsReporter = statsHelper;
-console.log('📊 Stats reporting system initialized');
 
 let gameEngineInstance = null;
 let discordClient = null;
@@ -41,9 +38,6 @@ async function startApplication() {
 
         // === NOUVEAU : Récupérer l'instance du GameEngine après le démarrage du bot ===
         await waitForGameEngine();
-
-        // === NOUVEAU : Démarrer la synchronisation automatique ===
-        startStatsSync();
 
         // === NOUVEAU : Gérer l'arrêt propre ===
         setupGracefulShutdown();
@@ -123,81 +117,6 @@ function getGameEngineInstance() {
     }
 }
 
-/**
- * Démarre la synchronisation automatique des stats
- */
-function startStatsSync() {
-    // Synchronisation toutes les 5 minutes
-    const SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes
-
-    const statsInterval = setInterval(async() => {
-        try {
-            await syncGameEngineStats();
-        } catch (error) {
-            logger.error('Error in stats sync:', error.message);
-        }
-    }, SYNC_INTERVAL);
-
-    // Stocker l'interval pour pouvoir l'arrêter
-    global.statsInterval = statsInterval;
-
-    logger.info('📊 Stats synchronization started (every 5 minutes)');
-
-    // Première sync après 30 secondes
-    setTimeout(async() => {
-        try {
-            await syncGameEngineStats();
-        } catch (error) {
-            logger.error('Error in initial stats sync:', error.message);
-        }
-    }, 30000);
-}
-
-/**
- * Synchronise les stats du GameEngine avec l'API
- */
-async function syncGameEngineStats() {
-    try {
-        const gameEngine = getGameEngineInstance();
-
-        if (!gameEngine) {
-            logger.debug('GameEngine not available for stats sync');
-            return;
-        }
-
-        // Obtenir les stats du GameEngine
-        const engineStats = gameEngine.getEngineStats();
-        const activeGames = gameEngine.getAllActiveGames();
-
-        // Obtenir les stats actuelles de l'API
-        const apiStats = await statsHelper.getStats();
-
-        if (apiStats) {
-            const apiActiveCount = apiStats.games?.active || 0;
-            const engineActiveCount = activeGames.length;
-
-            // Logger les stats périodiquement
-            logger.debug('Stats sync completed:', {
-                activeGames: engineActiveCount,
-                apiActiveGames: apiActiveCount,
-                averageAttempts: Math.round(engineStats.averageAttempts * 10) / 10,
-                averageTimeSpent: Math.round(engineStats.averageTimeSpent / 1000) + 's'
-            });
-
-            // Si les comptes ne correspondent pas trop, logger un warning
-            if (Math.abs(apiActiveCount - engineActiveCount) > 2) {
-                logger.warn('Active games count mismatch:', {
-                    api: apiActiveCount,
-                    engine: engineActiveCount,
-                    difference: Math.abs(apiActiveCount - engineActiveCount)
-                });
-            }
-        }
-
-    } catch (error) {
-        logger.error('Error syncing GameEngine stats:', error.message);
-    }
-}
 
 /**
  * Gestion de l'arrêt propre de l'application
@@ -207,13 +126,7 @@ function setupGracefulShutdown() {
         logger.info(`📴 Received ${signal}, shutting down gracefully...`);
 
         try {
-            // Arrêter la synchronisation des stats
-            if (global.statsInterval) {
-                clearInterval(global.statsInterval);
-                logger.info('📊 Stats synchronization stopped');
-            }
-
-            // Envoyer les dernières stats avant l'arrêt
+            // Logger les stats finales avant l'arrêt
             const gameEngine = getGameEngineInstance();
             if (gameEngine) {
                 const activeGames = gameEngine.getAllActiveGames();
@@ -221,20 +134,6 @@ function setupGracefulShutdown() {
                     activeGames: activeGames.length,
                     uptime: Math.round(process.uptime() / 60) + ' minutes'
                 });
-
-                // Marquer toutes les parties actives comme abandonnées
-                for (const { threadId } of activeGames) {
-                    try {
-                        await statsHelper.logGame('abandon', threadId);
-                    // eslint-disable-next-line no-unused-vars
-                    } catch (error) {
-                        // Ignore les erreurs de cleanup
-                    }
-                }
-
-                if (activeGames.length > 0) {
-                    logger.info(`🧹 ${activeGames.length} active games marked as abandoned`);
-                }
             }
 
             // Arrêter le client Discord
