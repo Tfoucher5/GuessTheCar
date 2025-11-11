@@ -200,7 +200,7 @@ async function createLeaderboardDisplay(type, limit, guildId, interaction) {
     }
 
     // Créer l'embed
-    const embed = createLeaderboardEmbed(leaderboard, leaderboardType, interaction.guild?.name, limit);
+    const embed = await createLeaderboardEmbed(leaderboard, leaderboardType, interaction.guild?.name, limit);
 
     // Ajouter la position du demandeur si pas dans le top
     await addRequesterPosition(embed, leaderboard, interaction, type, guildId);
@@ -214,7 +214,7 @@ async function createLeaderboardDisplay(type, limit, guildId, interaction) {
 /**
  * Crée l'embed du classement
  */
-function createLeaderboardEmbed(leaderboard, leaderboardType, guildName, limit) {
+async function createLeaderboardEmbed(leaderboard, leaderboardType, guildName, limit) {
     const embed = new EmbedBuilder()
         .setColor('#FFD700')
         .setTitle(`${leaderboardType.emoji} ${leaderboardType.name} - ${guildName}`)

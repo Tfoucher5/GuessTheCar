@@ -4,7 +4,7 @@
  */
 
 const logger = require('../../shared/utils/logger');
-const supabase = require('../../shared/database/connection');
+const { supabase } = require('../../shared/database/connection');
 
 class LevelSystem {
     constructor() {
