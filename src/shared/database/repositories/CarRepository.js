@@ -52,61 +52,63 @@ class CarRepository extends BaseRepository {
      */
     async getRandomCar() {
         // Utiliser une sélection pondérée basée sur spawn_weight
-        // Approche : calculer le poids total, générer un nombre aléatoire, et sélectionner la voiture correspondante
+        // La fonction RPC retourne seulement l'ID, puis on fait le join côté JS
 
         for (let i = 0; i < 5; i++) { // On essaie jusqu'à 5 fois
-            const { data, error } = await supabase.rpc('get_random_car_weighted');
+            try {
+                // Appeler la fonction RPC qui retourne un ID
+                const { data: carId, error } = await supabase.rpc('get_random_car_weighted');
 
-            if (error) {
-                console.warn(`[Attempt ${i + 1}] Failed to fetch weighted random car. Error:`, error.message);
+                if (error) {
+                    console.warn(`[Attempt ${i + 1}] RPC failed:`, error.message);
 
-                // Fallback : sélection simple si la fonction RPC n'existe pas encore
-                const { data: fallbackData, error: fallbackError } = await supabase
-                    .from('models')
-                    .select(`
-                        id, name, year, difficulty_level, image_url, brand_id, rarity, base_points, spawn_weight,
-                        brands (id, name, country)
-                    `)
-                    .not('rarity', 'is', null)
-                    .not('spawn_weight', 'is', null)
-                    .order('random()')
-                    .limit(1)
-                    .single();
+                    // Fallback : sélection simple aléatoire sans pondération
+                    const { data: fallbackData, error: fallbackError } = await supabase
+                        .from('models')
+                        .select(`
+                            id, name, year, difficulty_level, image_url, brand_id, rarity, base_points, spawn_weight,
+                            brands!inner (id, name, country)
+                        `)
+                        .not('rarity', 'is', null)
+                        .not('spawn_weight', 'is', null)
+                        .order('random()')
+                        .limit(1)
+                        .single();
 
-                if (fallbackData && fallbackData.brands) {
-                    return Car.fromDatabase({
-                        id: fallbackData.id,
-                        model: fallbackData.name,
-                        modelDate: fallbackData.year,
-                        difficulty: fallbackData.difficulty_level,
-                        imageUrl: fallbackData.image_url,
-                        brandId: fallbackData.brands.id,
-                        brand: fallbackData.brands.name,
-                        country: fallbackData.brands.country,
-                        rarity: fallbackData.rarity,
-                        base_points: fallbackData.base_points,
-                        spawn_weight: fallbackData.spawn_weight
-                    });
+                    if (fallbackError) {
+                        console.warn(`[Attempt ${i + 1}] Fallback also failed:`, fallbackError.message);
+                        continue;
+                    }
+
+                    if (fallbackData) {
+                        return Car.fromDatabase({
+                            id: fallbackData.id,
+                            model: fallbackData.name,
+                            modelDate: fallbackData.year,
+                            difficulty: fallbackData.difficulty_level,
+                            imageUrl: fallbackData.image_url,
+                            brandId: fallbackData.brands.id,
+                            brand: fallbackData.brands.name,
+                            country: fallbackData.brands.country,
+                            rarity: fallbackData.rarity,
+                            base_points: fallbackData.base_points,
+                            spawn_weight: fallbackData.spawn_weight
+                        });
+                    }
+                    continue;
                 }
 
-                continue;
-            }
+                // Si on a un ID valide, récupérer la voiture complète avec le brand
+                if (carId) {
+                    const car = await this.getCarById(carId);
+                    if (car) {
+                        return car;
+                    }
+                }
 
-            // Si on a une voiture valide de la fonction RPC
-            if (data && data.brand_name) {
-                return Car.fromDatabase({
-                    id: data.id,
-                    model: data.name,
-                    modelDate: data.year,
-                    difficulty: data.difficulty_level || 1,
-                    imageUrl: data.image_url,
-                    brandId: data.brand_id,
-                    brand: data.brand_name,
-                    country: data.country,
-                    rarity: data.rarity,
-                    base_points: data.base_points,
-                    spawn_weight: data.spawn_weight
-                });
+            } catch (err) {
+                console.error(`[Attempt ${i + 1}] Exception:`, err);
+                continue;
             }
         }
 
