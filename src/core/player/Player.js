@@ -18,6 +18,10 @@ class Player {
         this.averageResponseTime = parseFloat(data.average_response_time || data.averageResponseTime || 0);
         this.createdAt = data.created_at || data.createdAt || null;
         this.updatedAt = data.updated_at || data.updatedAt || null;
+
+        // Système de prestige
+        this.prestigeLevel = parseInt(data.prestige_level || data.prestigeLevel || 0);
+        this.prestigePoints = parseFloat(data.prestige_points || data.prestigePoints || 0);
     }
 
     /**
@@ -94,6 +98,8 @@ class Player {
             current_streak: this.currentStreak,
             best_time: this.bestTime,
             average_response_time: this.averageResponseTime,
+            prestige_level: this.prestigeLevel,
+            prestige_points: this.prestigePoints,
             created_at: this.createdAt,
             updated_at: this.updatedAt
         };
@@ -108,6 +114,8 @@ class Player {
             userId: this.userId,
             username: this.username,
             totalPoints: this.totalPoints,
+            prestigeLevel: this.prestigeLevel,
+            prestigePoints: this.prestigePoints,
             gamesPlayed: this.gamesPlayed,
             gamesWon: this.gamesWon,
             winRate: this.winRate,

@@ -1,10 +1,12 @@
 /**
  * Système de niveaux automobile - Basé sur la base de données
  * Les niveaux sont chargés depuis la table `levels` de Supabase
+ * Supporte le système de prestige pour progression difficile
  */
 
 const logger = require('../../shared/utils/logger');
 const { supabase } = require('../../shared/database/connection');
+const prestigeSystem = require('../prestige/PrestigeSystem');
 
 class LevelSystem {
     constructor() {
@@ -59,6 +61,7 @@ class LevelSystem {
 
     /**
      * Obtient le niveau d'un joueur basé sur ses points totaux
+     * @deprecated Utiliser getPlayerLevelWithPrestige pour supporter le prestige
      */
     async getPlayerLevel(totalPoints) {
         const levels = await this.loadLevels();
@@ -84,6 +87,69 @@ class LevelSystem {
             ...levels[0],
             progress: this.calculateProgress(totalPoints, levels[0], false),
             nextLevel
+        };
+    }
+
+    /**
+     * Obtient le niveau d'un joueur avec support du prestige
+     * @param {number} prestigePoints - Points dans le prestige actuel
+     * @param {number} prestigeLevel - Niveau de prestige (0-10)
+     */
+    async getPlayerLevelWithPrestige(prestigePoints, prestigeLevel = 0) {
+        const levels = await this.loadLevels();
+        const multiplier = await prestigeSystem.getPrestigeMultiplier(prestigeLevel);
+
+        // Appliquer le multiplicateur de prestige aux seuils de niveau
+        const adjustedLevels = levels.map(level => ({
+            ...level,
+            adjustedMinPoints: Math.floor(level.minPoints * multiplier),
+            adjustedMaxPoints: Math.floor(level.maxPoints * multiplier)
+        }));
+
+        // Trouve le niveau correspondant aux points avec prestige
+        for (let i = adjustedLevels.length - 1; i >= 0; i--) {
+            if (prestigePoints >= adjustedLevels[i].adjustedMinPoints) {
+                const level = adjustedLevels[i];
+                const nextLevel = i < adjustedLevels.length - 1 ? adjustedLevels[i + 1] : null;
+                const isMaxLevel = !nextLevel || level.adjustedMaxPoints >= 9999999999;
+
+                return {
+                    ...level,
+                    minPoints: level.adjustedMinPoints,
+                    maxPoints: level.adjustedMaxPoints,
+                    progress: this.calculateProgress(prestigePoints, {
+                        minPoints: level.adjustedMinPoints,
+                        maxPoints: level.adjustedMaxPoints
+                    }, isMaxLevel),
+                    nextLevel: nextLevel ? {
+                        ...nextLevel,
+                        minPoints: nextLevel.adjustedMinPoints,
+                        maxPoints: nextLevel.adjustedMaxPoints
+                    } : null,
+                    prestigeLevel,
+                    multiplier
+                };
+            }
+        }
+
+        // Par défaut, retourne le premier niveau
+        const nextLevel = adjustedLevels.length > 1 ? adjustedLevels[1] : null;
+        const firstLevel = adjustedLevels[0];
+        return {
+            ...firstLevel,
+            minPoints: firstLevel.adjustedMinPoints,
+            maxPoints: firstLevel.adjustedMaxPoints,
+            progress: this.calculateProgress(prestigePoints, {
+                minPoints: firstLevel.adjustedMinPoints,
+                maxPoints: firstLevel.adjustedMaxPoints
+            }, false),
+            nextLevel: nextLevel ? {
+                ...nextLevel,
+                minPoints: nextLevel.adjustedMinPoints,
+                maxPoints: nextLevel.adjustedMaxPoints
+            } : null,
+            prestigeLevel,
+            multiplier
         };
     }
 
