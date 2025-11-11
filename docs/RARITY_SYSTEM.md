@@ -2,12 +2,16 @@
 
 ## Vue d'ensemble
 
-Le système de rareté classe les voitures en 5 catégories basées sur leur présence **INDIVIDUELLE** en France. Chaque rareté a :
-- **Points de base** différents
+Le système de rareté classe **TOUS LES 753 MODÈLES** en 5 catégories basées sur leur présence **INDIVIDUELLE** en France. Chaque rareté a :
+- **Points de base** différents (remplace l'ancien système difficulty_level)
 - **Probabilité d'apparition** (spawn rate)
 - **Poids de spawn** pour le random weighted
 
-⚠️ **Important** : La rareté est assignée **modèle par modèle**, pas par marque. Une même marque peut avoir des modèles de différentes raretés.
+⚠️ **Important** :
+- La rareté est assignée **modèle par modèle**, pas par marque. Une même marque peut avoir des modèles de différentes raretés.
+- **Tous les 753 modèles sont conservés**, y compris les variantes (e-208, Plaid, etc.). Chaque variante a sa propre rareté.
+- Le système de **points utilise maintenant la rareté** au lieu du difficulty_level.
+- Les variantes électriques (e-208) ou performance (Plaid) ont généralement des raretés différentes de leur modèle de base.
 
 ## Niveaux de Rareté
 
@@ -72,23 +76,27 @@ Supercars et hypercars - véhicules d'exception extrêmement rares.
 - **Koenigsegg** : Jesko, Regera
 - **Ultra-luxury :** Rolls-Royce (tous), Bentley (tous)
 
-## Modèles Supprimés
+## Traitement des Variantes
 
-Seuls les **modèles de base** sont conservés. Toutes les variantes ont été supprimées :
+**Tous les 753 modèles sont conservés**, y compris les variantes. Chaque variante reçoit sa propre rareté :
 
-### Variantes supprimées :
-- **Variantes électriques :** e-208, e-2008, EQC, EQE, EQfortwo, etc.
-- **Variantes performance :** Model S Plaid, Model X Plaid, Model 3 Performance, Hellcat, Demon
-- **Trim levels :** Turbo S, GT3 RS, GT2 RS, Carrera 4S, Carrera S, STO, Tecnica, Performante, SVJ
-- **Éditions spéciales :** JCW, Brabus, Dream Edition, Sapphire, Grand Touring, Competition, M Competition
-- **Concepts cars :** Concept One, Concept Two, et tous les concepts
+### Variantes électriques (Peu commune / Rare) :
+- e-208, e-2008 : **🔵 Peu commune** (moins courants que les modèles essence)
+- Tesla Model S/X Plaid, Model 3 Performance : **🟠 Épique** (versions haute performance rares)
+- EQC, EQE, EQfortwo : **🟣 Rare** (électriques Mercedes/Smart rares en France)
 
-### Exemples de suppressions :
-- ✅ **Garde :** 208 | ❌ **Supprime :** e-208 (variante électrique)
-- ✅ **Garde :** Model S | ❌ **Supprime :** Model S Plaid (variante performance)
-- ✅ **Garde :** 911 | ❌ **Supprime :** 911 Turbo S, 911 GT3 RS (trim levels)
-- ✅ **Garde :** Huracán | ❌ **Supprime :** Huracán STO, Huracán Tecnica (variantes)
-- ✅ **Garde :** Challenger | ❌ **Supprime :** Challenger Hellcat, Demon (variantes performance)
+### Variantes performance (Épique) :
+- Model S Plaid, Model X Plaid : **🟠 Épique** (sportives électriques rares)
+- Challenger Hellcat, Demon : **🟠 Épique** (muscle cars extrêmes très rares en France)
+- Porsche Turbo S, GT3 RS, GT2 RS : **🟠 Épique** (sportives haute performance)
+- Lamborghini STO, Tecnica, Performante, SVJ : **🔴 Légendaire** (supercars ultra-rares)
+
+### Exemples de différences de rareté :
+- 208 : **🟢 Commune** | e-208 : **🔵 Peu commune** (électrique moins courant)
+- Model S : **🟣 Rare** | Model S Plaid : **🟠 Épique** (version performance)
+- 911 : **🟣 Rare** | 911 Turbo S : **🟠 Épique** (version sportive)
+- Huracán : **🔴 Légendaire** | Huracán STO : **🔴 Légendaire** (tous légendaires)
+- Challenger : **🟣 Rare** | Challenger Hellcat : **🟠 Épique** (performance)
 
 ## Intégration dans le Code
 
@@ -249,14 +257,16 @@ Pour appliquer le système de rareté à ta base de données :
 
 ```bash
 # Se connecter à Supabase et exécuter le script
-psql -h your-project.supabase.co -U postgres -d postgres -f scripts/database/update-car-rarity-system-individual.sql
+psql -h your-project.supabase.co -U postgres -d postgres -f scripts/database/update-car-rarity-system-v2.sql
 ```
 
 Ou via l'interface Supabase :
 1. Va dans l'éditeur SQL de Supabase
-2. Copie-colle le contenu de `scripts/database/update-car-rarity-system-individual.sql`
+2. Copie-colle le contenu de `scripts/database/update-car-rarity-system-v2.sql`
 3. Exécute le script (cela va prendre quelques secondes)
 4. Vérifie les statistiques avec les requêtes de vérification ci-dessous
+
+⚠️ **Important** : Le script crée aussi la fonction PostgreSQL `get_random_car_weighted()` pour la sélection aléatoire pondérée.
 
 ## Vérification
 
