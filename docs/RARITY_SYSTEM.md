@@ -15,13 +15,15 @@ Le système de rareté classe **TOUS LES 753 MODÈLES** en 5 catégories basées
 
 ## Niveaux de Rareté
 
-| Rareté | Emoji | Probabilité | Points | Spawn Weight | Exemples |
-|--------|-------|-------------|--------|--------------|----------|
-| **Commune** | 🟢 | 45% | 10 | 450 | Clio, 208, Corolla, Golf, Polo |
-| **Peu commune** | 🔵 | 30% | 25 | 300 | 3008, RAV4, Model 3, Classe E |
-| **Rare** | 🟣 | 18% | 50 | 180 | Supra, F-150, Model S, Cayenne |
-| **Épique** | 🟠 | 6% | 100 | 60 | M5, R8, Corvette, AMG GT, NSX |
-| **Légendaire** | 🔴 | 1% | 200 | 10 | Ferrari, Lamborghini, Bugatti, McLaren |
+| Rareté | Emoji | Probabilité | Points Base | Spawn Weight | Exemples |
+|--------|-------|-------------|-------------|--------------|----------|
+| **Commune** | 🟢 | 45% | **100** | 450 | Clio, 208, Corolla, Golf, Polo |
+| **Peu commune** | 🔵 | 30% | **250** | 300 | 3008, RAV4, Model 3, Classe E |
+| **Rare** | 🟣 | 18% | **500** | 180 | Supra, F-150, Model S, Cayenne |
+| **Épique** | 🟠 | 6% | **1,000** | 60 | M5, R8, Corvette, AMG GT, NSX |
+| **Légendaire** | 🔴 | 1% | **2,000** | 10 | Ferrari, Lamborghini, Bugatti, McLaren |
+
+⚠️ **Équilibrage ×10** : Les points ont été multipliés par 10 pour une progression équilibrée (Prestige 0 en ~1 mois au lieu de 11 mois).
 
 ## Distribution des Voitures
 

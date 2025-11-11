@@ -10,12 +10,12 @@ class EnhancedScoreCalculator {
             NORMAL: 90      // 🎯 Normal (60s-90s) - au-dessus de la moyenne
         };
 
-        // Multiplicateurs de bonus
+        // Multiplicateurs de bonus (rééquilibrés)
         this.BONUSES = {
             SPEED: {
-                LIGHTNING: 2.0,  // x2.0 pour être ultra-rapide
-                FAST: 1.5,       // x1.5 pour être rapide
-                QUICK: 1.2,      // x1.2 pour être efficace
+                LIGHTNING: 2.5,  // x2.5 pour être ultra-rapide (< 20s)
+                FAST: 2.0,       // x2.0 pour être rapide (20-35s)
+                QUICK: 1.5,      // x1.5 pour être efficace (35-60s)
                 NORMAL: 1.0      // x1.0 aucun bonus
             },
             ATTEMPTS: {
@@ -26,11 +26,11 @@ class EnhancedScoreCalculator {
             },
             NO_HINTS: 1.3,           // x1.3 si aucun indice utilisé
             NO_CHANGES: 1.2,         // x1.2 si aucun changement de voiture
-            PERFECT_GAME: 2.5        // x2.5 pour un jeu parfait (toutes conditions)
+            PERFECT_GAME: 3.0        // x3.0 pour un jeu parfait (toutes conditions)
         };
 
-        // Note: Les points de base sont maintenant définis par la rareté de la voiture
-        // commune: 10pts, peu_commune: 25pts, rare: 50pts, epique: 100pts, legendaire: 200pts
+        // Note: Les points de base sont maintenant définis par la rareté de la voiture (×10)
+        // commune: 100pts, peu_commune: 250pts, rare: 500pts, epique: 1000pts, legendaire: 2000pts
         // Voir car.getBasePoints() pour les valeurs actuelles
     }
 
