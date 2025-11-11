@@ -24,7 +24,6 @@ class PlayerRepository extends BaseRepository {
                     username: username,
                     guild_id: guildId,
                     total_points: 0,
-                    total_difficulty_points: 0,
                     games_played: 0,
                     games_won: 0,
                     correct_brand_guesses: 0,
@@ -153,7 +152,7 @@ class PlayerRepository extends BaseRepository {
      */
     async updatePlayerStats(userId, data, guildId = null) {
         const cleanData = this.cleanData(data, [
-            'username', 'total_points', 'total_difficulty_points', 'games_played',
+            'username', 'total_points', 'games_played',
             'games_won', 'correct_brand_guesses', 'correct_model_guesses',
             'total_brand_guesses', 'total_model_guesses', 'best_streak',
             'current_streak', 'best_time', 'average_response_time'
@@ -216,7 +215,6 @@ class PlayerRepository extends BaseRepository {
                 car_changes_used: gameSession.carChangesUsed || 0,
                 hints_used: JSON.stringify(gameSession.hintsUsed || {}),
                 points_earned: gameSession.pointsEarned || 0,
-                difficulty_points_earned: gameSession.difficultyPointsEarned || 0
             });
 
         if (error) throw error;
@@ -231,7 +229,6 @@ class PlayerRepository extends BaseRepository {
 
         const newStats = {
             total_points: player.totalPoints + (gameResult.basePoints || 0),
-            total_difficulty_points: player.totalDifficultyPoints + (gameResult.difficultyPoints || 0),
             games_played: player.gamesPlayed + 1,
             games_won: player.gamesWon + (gameResult.completed ? 1 : 0),
             correct_brand_guesses: player.correctBrandGuesses + (gameResult.makeFound ? 1 : 0),
@@ -353,20 +350,22 @@ class PlayerRepository extends BaseRepository {
      */
     async getPlayerCollection(userId, guildId = null) {
         // Compter les voitures trouvées
+        // Si guildId = null, on récupère TOUTES les voitures de l'utilisateur (inter-serveur)
+        // Si guildId est défini, on filtre par serveur
         let carsQuery = supabase
             .from('user_cars_found')
-            .select('car_id, brand_id', { count: 'exact' })
+            .select('car_id, brand_id')
             .eq('user_id', userId);
 
         if (guildId) {
             carsQuery = carsQuery.eq('guild_id', guildId);
-        } else {
-            carsQuery = carsQuery.is('guild_id', null);
         }
+        // Sinon, pas de filtre guild_id = on prend tout (inter-serveur)
 
-        const { data: carsData, count: carsCount } = await carsQuery;
+        const { data: carsData } = await carsQuery;
 
-        // Compter les marques uniques
+        // Compter les voitures uniques (distinctes) et marques uniques
+        const uniqueCars = [...new Set(carsData?.map(c => c.car_id) || [])];
         const uniqueBrands = [...new Set(carsData?.map(c => c.brand_id) || [])];
 
         // Compter le total de voitures et marques
@@ -374,7 +373,7 @@ class PlayerRepository extends BaseRepository {
         const { count: totalBrands } = await supabase.from('brands').select('*', { count: 'exact', head: true });
 
         return {
-            carsFound: carsCount || 0,
+            carsFound: uniqueCars.length,
             brandsFound: uniqueBrands.length,
             totalCars: totalCars || 0,
             totalBrands: totalBrands || 0
@@ -382,7 +381,7 @@ class PlayerRepository extends BaseRepository {
     }
 
     /**
-     * Obtient le classement des collectionneurs par serveur
+     * Obtient le classement des collectionneurs (inter-serveur si guildId = null)
      */
     async getCollectionLeaderboard(limit, guildId = null) {
         // Cette requête nécessite une fonction RPC côté Supabase ou un traitement côté client
@@ -393,9 +392,8 @@ class PlayerRepository extends BaseRepository {
 
         if (guildId) {
             query = query.eq('guild_id', guildId);
-        } else {
-            query = query.is('guild_id', null);
         }
+        // Sinon, pas de filtre guild_id = classement inter-serveur
 
         const { data: carsFound } = await query;
 
@@ -447,7 +445,7 @@ class PlayerRepository extends BaseRepository {
         // Récupérer les sessions du mois
         let query = supabase
             .from('game_sessions')
-            .select('user_id, points_earned, difficulty_points_earned, completed')
+            .select('user_id, points_earned, completed')
             .gte('started_at', startOfMonth.toISOString());
 
         if (guildId) {
@@ -468,7 +466,7 @@ class PlayerRepository extends BaseRepository {
                     monthlyGames: 0
                 };
             }
-            userStats[session.user_id].monthlyPoints += (session.points_earned || 0) + (session.difficulty_points_earned || 0);
+            userStats[session.user_id].monthlyPoints += (session.points_earned || 0);
             userStats[session.user_id].monthlyWins += session.completed ? 1 : 0;
             userStats[session.user_id].monthlyGames += 1;
         });
@@ -643,6 +641,39 @@ class PlayerRepository extends BaseRepository {
             ...Player.fromDatabase(row),
             ranking: index + 1
         }));
+    }
+
+    /**
+     * Récupère tous les joueurs pour le système de ranking
+     */
+    async getAllPlayersForRanking(guildId = null) {
+        let query = supabase
+            .from('user_scores')
+            .select('*')
+            .gt('total_points', 0)
+            .order('total_points', { ascending: false })
+            .order('games_won', { ascending: false });
+
+        if (guildId) {
+            query = query.eq('guild_id', guildId);
+        } else {
+            query = query.is('guild_id', null);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        return data.map(row => Player.fromDatabase(row));
+    }
+
+    /**
+     * Met à jour le ranking d'un joueur (utilisé par RealTimeRankingManager)
+     */
+    async updatePlayerRanking(userId, ranking, guildId = null) {
+        // Note: Cette méthode peut être utilisée pour des optimisations futures
+        // Pour l'instant, le ranking est calculé à la volée
+        // On pourrait ajouter une colonne 'ranking' dans user_scores si nécessaire
+        logger.debug(`Ranking updated for user ${userId}: ${ranking}`);
     }
 
     /**

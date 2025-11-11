@@ -1,8 +1,23 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const PlayerManager = require('../../../core/player/PlayerManager');
 const logger = require('../../../shared/utils/logger');
-const statsHelper = require('../../../shared/utils/StatsHelper');
 const playerManager = new PlayerManager();
+
+/**
+ * Génère une barre de progression visuelle
+ */
+function getProgressBar(percentage) {
+    // Vérifier que percentage est un nombre valide
+    if (isNaN(percentage) || percentage === null || percentage === undefined) {
+        percentage = 0;
+    }
+
+    const barLength = 15;
+    const filled = Math.floor((percentage / 100) * barLength);
+    const empty = barLength - filled;
+
+    return '█'.repeat(filled) + '░'.repeat(empty);
+}
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -13,15 +28,14 @@ module.exports = {
         try {
             await interaction.deferReply();
 
-            const guildId = interaction.guild?.id;
-
-            const leaderboard = await playerManager.getCollectionLeaderboard(10, guildId);
-            const userStats = await playerManager.getPlayerCollection(interaction.user.id, guildId);
+            // Collection inter-serveur : pas de guildId
+            const leaderboard = await playerManager.getCollectionLeaderboard(10, null);
+            const userStats = await playerManager.getPlayerCollection(interaction.user.id, null);
             const completionPercentage = Math.round((userStats.carsFound / userStats.totalCars) * 100 * 10) / 10;
 
             const collectionEmbed = new EmbedBuilder()
                 .setColor('#FF6B35')
-                .setTitle(`🏁 Classement des collections de ${interaction.guild?.name}`)
+                .setTitle(`🏁 Classement des collections`)
                 .setDescription('**Qui a découvert le plus de voitures ?**\n');
 
             if (leaderboard.length === 0) {
@@ -54,7 +68,7 @@ module.exports = {
                     name: '📊 Votre Collection',
                     value: `**Voitures:** ${userStats.carsFound}/${userStats.totalCars} (${completionPercentage}%)\n` +
                         `**Marques:** ${userStats.brandsFound}/${userStats.totalBrands}\n` +
-                        `**Progression:** ${this.getProgressBar(completionPercentage)}`,
+                        `**Progression:** ${getProgressBar(completionPercentage)}`,
                     inline: false
                 });
             } else {
@@ -67,18 +81,16 @@ module.exports = {
 
             await interaction.editReply({ embeds: [collectionEmbed] });
 
-            statsHelper.logCommand('collection', interaction.user.id);
 
         } catch (error) {
             logger.error('Error in collection command:', { guildId: interaction.guild?.id, error });
-            // Gestion d'erreur...
-        }
-    },
 
-    getProgressBar(percentage) {
-        const barLength = 15;
-        const filled = Math.floor((percentage / 100) * barLength);
-        const empty = barLength - filled;
-        return '█'.repeat(filled) + '░'.repeat(empty) + ` ${percentage}%`;
+            const errorEmbed = new EmbedBuilder()
+                .setColor('#FF0000')
+                .setTitle('❌ Erreur')
+                .setDescription('Une erreur est survenue lors de la récupération de la collection.');
+
+            await interaction.editReply({ embeds: [errorEmbed] });
+        }
     }
 };

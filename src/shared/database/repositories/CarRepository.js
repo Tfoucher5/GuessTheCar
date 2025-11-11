@@ -48,53 +48,67 @@ class CarRepository extends BaseRepository {
     }
 
     /**
-     * Récupère une voiture aléatoire avec ses informations complètes (version sécurisée)
+     * Récupère une voiture aléatoire avec ses informations complètes (sélection pondérée par rareté)
      */
     async getRandomCar() {
-        const { count, error: countError } = await supabase
-            .from('models')
-            .select('*', { count: 'exact', head: true });
+        // Utiliser une sélection pondérée basée sur spawn_weight
+        // La fonction RPC retourne seulement l'ID, puis on fait le join côté JS
 
-        if (countError) {
-            console.error('Supabase error counting cars:', countError);
-            throw new Error('Impossible de compter les voitures dans la base de données.');
-        }
-        if (!count || count === 0) {
-            return null;
-        }
-
-        // --- Tentatives multiples pour éviter les données corrompues ---
         for (let i = 0; i < 5; i++) { // On essaie jusqu'à 5 fois
-            const randomOffset = Math.floor(Math.random() * count);
+            try {
+                // Appeler la fonction RPC qui retourne un ID
+                const { data: carId, error } = await supabase.rpc('get_random_car_weighted');
 
-            const { data, error } = await supabase
-                .from('models')
-                .select(`
-                    id, name, year, difficulty_level, image_url, brand_id,
-                    brands (id, name, country) // On retire !inner pour une jointure externe
-                `)
-                .range(randomOffset, randomOffset)
-                .single();
+                if (error) {
+                    console.warn(`[Attempt ${i + 1}] RPC failed:`, error.message);
 
-            // Si on a une voiture ET que sa marque existe, c'est bon !
-            if (data && data.brands) {
-                return Car.fromDatabase({
-                    id: data.id,
-                    model: data.name,
-                    modelDate: data.year,
-                    difficulty: data.difficulty_level,
-                    imageUrl: data.image_url,
-                    brandId: data.brands.id,
-                    brand: data.brands.name,
-                    country: data.brands.country
-                });
-            }
+                    // Fallback : sélection simple aléatoire sans pondération
+                    const { data: fallbackData, error: fallbackError } = await supabase
+                        .from('models')
+                        .select(`
+                            id, name, year, difficulty_level, image_url, brand_id, rarity, base_points, spawn_weight,
+                            brands!inner (id, name, country)
+                        `)
+                        .not('rarity', 'is', null)
+                        .not('spawn_weight', 'is', null)
+                        .order('random()')
+                        .limit(1)
+                        .single();
 
-            // Si on est ici, c'est que la voiture est invalide ou qu'il y a eu une erreur.
-            if (error) {
-                console.warn(`[Attempt ${i + 1}] Failed to fetch a valid random car. Error:`, error.message);
-            } else if (!data?.brands) {
-                console.warn(`[Attempt ${i + 1}] Fetched a car (id: ${data?.id}) but its brand is missing. Retrying...`);
+                    if (fallbackError) {
+                        console.warn(`[Attempt ${i + 1}] Fallback also failed:`, fallbackError.message);
+                        continue;
+                    }
+
+                    if (fallbackData) {
+                        return Car.fromDatabase({
+                            id: fallbackData.id,
+                            model: fallbackData.name,
+                            modelDate: fallbackData.year,
+                            difficulty: fallbackData.difficulty_level,
+                            imageUrl: fallbackData.image_url,
+                            brandId: fallbackData.brands.id,
+                            brand: fallbackData.brands.name,
+                            country: fallbackData.brands.country,
+                            rarity: fallbackData.rarity,
+                            base_points: fallbackData.base_points,
+                            spawn_weight: fallbackData.spawn_weight
+                        });
+                    }
+                    continue;
+                }
+
+                // Si on a un ID valide, récupérer la voiture complète avec le brand
+                if (carId) {
+                    const car = await this.getCarById(carId);
+                    if (car) {
+                        return car;
+                    }
+                }
+
+            } catch (err) {
+                console.error(`[Attempt ${i + 1}] Exception:`, err);
+                continue;
             }
         }
 
@@ -115,6 +129,9 @@ class CarRepository extends BaseRepository {
                 difficulty_level,
                 image_url,
                 brand_id,
+                rarity,
+                base_points,
+                spawn_weight,
                 brands!inner (
                     id,
                     name,
@@ -140,7 +157,10 @@ class CarRepository extends BaseRepository {
             imageUrl: data.image_url,
             brandId: data.brands.id,
             brand: data.brands.name,
-            country: data.brands.country
+            country: data.brands.country,
+            rarity: data.rarity,
+            base_points: data.base_points,
+            spawn_weight: data.spawn_weight
         });
     }
 
@@ -157,6 +177,9 @@ class CarRepository extends BaseRepository {
                 difficulty_level,
                 image_url,
                 brand_id,
+                rarity,
+                base_points,
+                spawn_weight,
                 brands!inner (
                     id,
                     name,
@@ -171,6 +194,10 @@ class CarRepository extends BaseRepository {
 
         if (filters.difficulty) {
             query = query.eq('difficulty_level', filters.difficulty);
+        }
+
+        if (filters.rarity) {
+            query = query.eq('rarity', filters.rarity);
         }
 
         if (filters.country) {
@@ -201,7 +228,10 @@ class CarRepository extends BaseRepository {
             imageUrl: row.image_url,
             brandId: row.brands.id,
             brand: row.brands.name,
-            country: row.brands.country
+            country: row.brands.country,
+            rarity: row.rarity,
+            base_points: row.base_points,
+            spawn_weight: row.spawn_weight
         }));
     }
 

@@ -1,13 +1,18 @@
 class Car {
-    constructor(id, model, brand, difficulty = 1, imageUrl = null, brandId = null, country = null, modelDate = null) {
+    constructor(id, model, brand, difficulty = 1, imageUrl = null, brandId = null, country = null, modelDate = null, rarity = 'commune', basePoints = 10, spawnWeight = 450) {
         this.id = id;
         this.model = model;
         this.brand = brand;
-        this.difficulty = difficulty;
+        this.difficulty = difficulty; // Gardé pour compatibilité mais non utilisé
         this.imageUrl = imageUrl;
         this.brandId = brandId;
         this.country = country || 'Inconnu';
         this.modelDate = modelDate || new Date().getFullYear();
+
+        // Nouveau système de rareté
+        this.rarity = rarity || 'commune';
+        this.basePoints = basePoints || 10;
+        this.spawnWeight = spawnWeight || 450;
     }
 
     /**
@@ -22,7 +27,10 @@ class Car {
             data.imageUrl || data.image_url || null,
             data.brandId || data.brand_id || null,
             data.country || 'Inconnu',
-            data.modelDate || data.year || new Date().getFullYear()
+            data.modelDate || data.year || new Date().getFullYear(),
+            data.rarity || 'commune',
+            data.basePoints || data.base_points || 10,
+            data.spawnWeight || data.spawn_weight || 450
         );
     }
 
@@ -30,14 +38,16 @@ class Car {
      * Vérifie si la voiture est valide pour le jeu
      */
     isValid() {
+        const validRarities = ['commune', 'peu_commune', 'rare', 'epique', 'legendaire'];
         return !!(
             this.id &&
             this.model &&
             this.brand &&
             this.model.length > 0 &&
             this.brand.length > 1 &&
-            this.difficulty >= 1 &&
-            this.difficulty <= 3
+            validRarities.includes(this.rarity) &&
+            this.basePoints > 0 &&
+            this.spawnWeight > 0
         );
     }
 
@@ -90,7 +100,10 @@ class Car {
             id: this.id,
             name: this.model,
             brand_id: this.brandId,
-            difficulty_level: this.difficulty,
+            difficulty_level: this.difficulty, // Pour compatibilité
+            rarity: this.rarity,
+            base_points: this.basePoints,
+            spawn_weight: this.spawnWeight,
             image_url: this.imageUrl,
             year: this.modelDate
         };
@@ -139,39 +152,53 @@ class Car {
     }
 
     /**
-     * Obtient les points de base selon la difficulté
+     * Obtient les points de base selon la rareté
      */
     getBasePoints() {
-        switch (this.difficulty) {
-        case 1: return 10; // Facile
-        case 2: return 15; // Moyen
-        case 3: return 25; // Difficile
-        default: return 10;
-        }
+        return this.basePoints;
     }
 
     /**
-     * Obtient les points de difficulté
+     * Obtient le nom de la rareté
      */
-    getDifficultyPoints() {
-        switch (this.difficulty) {
-        case 1: return 1;
-        case 2: return 2;
-        case 3: return 4;
-        default: return 1;
+    getRarityName() {
+        switch (this.rarity) {
+        case 'commune': return 'Commune';
+        case 'peu_commune': return 'Peu commune';
+        case 'rare': return 'Rare';
+        case 'epique': return 'Épique';
+        case 'legendaire': return 'Légendaire';
+        default: return 'Commune';
         }
     }
 
     /**
-     * Obtient le nom de la difficulté
+     * Obtient l'emoji de la rareté
+     */
+    getRarityEmoji() {
+        switch (this.rarity) {
+        case 'commune': return '🟢';
+        case 'peu_commune': return '🔵';
+        case 'rare': return '🟣';
+        case 'epique': return '🟠';
+        case 'legendaire': return '🔴';
+        default: return '🟢';
+        }
+    }
+
+    /**
+     * Obtient le texte complet de la rareté (emoji + nom)
+     */
+    getRarityText() {
+        return `${this.getRarityEmoji()} ${this.getRarityName()}`;
+    }
+
+    /**
+     * Obtient le nom de la difficulté (pour compatibilité)
+     * @deprecated Utilisez getRarityName() à la place
      */
     getDifficultyName() {
-        switch (this.difficulty) {
-        case 1: return 'Facile';
-        case 2: return 'Moyen';
-        case 3: return 'Difficile';
-        default: return 'Inconnu';
-        }
+        return this.getRarityName();
     }
 
     /**
@@ -184,17 +211,22 @@ class Car {
             brand: this.brand,
             country: this.country,
             modelDate: this.modelDate,
-            difficulty: this.difficulty,
-            difficultyName: this.getDifficultyName(),
+            difficulty: this.difficulty, // Pour compatibilité
+            rarity: this.rarity,
+            rarityName: this.getRarityName(),
+            rarityEmoji: this.getRarityEmoji(),
+            rarityText: this.getRarityText(),
             basePoints: this.getBasePoints(),
-            difficultyPoints: this.getDifficultyPoints(),
+            spawnWeight: this.spawnWeight,
             imageUrl: this.imageUrl,
             brandId: this.brandId,
             fullName: this.getFullName(),
             makeLength: this.makeLength,
             modelLength: this.modelLength,
             firstLetter: this.firstLetter,
-            modelFirstLetter: this.modelFirstLetter
+            modelFirstLetter: this.modelFirstLetter,
+            // Pour compatibilité avec l'ancien système
+            difficultyName: this.getRarityName()
         };
     }
 
@@ -202,7 +234,7 @@ class Car {
      * Obtient une représentation textuelle
      */
     toString() {
-        return `${this.brand} ${this.model} (Difficulté: ${this.getDifficultyName()})`;
+        return `${this.brand} ${this.model} (${this.getRarityText()})`;
     }
 }
 

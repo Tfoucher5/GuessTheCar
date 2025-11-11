@@ -1,8 +1,8 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const PlayerManager = require('../../../core/player/PlayerManager');
 const LevelSystem = require('../../../core/levels/LevelSystem');
+const prestigeSystem = require('../../../core/prestige/PrestigeSystem');
 const logger = require('../../../shared/utils/logger');
-const statsHelper = require('../../../shared/utils/StatsHelper');
 const playerManager = new PlayerManager();
 
 module.exports = {
@@ -40,13 +40,16 @@ module.exports = {
                 // Créer le joueur s'il n'existe pas
                 await playerManager.findOrCreatePlayer(userId, username, guildId);
 
+                // Obtenir le premier niveau depuis la DB
+                const firstLevel = await LevelSystem.getPlayerLevel(0);
+
                 const noStatsEmbed = new EmbedBuilder()
                     .setColor('#FFA500')
                     .setTitle(`📊 Statistiques de ${username}`)
                     .setDescription('Aucune partie jouée pour le moment.\nCommencez une partie avec `/guesscar` !')
                     .addFields({
                         name: '🎯 Niveau',
-                        value: `*${LevelSystem.levels[0].title}*\n*${LevelSystem.levels[0].description}*`,
+                        value: `*${firstLevel.title}*\n*${firstLevel.description}*`,
                         inline: false
                     });
 
@@ -83,11 +86,13 @@ module.exports = {
                 avgTime = formatTime(Math.round(playerStats.averageResponseTime));
             }
 
-            // NOUVEAU: Obtenir le niveau du joueur
-            const playerLevel = LevelSystem.getPlayerLevel(playerStats.totalPoints);
-            const progressInfo = LevelSystem.getProgressToNextLevel(playerStats.totalPoints);
-            const difficultyPoints = Math.round((playerStats.totalDifficultyPoints || 0) * 10) / 10;
+            // NOUVEAU: Obtenir le niveau du joueur avec prestige (async)
+            const prestigePoints = playerStats.prestigePoints || playerStats.prestige_points || playerStats.totalPoints || 0;
+            const prestigeLevel = playerStats.prestigeLevel || playerStats.prestige_level || 0;
+
+            const playerLevel = await LevelSystem.getPlayerLevelWithPrestige(prestigePoints, prestigeLevel);
             const totalPoints = Math.round((playerStats.totalPoints || 0) * 10) / 10;
+            const currentPrestige = await prestigeSystem.getPrestigeLevel(prestigeLevel);
 
             // Créer l'embed avec le niveau
             const statsEmbed = new EmbedBuilder()
@@ -95,16 +100,30 @@ module.exports = {
                 .setTitle(`📊 Statistiques de ${username}`)
                 .setThumbnail(targetUser.displayAvatarURL({ dynamic: true }));
 
-            // NOUVEAU: Ajouter le niveau en premier
-            let levelText = `*${playerLevel.title}*\n*${playerLevel.description}*\n\n`;
+            // NOUVEAU: Ajouter le prestige et niveau
+            let levelText = '';
 
-            if (!progressInfo.isMaxLevel) {
-                const progressBar = LevelSystem.generateProgressBar(progressInfo.progressPercentage);
-                levelText += `**Progression:** ${progressBar} ${Math.round(progressInfo.progressPercentage)}%\n`;
-                levelText += `**Prochain niveau:** ${progressInfo.nextLevelTitle}\n`;
-                levelText += `**Points nécessaires:** ${Math.round(progressInfo.pointsNeeded * 10) / 10}`;
+            // Afficher le prestige si > 0
+            if (prestigeLevel > 0) {
+                levelText += `${currentPrestige.emoji} **${currentPrestige.name}** - Prestige ${prestigeLevel}\n`;
+                levelText += `⚡ Difficulté: **${currentPrestige.multiplier}x**\n\n`;
+            }
+
+            levelText += `${playerLevel.emoji} *${playerLevel.title}*\n*${playerLevel.description}*\n\n`;
+
+            // Progression dans le niveau actuel
+            const isMaxLevel = !playerLevel.nextLevel || playerLevel.maxPoints >= 9999999999;
+            if (!isMaxLevel) {
+                const progressBar = LevelSystem.generateProgressBar(playerLevel.progress);
+                levelText += `**Progression:** ${progressBar} ${Math.round(playerLevel.progress)}%\n`;
+                levelText += `**Prochain niveau:** ${playerLevel.nextLevel.title}\n`;
+                const pointsNeeded = playerLevel.nextLevel.minPoints - prestigePoints;
+                levelText += `**Points nécessaires:** ${Math.round(pointsNeeded * 10) / 10}`;
             } else {
-                levelText += progressInfo.message;
+                levelText += '🎊 **Niveau maximum atteint !**';
+                if (prestigeLevel < 10) {
+                    levelText += '\n💎 Utilisez `/prestige` pour monter en prestige !';
+                }
             }
 
             statsEmbed.addFields({
@@ -122,12 +141,12 @@ module.exports = {
                 },
                 {
                     name: '🏆 Points & Classement',
-                    value: `**Points totaux:** ${totalPoints}\n**Bonus difficulté:** ${difficultyPoints}\n**Classement:** #${playerStats.ranking || 'N/A'}\n**Série actuelle:** ${playerStats.currentStreak || 0}`,
+                    value: `**Points totaux:** ${totalPoints}\n**Classement:** #${playerStats.ranking || 'N/A'}\n**Série actuelle:** ${playerStats.currentStreak || 0}`,
                     inline: true
                 },
                 {
                     name: '⏱️ Performance',
-                    value: `**Points totaux:** ${totalPoints}\n**Bonus difficulté:** ${difficultyPoints}\n**Classement:** #${playerStats.ranking || 'N/A'}\n**Série actuelle:** ${playerStats.currentStreak || 0}`,
+                    value: `**Temps moyen:** ${avgTime}\n**Essais moyens:** ${avgAttempts}\n**Meilleur temps:** ${playerStats.bestTime ? formatTime(playerStats.bestTime) : 'N/A'}`,
                     inline: true
                 }
             );
@@ -148,7 +167,8 @@ module.exports = {
                 });
             }
 
-            const collectionStats = await playerManager.getPlayerCollection(userId, guildId);
+            // Collection inter-serveur : pas de guildId
+            const collectionStats = await playerManager.getPlayerCollection(userId, null);
 
             if (collectionStats && collectionStats.carsFound > 0) {
                 const completionPercentage = Math.round((collectionStats.carsFound / collectionStats.totalCars) * 100 * 10) / 10;
@@ -170,7 +190,6 @@ module.exports = {
 
             await interaction.editReply({ embeds: [statsEmbed] });
 
-            statsHelper.logCommand('stats', interaction.user.id);
 
         } catch (error) {
             logger.error('Error in stats command:', { userId: interaction.user.id,guildId: interaction.guild?.id, error });

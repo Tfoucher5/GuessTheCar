@@ -1,8 +1,8 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const PlayerManager = require('../../../core/player/PlayerManager');
 const LevelSystem = require('../../../core/levels/LevelSystem');
+const prestigeSystem = require('../../../core/prestige/PrestigeSystem');
 const logger = require('../../../shared/utils/logger');
-const statsHelper = require('../../../shared/utils/StatsHelper');
 const playerManager = new PlayerManager();
 
 // Types de classements disponibles
@@ -93,7 +93,6 @@ module.exports = {
 
             await interaction.editReply({ embeds: [embed], components });
 
-            statsHelper.logCommand('classement', interaction.user.id);
 
             // Créer un collector pour gérer les boutons de navigation
             const collector = interaction.channel.createMessageComponentCollector({
@@ -200,7 +199,7 @@ async function createLeaderboardDisplay(type, limit, guildId, interaction) {
     }
 
     // Créer l'embed
-    const embed = createLeaderboardEmbed(leaderboard, leaderboardType, interaction.guild?.name, limit);
+    const embed = await createLeaderboardEmbed(leaderboard, leaderboardType, interaction.guild?.name, limit);
 
     // Ajouter la position du demandeur si pas dans le top
     await addRequesterPosition(embed, leaderboard, interaction, type, guildId);
@@ -214,7 +213,7 @@ async function createLeaderboardDisplay(type, limit, guildId, interaction) {
 /**
  * Crée l'embed du classement
  */
-function createLeaderboardEmbed(leaderboard, leaderboardType, guildName, limit) {
+async function createLeaderboardEmbed(leaderboard, leaderboardType, guildName, limit) {
     const embed = new EmbedBuilder()
         .setColor('#FFD700')
         .setTitle(`${leaderboardType.emoji} ${leaderboardType.name} - ${guildName}`)
@@ -238,13 +237,22 @@ function createLeaderboardEmbed(leaderboard, leaderboardType, guildName, limit) 
         else if (position === 3) positionIcon = '🥉';
         else positionIcon = `**${position}.**`;
 
-        // Niveau du joueur
-        const playerLevel = LevelSystem.getPlayerLevel(player.totalPoints || 0);
+        // Niveau du joueur avec prestige
+        const prestigePoints = player.prestigePoints || player.prestige_points || player.totalPoints || 0;
+        const prestigeLevel = player.prestigeLevel || player.prestige_level || 0;
+        const playerLevel = await LevelSystem.getPlayerLevelWithPrestige(prestigePoints, prestigeLevel);
+
+        // Badge de prestige
+        let prestigeBadge = '';
+        if (prestigeLevel > 0) {
+            const prestige = await prestigeSystem.getPrestigeLevel(prestigeLevel);
+            prestigeBadge = ` ${prestige.emoji}`;
+        }
 
         // Stats selon le type de classement
         const stats = formatPlayerStats(player, leaderboardType.id);
 
-        leaderboardText += `${positionIcon} **${player.username}** ${playerLevel.emoji}\n`;
+        leaderboardText += `${positionIcon} **${player.username}**${prestigeBadge} ${playerLevel.emoji}\n`;
         leaderboardText += `└ ${stats}\n\n`;
     }
 
@@ -280,8 +288,9 @@ function formatPlayerStats(player, type) {
         return `${points} pts • ${player.gamesWon || 0}/${player.gamesPlayed || 0} • ${winRate}%`;
 
     case 'monthly':
-        // Pour le mensuel, on afficherait les stats du mois
-        return `${points} pts ce mois • ${player.gamesWon || 0} victoires`;
+        // Pour le mensuel, on affiche les stats du mois
+        const monthlyPoints = Math.round((player.monthlyPoints || 0) * 10) / 10;
+        return `${monthlyPoints} pts ce mois • ${player.monthlyWins || 0} victoires`;
 
     case 'speed':
     { const avgTime = player.averageTime && player.averageTime > 0 ?
@@ -367,7 +376,7 @@ async function addRequesterPosition(embed, leaderboard, interaction, type, guild
             const requesterStats = await playerManager.getPlayerWithRanking(interaction.user.id, guildId);
 
             if (requesterStats && requesterStats.ranking) {
-                const requesterLevel = LevelSystem.getPlayerLevel(requesterStats.totalPoints);
+                const requesterLevel = await LevelSystem.getPlayerLevel(requesterStats.totalPoints);
                 const stats = formatPlayerStats(requesterStats, type);
 
                 embed.addFields({

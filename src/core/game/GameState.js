@@ -47,7 +47,8 @@ class GameState {
             firstLetter: false,
             lastLetter: false,
             country: false,
-            length: false,
+            makeLength: false,
+            modelLength: false,
             year: false
         };
     }
@@ -148,7 +149,9 @@ class GameState {
                 id: this.car.id,
                 brand: this.car.brand,
                 model: this.car.model,
-                difficulty: this.car.difficulty
+                rarity: this.car.rarity,
+                rarityName: this.car.getRarityName(),
+                basePoints: this.car.getBasePoints()
             }
         };
     }
@@ -217,10 +220,8 @@ class GameState {
      */
     calculateFinalScore() {
         const basePoints = this.car.getBasePoints();
-        const difficultyMultiplier = this.car.getDifficultyPoints();
 
         let finalPoints = 0;
-        let difficultyPoints = 0;
 
         // Vérifier si la marque a été trouvée
         const makeFound = this.isSearchingModel() && !this.makeFailed;
@@ -228,17 +229,17 @@ class GameState {
         if (makeFound) {
             // Marque trouvée, points partiels
             finalPoints = basePoints * 0.5;
-            difficultyPoints = difficultyMultiplier * 0.5;
         }
 
         return {
             basePoints: Math.round(finalPoints * 10) / 10,
-            difficultyPoints: Math.round(difficultyPoints * 10) / 10,
+            totalPoints: Math.round(finalPoints * 10) / 10,
             isFullSuccess: false,
             makeFound: makeFound,
-            // AJOUT: Inclure les infos de difficulté
-            difficultyName: this.car.getDifficultyText(),
-            difficulty: this.car.difficulty
+            // Inclure les infos de rareté
+            rarity: this.car.rarity,
+            rarityName: this.car.getRarityName(),
+            rarityText: this.car.getRarityText()
         };
     }
 
@@ -246,7 +247,7 @@ class GameState {
      * Calcule le score avec le nouveau système amélioré
      */
     calculateEnhancedScore() {
-        const EnhancedScoreCalculator = require('../../shared/utils/EnhancedScoreCalculator');
+        const EnhancedScoreCalculator = require('./utils/EnhancedScoreCalculator');
         const calculator = new EnhancedScoreCalculator();
 
         // Calculer le nombre total d'essais
@@ -277,17 +278,17 @@ class GameState {
  */
     calculateFullSuccessScore() {
         const basePoints = this.car.getBasePoints();
-        const difficultyMultiplier = this.car.getDifficultyPoints();
 
         return {
             basePoints: Math.round(basePoints * 10) / 10,
-            difficultyPoints: Math.round(difficultyMultiplier * 10) / 10,
+            totalPoints: Math.round(basePoints * 10) / 10,
             isFullSuccess: true,
             makeFound: true,
             modelFound: true,
-            // AJOUT: Inclure les infos de difficulté
-            difficultyName: this.car.getDifficultyText(),
-            difficulty: this.car.difficulty
+            // Inclure les infos de rareté
+            rarity: this.car.rarity,
+            rarityName: this.car.getRarityName(),
+            rarityText: this.car.getRarityText()
         };
     }
 

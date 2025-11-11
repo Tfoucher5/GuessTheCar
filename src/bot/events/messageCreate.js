@@ -1,16 +1,16 @@
 const { Events } = require('discord.js');
-const GameEngine = require('../../core/game/GameEngine');
-const EmbedBuilder = require('../../shared/utils/embedBuilder');
+const GameEngineManager = require('../../core/game/GameEngineManager');
+const EmbedBuilder = require('../utils/embedBuilder');
 const logger = require('../../shared/utils/logger');
-
-// Instance globale du moteur de jeu
-const gameEngine = new GameEngine();
 
 module.exports = {
     name: Events.MessageCreate,
     async execute(message) {
         // Ignorer les messages des bots
         if (message.author.bot) return;
+
+        // Récupérer l'instance du GameEngine
+        const gameEngine = GameEngineManager.getInstance();
 
         // Vérifier s'il y a une partie active dans ce thread
         const activeGame = gameEngine.getActiveGame(message.channelId);
@@ -150,6 +150,3 @@ async function handleGameResult(message, result, gameState) {
         }, 5000);
     }
 }
-
-// Exporter le gameEngine pour l'utiliser dans les commandes
-module.exports.gameEngine = gameEngine;

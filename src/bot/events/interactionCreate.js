@@ -1,8 +1,8 @@
 // src/bot/events/interactionCreate.js
 const { Events, MessageFlags, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const logger = require('../../shared/utils/logger');
-const { gameEngine } = require('./messageCreate');
-const EmbedBuilder = require('../../shared/utils/embedBuilder');
+const GameEngineManager = require('../../core/game/GameEngineManager');
+const EmbedBuilder = require('../utils/embedBuilder');
 
 module.exports = {
     name: Events.InteractionCreate,
@@ -60,6 +60,9 @@ async function handleGameButton(interaction) {
 
         if (action !== 'game') return;
 
+        // Récupérer l'instance du GameEngine
+        const gameEngine = GameEngineManager.getInstance();
+
         // Vérifier que l'utilisateur a une partie active dans ce thread
         const activeGame = gameEngine.getActiveGame(threadId);
         if (!activeGame || activeGame.userId !== interaction.user.id) {
@@ -113,6 +116,7 @@ async function handleGameButton(interaction) {
  */
 async function handleHintButton(interaction, threadId, gameState) {
     try {
+        const gameEngine = GameEngineManager.getInstance();
         const result = gameEngine.getHint(threadId);
 
         const hintEmbed = EmbedBuilder.createGameEmbed(gameState, {
@@ -144,6 +148,7 @@ async function handleHintButton(interaction, threadId, gameState) {
  */
 async function handleChangeButton(interaction, threadId) {
     try {
+        const gameEngine = GameEngineManager.getInstance();
         const result = await gameEngine.changeCar(threadId);
 
         // Récupérer l'état mis à jour
@@ -234,6 +239,7 @@ async function handleAbandonButton(interaction, threadId, gameState) {
 
             // Confirmer l'abandon
             try {
+                const gameEngine = GameEngineManager.getInstance();
                 const result = await gameEngine.abandonGame(threadId);
 
                 const abandonEmbed = EmbedBuilder.createAbandonEmbed(

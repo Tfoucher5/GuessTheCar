@@ -4,8 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { Collection } = require('discord.js');
 const logger = require('../../shared/utils/logger');
-const statsHelper = require('../../shared/utils/StatsHelper');
-const supabaseCommandLogger = require('../../shared/utils/supabaseCommandLogger');
+const supabaseCommandLogger = require('../../shared/database/logging/supabaseCommandLogger');
 
 class CommandHandler {
     constructor(client) {
@@ -55,7 +54,7 @@ class CommandHandler {
         }
 
         try {
-            // Logger la commande dans Supabase ET dans l'API Node.js
+            // Logger la commande dans Supabase
             const commandName = interaction.commandName;
             const userId = interaction.user.id;
             const username = interaction.user.username;
@@ -65,17 +64,6 @@ class CommandHandler {
             // Logger dans Supabase (async, on n'attend pas)
             supabaseCommandLogger.logCommand(commandName, userId, guildId).catch(err => {
                 logger.error('Failed to log command to Supabase:', err);
-            });
-
-            // Logger dans l'API Node.js existante (pour compatibilité)
-            statsHelper.logCommand(
-                commandName,
-                userId,
-                username,
-                guildId,
-                guildName
-            ).catch(err => {
-                logger.error('Failed to log command to Node.js API:', err);
             });
 
             logger.info(`Command executed: ${commandName} by ${username} (${userId}) in ${guildName}`);
@@ -108,15 +96,35 @@ class CommandHandler {
             } catch (followUpError) {
                 logger.error('Failed to send error message to user:', followUpError);
             }
+        }
+    }
 
-            // Logger l'erreur dans l'API
-            statsHelper.logError(error, {
-                command: interaction.commandName,
-                user: interaction.user.id,
-                guild: interaction.guild?.id
-            }).catch(err => {
-                logger.error('Failed to log error to API:', err);
-            });
+    async registerCommands() {
+        const { REST, Routes } = require('discord.js');
+        const token = process.env.DISCORD_TOKEN;
+        const clientId = process.env.DISCORD_CLIENT_ID;
+
+        if (!token || !clientId) {
+            logger.error('DISCORD_TOKEN or DISCORD_CLIENT_ID missing in environment variables');
+            return;
+        }
+
+        const rest = new REST({ version: '10' }).setToken(token);
+
+        try {
+            const commandsData = Array.from(this.commands.values()).map(cmd => cmd.data.toJSON());
+
+            logger.info(`Started refreshing ${commandsData.length} application (/) commands.`);
+
+            // Register commands globally (works in all guilds)
+            const data = await rest.put(
+                Routes.applicationCommands(clientId),
+                { body: commandsData }
+            );
+
+            logger.info(`Successfully reloaded ${data.length} application (/) commands.`);
+        } catch (error) {
+            logger.error('Error registering commands:', error);
         }
     }
 
