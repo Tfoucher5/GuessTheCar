@@ -16,7 +16,9 @@ function getProgressBar(percentage) {
     const barLength = 15;
     const filled = Math.floor((percentage / 100) * barLength);
     const empty = barLength - filled;
-    return '█'.repeat(filled) + '░'.repeat(empty);
+
+    // Utiliser des emojis carrés pour une meilleure compatibilité Discord
+    return '🟩'.repeat(filled) + '⬜'.repeat(empty);
 }
 
 module.exports = {
