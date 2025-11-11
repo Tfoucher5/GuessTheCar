@@ -24,6 +24,8 @@ class PlayerRepository extends BaseRepository {
                     username: username,
                     guild_id: guildId,
                     total_points: 0,
+                    prestige_points: 0,
+                    prestige_level: 0,
                     games_played: 0,
                     games_won: 0,
                     correct_brand_guesses: 0,
@@ -152,8 +154,8 @@ class PlayerRepository extends BaseRepository {
      */
     async updatePlayerStats(userId, data, guildId = null) {
         const cleanData = this.cleanData(data, [
-            'username', 'total_points', 'games_played',
-            'games_won', 'correct_brand_guesses', 'correct_model_guesses',
+            'username', 'total_points', 'prestige_points', 'prestige_level',
+            'games_played', 'games_won', 'correct_brand_guesses', 'correct_model_guesses',
             'total_brand_guesses', 'total_model_guesses', 'best_streak',
             'current_streak', 'best_time', 'average_response_time'
         ]);
