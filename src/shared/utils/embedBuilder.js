@@ -141,8 +141,7 @@ class GameEmbedBuilder {
                 },
                 {
                     name: '🏆 Points gagnés',
-                    value: `**${(score.basePoints + score.difficultyPoints).toFixed(1)} points totaux**\n` +
-                        `*Points de base: ${score.basePoints.toFixed(1)} + Bonus difficulté: ${score.difficultyPoints.toFixed(1)}*`,
+                    value: `**${score.totalPoints.toFixed(1)} points gagnés**`,
                     inline: false
                 }
             )
@@ -384,8 +383,8 @@ class GameEmbedBuilder {
      * Crée un embed d'abandon de partie
      */
     static createAbandonEmbed(gameState, correctAnswer, score = null) {
-        const pointsMessage = score ?
-            `\nVous gagnez ${(score.basePoints + score.difficultyPoints).toFixed(1)} points totaux (${score.basePoints.toFixed(1)} + ${score.difficultyPoints.toFixed(1)} bonus) pour avoir trouvé la marque.` : '';
+        const pointsMessage = score && score.totalPoints > 0 ?
+            `\nVous gagnez ${score.totalPoints.toFixed(1)} points pour avoir trouvé la marque.` : '';
         return this.createGameEmbed(gameState, {
             color: '#FFA500',
             title: '🏳️ Partie abandonnée',
@@ -397,8 +396,8 @@ class GameEmbedBuilder {
  * Crée un embed de timeout
  */
     static createTimeoutEmbed(gameState, correctAnswer, score = null) {
-        const pointsMessage = score ?
-            `\nVous gagnez ${(score.basePoints + score.difficultyPoints).toFixed(1)} points totaux (${score.basePoints.toFixed(1)} + ${score.difficultyPoints.toFixed(1)} bonus) pour avoir trouvé la marque.` : '';
+        const pointsMessage = score && score.totalPoints > 0 ?
+            `\nVous gagnez ${score.totalPoints.toFixed(1)} points pour avoir trouvé la marque.` : '';
 
         return this.createGameEmbed(gameState, {
             color: '#FF8C00',
@@ -457,9 +456,8 @@ class GameEmbedBuilder {
     static createGameOverEmbed(gameState, carName, score = null, timeSpent = 0, attempts = 0) {
         let description = `😞 Dommage !\nLa voiture était la **${carName}**.`;
 
-        if (score && (score.basePoints > 0 || score.difficultyPoints > 0)) {
-            const totalPoints = score.basePoints + score.difficultyPoints;
-            description += `\n\nVous avez trouvé la marque, vous gagnez ${totalPoints.toFixed(1)} points totaux (${score.basePoints.toFixed(1)} + ${score.difficultyPoints.toFixed(1)} bonus) !`;
+        if (score && score.totalPoints > 0) {
+            description += `\n\nVous avez trouvé la marque, vous gagnez ${score.totalPoints.toFixed(1)} points !`;
         } else {
             description += '\n\nAucun point cette fois, mais essayez encore !';
         }

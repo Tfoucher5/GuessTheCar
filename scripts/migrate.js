@@ -25,6 +25,7 @@ async function createDatabase() {
     await client.query(`DROP TABLE IF EXISTS user_scores`);
     await client.query(`DROP TABLE IF EXISTS models`);
     await client.query(`DROP TABLE IF EXISTS brands`);
+    await client.query(`DROP TABLE IF EXISTS levels`);
 
     console.log('✅ Drops terminés');
 
@@ -38,6 +39,28 @@ async function createDatabase() {
       $$ LANGUAGE plpgsql;
     `);
     console.log('✅ Fonction set_updated_at créée');
+
+    // Table des niveaux
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS levels (
+        id BIGSERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        "minPoints" DOUBLE PRECISION NOT NULL,
+        "maxPoints" DOUBLE PRECISION NOT NULL,
+        description TEXT NOT NULL,
+        emoji VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW(),
+        animation_class TEXT DEFAULT 'level-static'
+      );
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS levels_minpoints_index ON levels("minPoints")`);
+    await client.query(`
+      CREATE TRIGGER trg_levels_updated_at
+      BEFORE UPDATE ON levels
+      FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
+    `);
+    console.log('✅ Table levels créée');
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS brands (
@@ -87,7 +110,6 @@ async function createDatabase() {
         guild_id VARCHAR(255),
         username VARCHAR(32) NOT NULL,
         total_points NUMERIC(10,2) DEFAULT 0,
-        total_difficulty_points NUMERIC(10,2) DEFAULT 0,
         games_played INT DEFAULT 0,
         games_won INT DEFAULT 0,
         correct_brand_guesses INT DEFAULT 0,
@@ -107,7 +129,6 @@ async function createDatabase() {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_user_scores_guild_id ON user_scores(guild_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_user_scores_guild_user ON user_scores(guild_id, user_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_user_scores_total_points ON user_scores(total_points DESC)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_user_scores_total_difficulty_points ON user_scores(total_difficulty_points DESC)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_user_scores_games_won ON user_scores(games_won DESC)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_user_scores_updated_at ON user_scores(updated_at)`);
     await client.query(`
@@ -163,7 +184,6 @@ async function createDatabase() {
         car_changes_used INT DEFAULT 0,
         hints_used JSONB DEFAULT NULL,
         points_earned NUMERIC(6,2) DEFAULT 0,
-        difficulty_points_earned NUMERIC(6,2) DEFAULT 0,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       );
@@ -221,8 +241,35 @@ async function createDatabase() {
     `);
     console.log('✅ Vue leaderboard_view créée');
 
+    // Insertion des niveaux
+    await client.query(`
+      INSERT INTO levels (title, "minPoints", "maxPoints", description, emoji, animation_class) VALUES
+      ('🤡 Pire que Lance Stroll', 0, 99, 'Même le pilote le plus critiqué de F1 fait mieux que ça !', '🤡', 'level-static'),
+      ('🚗 Conducteur du Dimanche', 100, 249, 'Vous conduisez votre Clio au supermarché, c''est déjà ça !', '🚗', 'level-static'),
+      ('🔰 Apprenti Mécanicien', 250, 499, 'Vous savez faire la vidange... enfin, vous essayez.', '🔰', 'level-static'),
+      ('🚙 Fan de SUV', 500, 899, 'Un Qashqai, c''est sportif non ? Non ?', '🚙', 'level-static'),
+      ('🏁 Spectateur de F1', 900, 1499, 'Vous regardez les courses du canapé avec des chips.', '🏁', 'level-static'),
+      ('🏎️ Pilote de Karting', 1500, 2499, 'Enfin du vrai pilotage ! Même si c''est sur un parking.', '🏎️', 'level-static'),
+      ('🚘 Propriétaire de GTI', 2500, 3999, 'Golf GTI ou 208 GTI, vous avez du goût !', '🚘', 'level-static'),
+      ('🏃 Coureur Amateur', 4000, 6499, 'Trackdays le weekend, embouteillages la semaine.', '🏃', 'level-static'),
+      ('🔧 Mécanicien Confirmé', 6500, 9999, 'Vous savez distinguer un flat-6 d''un V6 !', '🔧', 'level-static'),
+      ('🚀 Passionné de Supercars', 10000, 15999, 'Ferrari, Lamborghini... vous connaissez par cœur !', '🚀', 'level-static'),
+      ('🏆 Julien Febreau', 16000, 24999, 'Vous avez la culture auto du journaliste de Sport Auto !', '🏆', 'level-pulse'),
+      ('⭐ Soheil Ayari', 25000, 39999, 'Votre expertise rappelle celle du pilote instructeur !', '⭐', 'level-pulse'),
+      ('🎯 Sébastien Loeb', 40000, 64999, 'Nonuple champion du monde, respect !', '🎯', 'level-pulse'),
+      ('👑 Alain Prost', 65000, 99999, 'Le Professeur serait fier de vos connaissances !', '👑', 'level-glow'),
+      ('🌟 Ayrton Senna', 100000, 159999, 'La légende brésilienne approuverait votre passion !', '🌟', 'level-glow'),
+      ('🔥 Encyclopédie Vivante', 160000, 249999, 'Vous êtes une bible automobile sur pattes !', '🔥', 'level-glow'),
+      ('⚡ Sage de l''Automobile', 250000, 399999, 'Votre savoir dépasse l''entendement humain !', '⚡', 'level-rainbow'),
+      ('🌪️ Maître Absolu', 400000, 649999, 'Il n''y a plus grand chose que vous ignoriez !', '🌪️', 'level-rainbow'),
+      ('🗲 Génie de l''Automobile', 650000, 999999, 'Vous frôlez la perfection, c''est impressionnant !', '🗲', 'level-rainbow'),
+      ('🧠 Sylvain Lyve', 1000000, 9999999999, 'Vous avez atteint le niveau du maître absolu de YouTube automobile !', '🧠', 'level-legendary')
+    `);
+    console.log('✅ Niveaux insérés (20 niveaux)');
+
     console.log('\n🎉 Migration PostgreSQL terminée avec succès!');
     console.log('\n📊 Tables créées :');
+    console.log('- levels');
     console.log('- brands');
     console.log('- models');
     console.log('- user_scores');

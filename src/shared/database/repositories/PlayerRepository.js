@@ -24,7 +24,6 @@ class PlayerRepository extends BaseRepository {
                     username: username,
                     guild_id: guildId,
                     total_points: 0,
-                    total_difficulty_points: 0,
                     games_played: 0,
                     games_won: 0,
                     correct_brand_guesses: 0,
@@ -153,7 +152,7 @@ class PlayerRepository extends BaseRepository {
      */
     async updatePlayerStats(userId, data, guildId = null) {
         const cleanData = this.cleanData(data, [
-            'username', 'total_points', 'total_difficulty_points', 'games_played',
+            'username', 'total_points', 'games_played',
             'games_won', 'correct_brand_guesses', 'correct_model_guesses',
             'total_brand_guesses', 'total_model_guesses', 'best_streak',
             'current_streak', 'best_time', 'average_response_time'
@@ -216,7 +215,6 @@ class PlayerRepository extends BaseRepository {
                 car_changes_used: gameSession.carChangesUsed || 0,
                 hints_used: JSON.stringify(gameSession.hintsUsed || {}),
                 points_earned: gameSession.pointsEarned || 0,
-                difficulty_points_earned: gameSession.difficultyPointsEarned || 0
             });
 
         if (error) throw error;
@@ -231,7 +229,6 @@ class PlayerRepository extends BaseRepository {
 
         const newStats = {
             total_points: player.totalPoints + (gameResult.basePoints || 0),
-            total_difficulty_points: player.totalDifficultyPoints + (gameResult.difficultyPoints || 0),
             games_played: player.gamesPlayed + 1,
             games_won: player.gamesWon + (gameResult.completed ? 1 : 0),
             correct_brand_guesses: player.correctBrandGuesses + (gameResult.makeFound ? 1 : 0),
@@ -447,7 +444,7 @@ class PlayerRepository extends BaseRepository {
         // Récupérer les sessions du mois
         let query = supabase
             .from('game_sessions')
-            .select('user_id, points_earned, difficulty_points_earned, completed')
+            .select('user_id, points_earned, completed')
             .gte('started_at', startOfMonth.toISOString());
 
         if (guildId) {
@@ -468,7 +465,7 @@ class PlayerRepository extends BaseRepository {
                     monthlyGames: 0
                 };
             }
-            userStats[session.user_id].monthlyPoints += (session.points_earned || 0) + (session.difficulty_points_earned || 0);
+            userStats[session.user_id].monthlyPoints += (session.points_earned || 0);
             userStats[session.user_id].monthlyWins += session.completed ? 1 : 0;
             userStats[session.user_id].monthlyGames += 1;
         });

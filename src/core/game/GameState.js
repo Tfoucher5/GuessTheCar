@@ -217,10 +217,8 @@ class GameState {
      */
     calculateFinalScore() {
         const basePoints = this.car.getBasePoints();
-        const difficultyMultiplier = this.car.getDifficultyPoints();
 
         let finalPoints = 0;
-        let difficultyPoints = 0;
 
         // Vérifier si la marque a été trouvée
         const makeFound = this.isSearchingModel() && !this.makeFailed;
@@ -228,12 +226,11 @@ class GameState {
         if (makeFound) {
             // Marque trouvée, points partiels
             finalPoints = basePoints * 0.5;
-            difficultyPoints = difficultyMultiplier * 0.5;
         }
 
         return {
             basePoints: Math.round(finalPoints * 10) / 10,
-            difficultyPoints: Math.round(difficultyPoints * 10) / 10,
+            totalPoints: Math.round(finalPoints * 10) / 10,
             isFullSuccess: false,
             makeFound: makeFound,
             // AJOUT: Inclure les infos de difficulté
@@ -277,11 +274,10 @@ class GameState {
  */
     calculateFullSuccessScore() {
         const basePoints = this.car.getBasePoints();
-        const difficultyMultiplier = this.car.getDifficultyPoints();
 
         return {
             basePoints: Math.round(basePoints * 10) / 10,
-            difficultyPoints: Math.round(difficultyMultiplier * 10) / 10,
+            totalPoints: Math.round(basePoints * 10) / 10,
             isFullSuccess: true,
             makeFound: true,
             modelFound: true,

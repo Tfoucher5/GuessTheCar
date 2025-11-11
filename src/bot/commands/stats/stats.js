@@ -40,13 +40,16 @@ module.exports = {
                 // Créer le joueur s'il n'existe pas
                 await playerManager.findOrCreatePlayer(userId, username, guildId);
 
+                // Obtenir le premier niveau depuis la DB
+                const firstLevel = await LevelSystem.getPlayerLevel(0);
+
                 const noStatsEmbed = new EmbedBuilder()
                     .setColor('#FFA500')
                     .setTitle(`📊 Statistiques de ${username}`)
                     .setDescription('Aucune partie jouée pour le moment.\nCommencez une partie avec `/guesscar` !')
                     .addFields({
                         name: '🎯 Niveau',
-                        value: `*${LevelSystem.levels[0].title}*\n*${LevelSystem.levels[0].description}*`,
+                        value: `*${firstLevel.title}*\n*${firstLevel.description}*`,
                         inline: false
                     });
 
@@ -83,10 +86,9 @@ module.exports = {
                 avgTime = formatTime(Math.round(playerStats.averageResponseTime));
             }
 
-            // NOUVEAU: Obtenir le niveau du joueur
-            const playerLevel = LevelSystem.getPlayerLevel(playerStats.totalPoints);
-            const progressInfo = LevelSystem.getProgressToNextLevel(playerStats.totalPoints);
-            const difficultyPoints = Math.round((playerStats.totalDifficultyPoints || 0) * 10) / 10;
+            // NOUVEAU: Obtenir le niveau du joueur (async)
+            const playerLevel = await LevelSystem.getPlayerLevel(playerStats.totalPoints);
+            const progressInfo = await LevelSystem.getProgressToNextLevel(playerStats.totalPoints);
             const totalPoints = Math.round((playerStats.totalPoints || 0) * 10) / 10;
 
             // Créer l'embed avec le niveau
@@ -122,12 +124,12 @@ module.exports = {
                 },
                 {
                     name: '🏆 Points & Classement',
-                    value: `**Points totaux:** ${totalPoints}\n**Bonus difficulté:** ${difficultyPoints}\n**Classement:** #${playerStats.ranking || 'N/A'}\n**Série actuelle:** ${playerStats.currentStreak || 0}`,
+                    value: `**Points totaux:** ${totalPoints}\n**Classement:** #${playerStats.ranking || 'N/A'}\n**Série actuelle:** ${playerStats.currentStreak || 0}`,
                     inline: true
                 },
                 {
                     name: '⏱️ Performance',
-                    value: `**Points totaux:** ${totalPoints}\n**Bonus difficulté:** ${difficultyPoints}\n**Classement:** #${playerStats.ranking || 'N/A'}\n**Série actuelle:** ${playerStats.currentStreak || 0}`,
+                    value: `**Temps moyen:** ${avgTime}\n**Essais moyens:** ${avgAttempts}\n**Meilleur temps:** ${playerStats.bestTime ? formatTime(playerStats.bestTime) : 'N/A'}`,
                     inline: true
                 }
             );

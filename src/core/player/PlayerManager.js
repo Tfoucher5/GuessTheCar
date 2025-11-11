@@ -29,12 +29,12 @@ class PlayerManager {
     }
 
     /**
-     * ✅ CORRIGÉ - Met à jour le score d'un joueur
+     * ✅ MODIFIÉ - Met à jour le score d'un joueur (sans difficultyPoints)
      */
-    async updatePlayerScore(userId, username, basePoints, difficultyPoints, isComplete, gameStats = {}) {
+    async updatePlayerScore(userId, username, points, isComplete, gameStats = {}) {
         try {
             console.log('PlayerManager.updatePlayerScore called with:', {
-                userId, username, basePoints, difficultyPoints, isComplete,
+                userId, username, points, isComplete,
                 guildId: gameStats.guildId
             });
 
@@ -58,8 +58,7 @@ class PlayerManager {
                 timeout: gameStats.timeout || false,
                 carChangesUsed: gameStats.carChangesUsed || 0,
                 hintsUsed: gameStats.hintsUsed || {},
-                pointsEarned: basePoints || 0,
-                difficultyPointsEarned: difficultyPoints || 0
+                pointsEarned: points || 0
             };
 
             // ✅ Sauvegarder la session de jeu
@@ -68,8 +67,7 @@ class PlayerManager {
             // ✅ CORRIGÉ: Utiliser les noms de colonnes SQL (snake_case)
             const newStats = {
                 // ❌ SUPPRIMÉ: userId, username, guildId ne sont PAS des colonnes à mettre à jour
-                total_points: player.totalPoints + (basePoints || 0),  // ✅ snake_case
-                total_difficulty_points: player.totalDifficultyPoints + (difficultyPoints || 0),  // ✅ snake_case
+                total_points: player.totalPoints + (points || 0),  // ✅ snake_case
                 games_played: player.gamesPlayed + 1,  // ✅ snake_case
                 games_won: player.gamesWon + (isComplete ? 1 : 0),  // ✅ snake_case
                 correct_brand_guesses: player.correctBrandGuesses + (gameStats.makeFound ? 1 : 0),  // ✅ snake_case
@@ -110,21 +108,19 @@ class PlayerManager {
 
             console.log('PlayerManager.updatePlayerScore - updatedPlayer:', {
                 totalPoints: updatedPlayer.totalPoints,
-                totalDifficultyPoints: updatedPlayer.totalDifficultyPoints,
                 gamesPlayed: updatedPlayer.gamesPlayed,
                 gamesWon: updatedPlayer.gamesWon
             });
 
             logger.info('Player score updated:', {
                 userId, guildId: gameStats.guildId,
-                basePoints,
-                difficultyPoints,
+                points,
                 isComplete,
                 abandoned: gameStats.abandoned || false,
                 timeout: gameStats.timeout || false,
                 gamesPlayed: updatedPlayer.gamesPlayed,
                 gamesWon: updatedPlayer.gamesWon,
-                newTotal: updatedPlayer.totalDifficultyPoints
+                newTotal: updatedPlayer.totalPoints
             });
 
             return updatedPlayer;

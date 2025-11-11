@@ -150,17 +150,6 @@ class Car {
         }
     }
 
-    /**
-     * Obtient les points de difficulté
-     */
-    getDifficultyPoints() {
-        switch (this.difficulty) {
-        case 1: return 1;
-        case 2: return 2;
-        case 3: return 4;
-        default: return 1;
-        }
-    }
 
     /**
      * Obtient le nom de la difficulté
@@ -187,7 +176,6 @@ class Car {
             difficulty: this.difficulty,
             difficultyName: this.getDifficultyName(),
             basePoints: this.getBasePoints(),
-            difficultyPoints: this.getDifficultyPoints(),
             imageUrl: this.imageUrl,
             brandId: this.brandId,
             fullName: this.getFullName(),

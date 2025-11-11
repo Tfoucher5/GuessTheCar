@@ -6,7 +6,6 @@ class Player {
         this.userId = data.user_id || data.userId || null;
         this.username = data.username || '';
         this.totalPoints = parseFloat(data.total_points || data.totalPoints || 0);
-        this.totalDifficultyPoints = parseFloat(data.total_difficulty_points || data.totalDifficultyPoints || 0);
         this.gamesPlayed = parseInt(data.games_played || data.gamesPlayed || 0);
         this.gamesWon = parseInt(data.games_won || data.gamesWon || 0);
         this.correctBrandGuesses = parseInt(data.correct_brand_guesses || data.correctBrandGuesses || 0);
@@ -46,12 +45,14 @@ class Player {
     }
 
     /**
-     * Détermine le niveau de compétence du joueur
+     * Détermine le niveau de compétence du joueur basé sur les points totaux
+     * Utilise maintenant le système de niveaux de la DB (via LevelSystem)
      */
     get skillLevel() {
-        if (this.totalDifficultyPoints >= 100) return 'Expert';
-        if (this.totalDifficultyPoints >= 50) return 'Avancé';
-        if (this.totalDifficultyPoints >= 20) return 'Intermédiaire';
+        // Classification simplifiée basée sur les points totaux
+        if (this.totalPoints >= 1000) return 'Expert';
+        if (this.totalPoints >= 500) return 'Avancé';
+        if (this.totalPoints >= 100) return 'Intermédiaire';
         return 'Débutant';
     }
 
@@ -83,7 +84,6 @@ class Player {
             user_id: this.userId,
             username: this.username,
             total_points: this.totalPoints,
-            total_difficulty_points: this.totalDifficultyPoints,
             games_played: this.gamesPlayed,
             games_won: this.gamesWon,
             correct_brand_guesses: this.correctBrandGuesses,
@@ -108,7 +108,6 @@ class Player {
             userId: this.userId,
             username: this.username,
             totalPoints: this.totalPoints,
-            totalDifficultyPoints: this.totalDifficultyPoints,
             gamesPlayed: this.gamesPlayed,
             gamesWon: this.gamesWon,
             winRate: this.winRate,
@@ -136,7 +135,6 @@ class Player {
     updateGameStats(gameSession) {
         // Ajouter les points
         this.totalPoints += gameSession.pointsEarned || 0;
-        this.totalDifficultyPoints += gameSession.difficultyPointsEarned || 0;
 
         // Incrémenter les parties jouées
         this.gamesPlayed += 1;

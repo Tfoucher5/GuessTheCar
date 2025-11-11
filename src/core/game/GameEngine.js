@@ -219,22 +219,19 @@ class GameEngine extends EventEmitter {
             console.log('Fallback score calculated:', score);
         }
 
-        // ✅ SIMPLIFIÉ: Maintenant on a toujours basePoints ET difficultyPoints
-        const basePoints = score.basePoints || 0;
-        const difficultyPoints = score.difficultyPoints || 0;
+        // Points gagnés (totalPoints contient maintenant seulement les basePoints avec bonus)
+        const points = score.totalPoints || 0;
 
-        console.log('GameEngine.endGameWithSuccess - Score breakdown:', {
-            basePoints,
-            difficultyPoints,
+        console.log('GameEngine.endGameWithSuccess - Points earned:', {
+            points,
             totalPoints: score.totalPoints
         });
 
-        // ✅ Passer les points séparément
+        // Sauvegarder les points
         await this.playerManager.updatePlayerScore(
             gameState.userId,
             gameState.username,
-            basePoints,
-            difficultyPoints,
+            points,
             true,
             {
                 guildId: gameState.guildId,
@@ -316,22 +313,19 @@ class GameEngine extends EventEmitter {
             score.difficultyName = gameState.car.getDifficultyText();
             score.carName = gameState.car.getFullName();
 
-            // ✅ SIMPLIFIÉ: Maintenant on a toujours basePoints ET difficultyPoints
-            const basePoints = score.basePoints || 0;
-            const difficultyPoints = score.difficultyPoints || 0;
+            // Points gagnés (succès partiel)
+            const points = score.totalPoints || 0;
 
-            console.log('GameEngine.endGameWithPartialSuccess - Score breakdown:', {
-                basePoints,
-                difficultyPoints,
+            console.log('GameEngine.endGameWithPartialSuccess - Points earned:', {
+                points,
                 totalPoints: score.totalPoints
             });
 
-            // ✅ Passer les points séparément
+            // Sauvegarder les points
             await this.playerManager.updatePlayerScore(
                 gameState.userId,
                 gameState.username,
-                basePoints,
-                difficultyPoints,
+                points,
                 false, // Pas de succès complet
                 {
                     guildId: gameState.guildId,
@@ -353,7 +347,7 @@ class GameEngine extends EventEmitter {
                 type: 'gameOver',
                 isCorrect: false,
                 success: false,
-                feedback: `⌛ Plus d'essais !\nLa voiture était la **${gameState.car.getFullName()}**.\n\nVous avez trouvé la marque, vous gagnez ${(basePoints + difficultyPoints).toFixed(1)} points totaux (${basePoints.toFixed(1)} + ${difficultyPoints.toFixed(1)} bonus) !`,
+                feedback: `⌛ Plus d'essais !\nLa voiture était la **${gameState.car.getFullName()}**.\n\nVous avez trouvé la marque, vous gagnez ${points.toFixed(1)} points !`,
                 score,
                 timeSpent,
                 attempts: totalAttempts,
@@ -368,8 +362,7 @@ class GameEngine extends EventEmitter {
             await this.playerManager.updatePlayerScore(
                 gameState.userId,
                 gameState.username,
-                0,  // Pas de points de base
-                0,  // Pas de points de difficulté
+                0,  // Pas de points
                 false,
                 {
                     guildId: gameState.guildId,
@@ -495,8 +488,7 @@ class GameEngine extends EventEmitter {
                 await this.playerManager.updatePlayerScore(
                     gameState.userId,
                     gameState.username,
-                    score.basePoints,
-                    score.difficultyPoints,
+                    score.totalPoints || 0,
                     false,
                     {
                         guildId: gameState.guildId, // ✅ AJOUTÉ LE guildId ICI !
@@ -517,7 +509,6 @@ class GameEngine extends EventEmitter {
                 await this.playerManager.updatePlayerScore(
                     gameState.userId,
                     gameState.username,
-                    0,
                     0,
                     false,
                     {
@@ -577,8 +568,7 @@ class GameEngine extends EventEmitter {
                 await this.playerManager.updatePlayerScore(
                     gameState.userId,
                     gameState.username,
-                    score.basePoints,
-                    score.difficultyPoints,
+                    score.totalPoints || 0,
                     false,
                     {
                         guildId: gameState.guildId, // ✅ AJOUTÉ LE guildId ICI !
@@ -599,7 +589,6 @@ class GameEngine extends EventEmitter {
                 await this.playerManager.updatePlayerScore(
                     gameState.userId,
                     gameState.username,
-                    0,
                     0,
                     false,
                     {

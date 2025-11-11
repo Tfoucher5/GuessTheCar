@@ -1,4 +1,4 @@
-// src/shared/utils/EnhancedScoreCalculator.js - Version avec difficultyPoints
+// src/shared/utils/EnhancedScoreCalculator.js - Version sans difficultyPoints
 
 class EnhancedScoreCalculator {
     constructor() {
@@ -35,17 +35,10 @@ class EnhancedScoreCalculator {
             2: 15,  // Moyen
             3: 25   // Difficile
         };
-
-        // ✅ AJOUTÉ: Points de difficulté par niveau
-        this.DIFFICULTY_POINTS = {
-            1: 1,   // Facile: +1 point de difficulté
-            2: 2,   // Moyen: +2 points de difficulté
-            3: 4    // Difficile: +4 points de difficulté
-        };
     }
 
     /**
-     * ✅ MODIFIÉ: Calcule le score complet avec basePoints ET difficultyPoints séparés
+     * Calcule le score complet avec tous les bonus
      */
     calculateEnhancedScore(gameData) {
         const {
@@ -61,13 +54,11 @@ class EnhancedScoreCalculator {
 
         const timeInSeconds = Math.round(timeSpent / 1000);
         const basePoints = this.BASE_POINTS[car.difficulty] || 10;
-        const difficultyBase = this.DIFFICULTY_POINTS[car.difficulty] || 1;
 
         let score = {
             basePoints: 0,
-            difficultyPoints: 0,  // ✅ AJOUTÉ
+            totalPoints: 0,
             bonuses: {},
-            totalPoints: 0,       // Garde pour compatibilité
             achievements: [],
             details: {}
         };
@@ -75,13 +66,10 @@ class EnhancedScoreCalculator {
         // Points de base selon le succès
         if (isComplete && makeFound && modelFound) {
             score.basePoints = basePoints; // Points complets
-            score.difficultyPoints = difficultyBase; // ✅ Points de difficulté complets
         } else if (makeFound) {
             score.basePoints = basePoints * 0.5; // Points partiels
-            score.difficultyPoints = difficultyBase * 0.5; // ✅ Points de difficulté partiels
         } else {
             score.basePoints = 0; // Aucun point
-            score.difficultyPoints = 0; // ✅ Aucun point de difficulté
         }
 
         // Bonus de vitesse (seulement si jeu terminé)
@@ -90,8 +78,6 @@ class EnhancedScoreCalculator {
             if (speedBonus.multiplier > 1.0) {
                 score.bonuses.speed = speedBonus;
                 score.achievements.push(speedBonus.achievement);
-
-                // ✅ Appliquer le bonus aux points de base seulement
                 score.basePoints *= speedBonus.multiplier;
             }
         }
@@ -101,8 +87,6 @@ class EnhancedScoreCalculator {
         if (attemptsBonus.multiplier > 1.0) {
             score.bonuses.attempts = attemptsBonus;
             score.achievements.push(attemptsBonus.achievement);
-
-            // ✅ Appliquer le bonus aux points de base seulement
             score.basePoints *= attemptsBonus.multiplier;
         }
 
@@ -115,8 +99,6 @@ class EnhancedScoreCalculator {
                 description: 'Aucun indice utilisé'
             };
             score.achievements.push('🧠 Pur Instinct');
-
-            // ✅ Appliquer le bonus aux points de base seulement
             score.basePoints *= this.BONUSES.NO_HINTS;
         }
 
@@ -129,8 +111,6 @@ class EnhancedScoreCalculator {
                 description: 'Aucun changement de voiture'
             };
             score.achievements.push('🎯 Déterminé');
-
-            // ✅ Appliquer le bonus aux points de base seulement
             score.basePoints *= this.BONUSES.NO_CHANGES;
         }
 
@@ -144,18 +124,12 @@ class EnhancedScoreCalculator {
                 description: isPerfectGame.description
             };
             score.achievements.push('👑 MAÎTRE ABSOLU');
-
-            // ✅ Appliquer le bonus aux points de base ET de difficulté
             score.basePoints *= this.BONUSES.PERFECT_GAME;
-            score.difficultyPoints *= this.BONUSES.PERFECT_GAME;
         }
 
-        // ✅ Arrondir les points
+        // Arrondir les points
         score.basePoints = Math.round(score.basePoints * 10) / 10;
-        score.difficultyPoints = Math.round(score.difficultyPoints * 10) / 10;
-
-        // ✅ Calculer le total pour compatibilité
-        score.totalPoints = score.basePoints + score.difficultyPoints;
+        score.totalPoints = score.basePoints;
 
         // Détails pour l'affichage
         score.details = {
@@ -275,7 +249,7 @@ class EnhancedScoreCalculator {
     }
 
     /**
-     * ✅ MODIFIÉ: Formate les résultats pour l'affichage avec les deux types de points
+     * Formate les résultats pour l'affichage
      */
     formatScoreDisplay(score) {
         let display = {
@@ -297,11 +271,9 @@ class EnhancedScoreCalculator {
             display.title = '✅ Mission Accomplie !';
         }
 
-        // ✅ Description avec les deux types de points
+        // Description avec les points
         display.description = `**${score.details.carName}** trouvée !\n`;
-        display.description += `**Points de base:** ${score.basePoints}\n`;
-        display.description += `**Points de difficulté:** ${score.difficultyPoints}\n`;
-        display.description += `**Total:** ${score.totalPoints}`;
+        display.description += `**Points gagnés:** ${score.totalPoints}`;
 
         // Achievements
         if (score.achievements.length > 0) {
