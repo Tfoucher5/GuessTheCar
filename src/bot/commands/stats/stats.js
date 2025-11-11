@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const PlayerManager = require('../../../core/player/PlayerManager');
 const LevelSystem = require('../../../core/levels/LevelSystem');
+const prestigeSystem = require('../../../core/prestige/PrestigeSystem');
 const logger = require('../../../shared/utils/logger');
 const playerManager = new PlayerManager();
 
@@ -85,10 +86,13 @@ module.exports = {
                 avgTime = formatTime(Math.round(playerStats.averageResponseTime));
             }
 
-            // NOUVEAU: Obtenir le niveau du joueur (async)
-            const playerLevel = await LevelSystem.getPlayerLevel(playerStats.totalPoints);
-            const progressInfo = await LevelSystem.getProgressToNextLevel(playerStats.totalPoints);
+            // NOUVEAU: Obtenir le niveau du joueur avec prestige (async)
+            const prestigePoints = playerStats.prestigePoints || playerStats.prestige_points || playerStats.totalPoints || 0;
+            const prestigeLevel = playerStats.prestigeLevel || playerStats.prestige_level || 0;
+
+            const playerLevel = await LevelSystem.getPlayerLevelWithPrestige(prestigePoints, prestigeLevel);
             const totalPoints = Math.round((playerStats.totalPoints || 0) * 10) / 10;
+            const currentPrestige = await prestigeSystem.getPrestigeLevel(prestigeLevel);
 
             // Créer l'embed avec le niveau
             const statsEmbed = new EmbedBuilder()
@@ -96,16 +100,30 @@ module.exports = {
                 .setTitle(`📊 Statistiques de ${username}`)
                 .setThumbnail(targetUser.displayAvatarURL({ dynamic: true }));
 
-            // NOUVEAU: Ajouter le niveau en premier
-            let levelText = `*${playerLevel.title}*\n*${playerLevel.description}*\n\n`;
+            // NOUVEAU: Ajouter le prestige et niveau
+            let levelText = '';
 
-            if (!progressInfo.isMaxLevel) {
-                const progressBar = LevelSystem.generateProgressBar(progressInfo.progressPercentage);
-                levelText += `**Progression:** ${progressBar} ${Math.round(progressInfo.progressPercentage)}%\n`;
-                levelText += `**Prochain niveau:** ${progressInfo.nextLevelTitle}\n`;
-                levelText += `**Points nécessaires:** ${Math.round(progressInfo.pointsNeeded * 10) / 10}`;
+            // Afficher le prestige si > 0
+            if (prestigeLevel > 0) {
+                levelText += `${currentPrestige.emoji} **${currentPrestige.name}** - Prestige ${prestigeLevel}\n`;
+                levelText += `⚡ Difficulté: **${currentPrestige.multiplier}x**\n\n`;
+            }
+
+            levelText += `*${playerLevel.title}*\n*${playerLevel.description}*\n\n`;
+
+            // Progression dans le niveau actuel
+            const isMaxLevel = !playerLevel.nextLevel || playerLevel.maxPoints >= 9999999999;
+            if (!isMaxLevel) {
+                const progressBar = LevelSystem.generateProgressBar(playerLevel.progress);
+                levelText += `**Progression:** ${progressBar} ${Math.round(playerLevel.progress)}%\n`;
+                levelText += `**Prochain niveau:** ${playerLevel.nextLevel.title}\n`;
+                const pointsNeeded = playerLevel.nextLevel.minPoints - prestigePoints;
+                levelText += `**Points nécessaires:** ${Math.round(pointsNeeded * 10) / 10}`;
             } else {
-                levelText += progressInfo.message;
+                levelText += '🎊 **Niveau maximum atteint !**';
+                if (prestigeLevel < 10) {
+                    levelText += '\n💎 Utilisez `/prestige` pour monter en prestige !';
+                }
             }
 
             statsEmbed.addFields({

@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const PlayerManager = require('../../../core/player/PlayerManager');
 const LevelSystem = require('../../../core/levels/LevelSystem');
+const prestigeSystem = require('../../../core/prestige/PrestigeSystem');
 const logger = require('../../../shared/utils/logger');
 const playerManager = new PlayerManager();
 
@@ -236,13 +237,22 @@ async function createLeaderboardEmbed(leaderboard, leaderboardType, guildName, l
         else if (position === 3) positionIcon = '🥉';
         else positionIcon = `**${position}.**`;
 
-        // Niveau du joueur
-        const playerLevel = await LevelSystem.getPlayerLevel(player.totalPoints || 0);
+        // Niveau du joueur avec prestige
+        const prestigePoints = player.prestigePoints || player.prestige_points || player.totalPoints || 0;
+        const prestigeLevel = player.prestigeLevel || player.prestige_level || 0;
+        const playerLevel = await LevelSystem.getPlayerLevelWithPrestige(prestigePoints, prestigeLevel);
+
+        // Badge de prestige
+        let prestigeBadge = '';
+        if (prestigeLevel > 0) {
+            const prestige = await prestigeSystem.getPrestigeLevel(prestigeLevel);
+            prestigeBadge = ` ${prestige.emoji}`;
+        }
 
         // Stats selon le type de classement
         const stats = formatPlayerStats(player, leaderboardType.id);
 
-        leaderboardText += `${positionIcon} **${player.username}** ${playerLevel.emoji}\n`;
+        leaderboardText += `${positionIcon} **${player.username}**${prestigeBadge} ${playerLevel.emoji}\n`;
         leaderboardText += `└ ${stats}\n\n`;
     }
 

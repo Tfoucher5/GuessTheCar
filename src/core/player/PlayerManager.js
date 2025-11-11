@@ -67,7 +67,8 @@ class PlayerManager {
             // ✅ CORRIGÉ: Utiliser les noms de colonnes SQL (snake_case)
             const newStats = {
                 // ❌ SUPPRIMÉ: userId, username, guildId ne sont PAS des colonnes à mettre à jour
-                total_points: player.totalPoints + (points || 0),  // ✅ snake_case
+                total_points: player.totalPoints + (points || 0),  // ✅ Total historique
+                prestige_points: (player.prestigePoints || 0) + (points || 0),  // ✅ Points dans le prestige actuel
                 games_played: player.gamesPlayed + 1,  // ✅ snake_case
                 games_won: player.gamesWon + (isComplete ? 1 : 0),  // ✅ snake_case
                 correct_brand_guesses: player.correctBrandGuesses + (gameStats.makeFound ? 1 : 0),  // ✅ snake_case
@@ -362,6 +363,75 @@ class PlayerManager {
                 error
             });
             // Ne pas faire échouer le jeu si l'enregistrement rate
+        }
+    }
+
+    /**
+     * Fait monter un joueur en prestige
+     * Reset le prestige_points à 0 et augmente prestige_level
+     */
+    async prestigePlayer(userId, guildId = null) {
+        try {
+            const levelSystem = require('../levels/LevelSystem');
+            const prestigeSystem = require('../prestige/PrestigeSystem');
+
+            // Récupérer le joueur
+            const player = await this.playerRepository.findByUserIdAndGuild(userId, guildId);
+
+            if (!player) {
+                throw new ValidationError('Joueur non trouvé');
+            }
+
+            // Vérifier le niveau actuel
+            const currentLevel = await levelSystem.getPlayerLevelWithPrestige(
+                player.prestigePoints || 0,
+                player.prestigeLevel || 0
+            );
+
+            // Vérifier si peut prestigier
+            const canPrestige = await prestigeSystem.canPrestige(
+                player.prestigePoints || 0,
+                player.prestigeLevel || 0,
+                currentLevel.levelIndex + 1 // levelIndex est 0-based, les niveaux sont 1-based
+            );
+
+            if (!canPrestige.canPrestige) {
+                throw new ValidationError(canPrestige.reason);
+            }
+
+            // Monter en prestige
+            const newPrestigeLevel = (player.prestigeLevel || 0) + 1;
+
+            const updatedStats = {
+                prestige_level: newPrestigeLevel,
+                prestige_points: 0 // Reset les points dans le prestige
+                // total_points reste inchangé (historique)
+            };
+
+            const updatedPlayer = await this.playerRepository.updatePlayerStats(
+                userId,
+                updatedStats,
+                guildId
+            );
+
+            logger.info('Player prestiged:', {
+                userId,
+                guildId,
+                oldPrestige: player.prestigeLevel || 0,
+                newPrestige: newPrestigeLevel,
+                totalPoints: player.totalPoints
+            });
+
+            return {
+                success: true,
+                newPrestigeLevel,
+                nextPrestigeInfo: canPrestige.nextPrestigeInfo,
+                player: updatedPlayer
+            };
+
+        } catch (error) {
+            logger.error('Error prestiging player:', { userId, guildId, error });
+            throw error;
         }
     }
 }
