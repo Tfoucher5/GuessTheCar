@@ -2,7 +2,7 @@
 
 const { SlashCommandBuilder, ChannelType, MessageFlags } = require('discord.js');
 const GameEngineManager = require('../../../core/game/GameEngineManager');
-const EmbedBuilder = require('../../../bot/utils/embedBuilder');
+const EmbedBuilder = require('../../utils/embedBuilder');
 const logger = require('../../../shared/utils/logger');
 
 module.exports = {

@@ -2,7 +2,7 @@
 const { Events, MessageFlags, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const logger = require('../../shared/utils/logger');
 const { gameEngine } = require('./messageCreate');
-const EmbedBuilder = require('../../bot/utils/embedBuilder');
+const EmbedBuilder = require('../utils/embedBuilder');
 
 module.exports = {
     name: Events.InteractionCreate,

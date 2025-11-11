@@ -244,7 +244,7 @@ class GameState {
      * Calcule le score avec le nouveau système amélioré
      */
     calculateEnhancedScore() {
-        const EnhancedScoreCalculator = require('../../core/game/utils/EnhancedScoreCalculator');
+        const EnhancedScoreCalculator = require('./utils/EnhancedScoreCalculator');
         const calculator = new EnhancedScoreCalculator();
 
         // Calculer le nombre total d'essais

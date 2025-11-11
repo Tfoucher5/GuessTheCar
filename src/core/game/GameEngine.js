@@ -2,7 +2,7 @@ const EventEmitter = require('events');
 const GameState = require('./GameState');
 const CarService = require('../car/CarService');
 const PlayerManager = require('../player/PlayerManager');
-const { checkAnswer } = require('../../core/game/utils/textSimilarity');
+const { checkAnswer } = require('./utils/textSimilarity');
 const { validatePlayerGuess } = require('../../shared/utils/validation');
 const gameConfig = require('../../shared/config/game');
 const logger = require('../../shared/utils/logger');
@@ -289,7 +289,7 @@ class GameEngine extends EventEmitter {
                     modelFound: false   // ✅ Modèle pas trouvé
                 };
 
-                const EnhancedScoreCalculator = require('../../core/game/utils/EnhancedScoreCalculator');
+                const EnhancedScoreCalculator = require('./utils/EnhancedScoreCalculator');
                 const calculator = new EnhancedScoreCalculator();
                 score = calculator.calculateEnhancedScore(partialGameData);
 

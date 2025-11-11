@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
-const EmbedBuilder = require('../../../bot/utils/embedBuilder');
+const EmbedBuilder = require('../../utils/embedBuilder');
 const logger = require('../../../shared/utils/logger');
 
 module.exports = {
