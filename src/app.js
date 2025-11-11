@@ -1,7 +1,7 @@
 require('dotenv').config();
 const logger = require('./shared/utils/logger');
+const GameEngineManager = require('./core/game/GameEngineManager');
 
-let gameEngineInstance = null;
 let discordClient = null;
 
 // Gestion des erreurs non capturées
@@ -31,15 +31,15 @@ async function startApplication() {
             logger.info(`✅ API Server running on port ${API_PORT}`);
         });
 
+        // Initialiser le GameEngine
+        GameEngineManager.initialize();
+
         // Démarrer le bot Discord
         const discordClient = require('./bot/client');
         await discordClient.login(process.env.DISCORD_TOKEN);
         logger.info('✅ Discord Bot connected');
 
-        // === NOUVEAU : Récupérer l'instance du GameEngine après le démarrage du bot ===
-        await waitForGameEngine();
-
-        // === NOUVEAU : Gérer l'arrêt propre ===
+        // Gérer l'arrêt propre
         setupGracefulShutdown();
 
         logger.info('🎉 Application started successfully!');
@@ -50,74 +50,6 @@ async function startApplication() {
     }
 }
 
-async function waitForGameEngine() {
-    return new Promise((resolve) => {
-        const checkGameEngine = () => {
-            try {
-                // Méthode 1 : Récupérer depuis messageCreate.js
-                const messageCreateModule = require('./bot/events/messageCreate');
-                if (messageCreateModule.gameEngine) {
-                    gameEngineInstance = messageCreateModule.gameEngine;
-                    logger.info('✅ GameEngine instance found from messageCreate module');
-                    resolve();
-                    return;
-                }
-
-                // Méthode 2 : Créer une nouvelle instance si nécessaire
-                if (!gameEngineInstance) {
-                    const GameEngine = require('./core/game/GameEngine');
-                    gameEngineInstance = new GameEngine();
-                    logger.info('✅ New GameEngine instance created');
-                    resolve();
-                    return;
-                }
-
-                // Retry dans 1 seconde si pas trouvé
-                setTimeout(checkGameEngine, 1000);
-
-            } catch (error) {
-                logger.warn('GameEngine not yet available, retrying...', error.message);
-                setTimeout(checkGameEngine, 1000);
-            }
-        };
-
-        checkGameEngine();
-    });
-}
-
-/**
- * Fonction pour obtenir l'instance du GameEngine
- */
-function getGameEngineInstance() {
-    // Méthode 1 : Utiliser l'instance stockée
-    if (gameEngineInstance) {
-        return gameEngineInstance;
-    }
-
-    // Méthode 2 : Essayer de récupérer depuis messageCreate.js
-    try {
-        const messageCreateModule = require('./bot/events/messageCreate');
-        if (messageCreateModule.gameEngine) {
-            gameEngineInstance = messageCreateModule.gameEngine;
-            return gameEngineInstance;
-        }
-    } catch (error) {
-        logger.debug('Could not get GameEngine from messageCreate:', error.message);
-    }
-
-    // Méthode 3 : Créer une nouvelle instance (fallback)
-    try {
-        const GameEngine = require('./core/game/GameEngine');
-        gameEngineInstance = new GameEngine();
-        logger.warn('Created fallback GameEngine instance');
-        return gameEngineInstance;
-    } catch (error) {
-        logger.error('Could not create GameEngine instance:', error.message);
-        return null;
-    }
-}
-
-
 /**
  * Gestion de l'arrêt propre de l'application
  */
@@ -127,8 +59,8 @@ function setupGracefulShutdown() {
 
         try {
             // Logger les stats finales avant l'arrêt
-            const gameEngine = getGameEngineInstance();
-            if (gameEngine) {
+            if (GameEngineManager.isInitialized()) {
+                const gameEngine = GameEngineManager.getInstance();
                 const activeGames = gameEngine.getAllActiveGames();
                 logger.info('📋 Final stats before shutdown:', {
                     activeGames: activeGames.length,

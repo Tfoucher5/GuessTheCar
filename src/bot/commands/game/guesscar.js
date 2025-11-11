@@ -1,7 +1,7 @@
 // src/bot/commands/game/guesscar.js - Version mise à jour avec boutons et mention
 
 const { SlashCommandBuilder, ChannelType, MessageFlags } = require('discord.js');
-const { gameEngine } = require('../../events/messageCreate');
+const GameEngineManager = require('../../../core/game/GameEngineManager');
 const EmbedBuilder = require('../../../bot/utils/embedBuilder');
 const logger = require('../../../shared/utils/logger');
 
@@ -12,6 +12,9 @@ module.exports = {
 
     async execute(interaction) {
         try {
+            // Récupérer l'instance du GameEngine
+            const gameEngine = GameEngineManager.getInstance();
+
             // Vérifier s'il y a déjà une partie active pour ce joueur
             const existingGame = gameEngine.findActiveGameByUser(interaction.user.id);
 
