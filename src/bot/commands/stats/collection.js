@@ -8,6 +8,11 @@ const playerManager = new PlayerManager();
  * Génère une barre de progression visuelle
  */
 function getProgressBar(percentage) {
+    // Vérifier que percentage est un nombre valide
+    if (isNaN(percentage) || percentage === null || percentage === undefined) {
+        percentage = 0;
+    }
+
     const barLength = 15;
     const filled = Math.floor((percentage / 100) * barLength);
     const empty = barLength - filled;

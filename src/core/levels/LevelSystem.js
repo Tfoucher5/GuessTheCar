@@ -67,28 +67,32 @@ class LevelSystem {
         for (let i = levels.length - 1; i >= 0; i--) {
             if (totalPoints >= levels[i].minPoints) {
                 const level = levels[i];
+                const nextLevel = i < levels.length - 1 ? levels[i + 1] : null;
+                const isMaxLevel = !nextLevel || level.maxPoints >= 9999999999;
+
                 return {
                     ...level,
-                    progress: this.calculateProgress(totalPoints, level),
-                    nextLevel: i < levels.length - 1 ? levels[i + 1] : null
+                    progress: this.calculateProgress(totalPoints, level, isMaxLevel),
+                    nextLevel
                 };
             }
         }
 
         // Par défaut, retourne le premier niveau
+        const nextLevel = levels.length > 1 ? levels[1] : null;
         return {
             ...levels[0],
-            progress: this.calculateProgress(totalPoints, levels[0]),
-            nextLevel: levels.length > 1 ? levels[1] : null
+            progress: this.calculateProgress(totalPoints, levels[0], false),
+            nextLevel
         };
     }
 
     /**
      * Calcule le pourcentage de progression dans le niveau actuel
      */
-    calculateProgress(points, level) {
+    calculateProgress(points, level, isMaxLevel = false) {
         // Niveau max atteint
-        if (level.maxPoints >= 9999999999 || !level.nextLevel) {
+        if (isMaxLevel) {
             return 100;
         }
 
@@ -123,6 +127,11 @@ class LevelSystem {
      * Génère une barre de progression visuelle
      */
     generateProgressBar(percentage, length = 10) {
+        // Vérifier que percentage est un nombre valide
+        if (isNaN(percentage) || percentage === null || percentage === undefined) {
+            percentage = 0;
+        }
+
         const filled = Math.floor((percentage / 100) * length);
         const empty = length - filled;
         return '█'.repeat(filled) + '░'.repeat(empty);
