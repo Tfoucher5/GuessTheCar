@@ -109,7 +109,7 @@ module.exports = {
                 levelText += `⚡ Difficulté: **${currentPrestige.multiplier}x**\n\n`;
             }
 
-            levelText += `*${playerLevel.title}*\n*${playerLevel.description}*\n\n`;
+            levelText += `${playerLevel.emoji} *${playerLevel.title}*\n*${playerLevel.description}*\n\n`;
 
             // Progression dans le niveau actuel
             const isMaxLevel = !playerLevel.nextLevel || playerLevel.maxPoints >= 9999999999;

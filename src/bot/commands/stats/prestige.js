@@ -67,10 +67,9 @@ module.exports = {
                     );
 
                 if (currentLevelNumber < 20) {
-                    const pointsToLevel20 = currentLevel.nextLevel ? currentLevel.nextLevel.minPoints - prestigePoints : 0;
                     embed.addFields({
                         name: '🎯 Pour Débloquer le Prestige',
-                        value: `Atteignez le **niveau 20** (🧠 Sylvain Lyve)\nPoints nécessaires: **${pointsToLevel20.toLocaleString()}**`,
+                        value: `Atteignez le **niveau 20** (🧠 Sylvain Lyve)`,
                         inline: false
                     });
                 }
