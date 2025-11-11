@@ -47,7 +47,8 @@ class GameState {
             firstLetter: false,
             lastLetter: false,
             country: false,
-            length: false,
+            makeLength: false,
+            modelLength: false,
             year: false
         };
     }

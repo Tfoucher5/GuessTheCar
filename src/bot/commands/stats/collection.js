@@ -4,6 +4,16 @@ const logger = require('../../../shared/utils/logger');
 const statsHelper = require('../../../shared/utils/StatsHelper');
 const playerManager = new PlayerManager();
 
+/**
+ * Génère une barre de progression visuelle
+ */
+function getProgressBar(percentage) {
+    const barLength = 15;
+    const filled = Math.floor((percentage / 100) * barLength);
+    const empty = barLength - filled;
+    return '█'.repeat(filled) + '░'.repeat(empty);
+}
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('collection')
@@ -54,7 +64,7 @@ module.exports = {
                     name: '📊 Votre Collection',
                     value: `**Voitures:** ${userStats.carsFound}/${userStats.totalCars} (${completionPercentage}%)\n` +
                         `**Marques:** ${userStats.brandsFound}/${userStats.totalBrands}\n` +
-                        `**Progression:** ${this.getProgressBar(completionPercentage)}`,
+                        `**Progression:** ${getProgressBar(completionPercentage)}`,
                     inline: false
                 });
             } else {
@@ -71,14 +81,13 @@ module.exports = {
 
         } catch (error) {
             logger.error('Error in collection command:', { guildId: interaction.guild?.id, error });
-            // Gestion d'erreur...
-        }
-    },
 
-    getProgressBar(percentage) {
-        const barLength = 15;
-        const filled = Math.floor((percentage / 100) * barLength);
-        const empty = barLength - filled;
-        return '█'.repeat(filled) + '░'.repeat(empty) + ` ${percentage}%`;
+            const errorEmbed = new EmbedBuilder()
+                .setColor('#FF0000')
+                .setTitle('❌ Erreur')
+                .setDescription('Une erreur est survenue lors de la récupération de la collection.');
+
+            await interaction.editReply({ embeds: [errorEmbed] });
+        }
     }
 };

@@ -36,7 +36,7 @@ class CarService {
      * Crée une voiture depuis des données
      */
     createCarFromData(carData) {
-        return new Car(carData);
+        return Car.fromDatabase(carData);
     }
 
     /**

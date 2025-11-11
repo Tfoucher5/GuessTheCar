@@ -105,7 +105,7 @@ class RealTimeRankingManager {
             const updatedPlayer = {
                 userId: userId,
                 username: newStats.username,
-                totalDifficultyPoints: newStats.totalDifficultyPoints || 0,
+                totalPoints: newStats.totalPoints || 0,
                 gamesWon: newStats.gamesWon || 0,
                 gamesPlayed: newStats.gamesPlayed || 0,
                 bestTime: newStats.bestTime || null,
@@ -164,10 +164,9 @@ class RealTimeRankingManager {
         return {
             userId,
             username: stats.username || 'Unknown',
-            totalPoints: Number(stats.totalPoints || stats.total_points || 0), // PRIORITÉ totalPoints
-            totalDifficultyPoints: Number(stats.totalDifficultyPoints || stats.total_difficulty_points || 0),
+            totalPoints: Number(stats.totalPoints || stats.total_points || 0),
             gamesWon: Number(stats.gamesWon || stats.games_won || 0),
-            gamesPlayed: Number(stats.gamesPlayed || stats.games_played || 0),
+            gamesPlayed: Number(stats.gamesPlayed || 0),
             bestTime: stats.bestTime || stats.best_time || null,
             currentStreak: Number(stats.currentStreak || stats.current_streak || 0),
             bestStreak: Number(stats.bestStreak || stats.best_streak || 0),

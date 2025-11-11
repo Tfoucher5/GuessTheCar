@@ -192,7 +192,6 @@ class Player {
      */
     resetStats() {
         this.totalPoints = 0;
-        this.totalDifficultyPoints = 0;
         this.gamesPlayed = 0;
         this.gamesWon = 0;
         this.correctBrandGuesses = 0;

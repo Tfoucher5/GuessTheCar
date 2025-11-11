@@ -643,6 +643,39 @@ class PlayerRepository extends BaseRepository {
     }
 
     /**
+     * Récupère tous les joueurs pour le système de ranking
+     */
+    async getAllPlayersForRanking(guildId = null) {
+        let query = supabase
+            .from('user_scores')
+            .select('*')
+            .gt('total_points', 0)
+            .order('total_points', { ascending: false })
+            .order('games_won', { ascending: false });
+
+        if (guildId) {
+            query = query.eq('guild_id', guildId);
+        } else {
+            query = query.is('guild_id', null);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        return data.map(row => Player.fromDatabase(row));
+    }
+
+    /**
+     * Met à jour le ranking d'un joueur (utilisé par RealTimeRankingManager)
+     */
+    async updatePlayerRanking(userId, ranking, guildId = null) {
+        // Note: Cette méthode peut être utilisée pour des optimisations futures
+        // Pour l'instant, le ranking est calculé à la volée
+        // On pourrait ajouter une colonne 'ranking' dans user_scores si nécessaire
+        logger.debug(`Ranking updated for user ${userId}: ${ranking}`);
+    }
+
+    /**
      * Classement par activité
      */
     async getActivityLeaderboard(limit = 10, guildId = null) {

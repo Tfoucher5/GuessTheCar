@@ -239,7 +239,7 @@ function createLeaderboardEmbed(leaderboard, leaderboardType, guildName, limit) 
         else positionIcon = `**${position}.**`;
 
         // Niveau du joueur
-        const playerLevel = LevelSystem.getPlayerLevel(player.totalPoints || 0);
+        const playerLevel = await LevelSystem.getPlayerLevel(player.totalPoints || 0);
 
         // Stats selon le type de classement
         const stats = formatPlayerStats(player, leaderboardType.id);
@@ -367,7 +367,7 @@ async function addRequesterPosition(embed, leaderboard, interaction, type, guild
             const requesterStats = await playerManager.getPlayerWithRanking(interaction.user.id, guildId);
 
             if (requesterStats && requesterStats.ranking) {
-                const requesterLevel = LevelSystem.getPlayerLevel(requesterStats.totalPoints);
+                const requesterLevel = await LevelSystem.getPlayerLevel(requesterStats.totalPoints);
                 const stats = formatPlayerStats(requesterStats, type);
 
                 embed.addFields({

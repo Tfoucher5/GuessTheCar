@@ -260,7 +260,6 @@ class PlayerManager {
                 userId: player.userId,
                 username: player.username,
                 totalPoints: 0,
-                totalDifficultyPoints: 0,
                 gamesPlayed: 0,
                 gamesWon: 0,
                 correctBrandGuesses: 0,
