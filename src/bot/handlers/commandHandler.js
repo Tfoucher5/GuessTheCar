@@ -99,6 +99,35 @@ class CommandHandler {
         }
     }
 
+    async registerCommands() {
+        const { REST, Routes } = require('discord.js');
+        const token = process.env.DISCORD_TOKEN;
+        const clientId = process.env.DISCORD_CLIENT_ID;
+
+        if (!token || !clientId) {
+            logger.error('DISCORD_TOKEN or DISCORD_CLIENT_ID missing in environment variables');
+            return;
+        }
+
+        const rest = new REST({ version: '10' }).setToken(token);
+
+        try {
+            const commandsData = Array.from(this.commands.values()).map(cmd => cmd.data.toJSON());
+
+            logger.info(`Started refreshing ${commandsData.length} application (/) commands.`);
+
+            // Register commands globally (works in all guilds)
+            const data = await rest.put(
+                Routes.applicationCommands(clientId),
+                { body: commandsData }
+            );
+
+            logger.info(`Successfully reloaded ${data.length} application (/) commands.`);
+        } catch (error) {
+            logger.error('Error registering commands:', error);
+        }
+    }
+
     getCommandsList() {
         return Array.from(this.commands.values()).map(cmd => ({
             name: cmd.data.name,
