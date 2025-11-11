@@ -149,7 +149,9 @@ class GameState {
                 id: this.car.id,
                 brand: this.car.brand,
                 model: this.car.model,
-                difficulty: this.car.difficulty
+                rarity: this.car.rarity,
+                rarityName: this.car.getRarityName(),
+                basePoints: this.car.getBasePoints()
             }
         };
     }
@@ -234,9 +236,10 @@ class GameState {
             totalPoints: Math.round(finalPoints * 10) / 10,
             isFullSuccess: false,
             makeFound: makeFound,
-            // AJOUT: Inclure les infos de difficulté
-            difficultyName: this.car.getDifficultyText(),
-            difficulty: this.car.difficulty
+            // Inclure les infos de rareté
+            rarity: this.car.rarity,
+            rarityName: this.car.getRarityName(),
+            rarityText: this.car.getRarityText()
         };
     }
 
@@ -282,9 +285,10 @@ class GameState {
             isFullSuccess: true,
             makeFound: true,
             modelFound: true,
-            // AJOUT: Inclure les infos de difficulté
-            difficultyName: this.car.getDifficultyText(),
-            difficulty: this.car.difficulty
+            // Inclure les infos de rareté
+            rarity: this.car.rarity,
+            rarityName: this.car.getRarityName(),
+            rarityText: this.car.getRarityText()
         };
     }
 

@@ -101,8 +101,8 @@ class GameEmbedBuilder {
         }
 
         // Fallback vers l'ancien système si pas de score amélioré
-        const difficultyText = car ? car.getDifficultyText() :
-            (score.difficultyName || score.difficulty || 'Inconnue');
+        const rarityText = car ? car.getRarityText() :
+            (score.rarityText || score.rarityName || 'Inconnue');
 
         const carName = car ? car.getFullName() :
             (score.carName || 'Voiture inconnue');
@@ -128,8 +128,8 @@ class GameEmbedBuilder {
                     inline: true
                 },
                 {
-                    name: '📊 Difficulté',
-                    value: difficultyText,
+                    name: '✨ Rareté',
+                    value: rarityText,
                     inline: true
                 },
                 {
@@ -207,7 +207,7 @@ class GameEmbedBuilder {
         // Stats de performance
         display.fields.push({
             name: '📊 Performance',
-            value: `**Temps:** ${score.details.timeSpent}s\n**Essais:** ${score.details.totalAttempts}\n**Difficulté:** ${score.details.difficulty}`,
+            value: `**Temps:** ${score.details.timeSpent}s\n**Essais:** ${score.details.totalAttempts}\n**Rareté:** ${score.details.rarity || score.details.rarityName || 'Inconnue'}`,
             inline: true
         });
 
@@ -432,11 +432,11 @@ class GameEmbedBuilder {
      * Crée un embed de démarrage de partie avec boutons
      */
     static createGameStartEmbed(car, gameState) {
-        const difficultyText = car.getDifficultyText();
+        const rarityText = car.getRarityText();
         const country = car.country || 'Inconnu';
 
         const embed = this.createGameEmbed(gameState, {
-            title: `🚗 Nouvelle partie - Difficulté: **${difficultyText}**`,
+            title: `🚗 Nouvelle partie - Rareté: **${rarityText}**`,
             description: 'C\'est parti ! Devine la **marque** de la voiture.\n\n' +
                 `🌍 **Pays d'origine:** ${country}\n\n` +
                 '• Utilise les boutons ci-dessous pour interagir\n' +

@@ -29,12 +29,9 @@ class EnhancedScoreCalculator {
             PERFECT_GAME: 2.5        // x2.5 pour un jeu parfait (toutes conditions)
         };
 
-        // Points de base par difficulté
-        this.BASE_POINTS = {
-            1: 10,  // Facile
-            2: 15,  // Moyen
-            3: 25   // Difficile
-        };
+        // Note: Les points de base sont maintenant définis par la rareté de la voiture
+        // commune: 10pts, peu_commune: 25pts, rare: 50pts, epique: 100pts, legendaire: 200pts
+        // Voir car.getBasePoints() pour les valeurs actuelles
     }
 
     /**
@@ -53,7 +50,8 @@ class EnhancedScoreCalculator {
         } = gameData;
 
         const timeInSeconds = Math.round(timeSpent / 1000);
-        const basePoints = this.BASE_POINTS[car.difficulty] || 10;
+        // Utiliser les points de base de la voiture selon sa rareté
+        const basePoints = car.getBasePoints();
 
         let score = {
             basePoints: 0,
@@ -137,7 +135,8 @@ class EnhancedScoreCalculator {
             totalAttempts,
             hintsUsed,
             carChanges,
-            difficulty: car.getDifficultyText(),
+            rarity: car.getRarityText(), // Utiliser la rareté au lieu de la difficulté
+            rarityName: car.getRarityName(),
             carName: car.getFullName()
         };
 
@@ -305,7 +304,7 @@ class EnhancedScoreCalculator {
         // Stats de performance
         display.fields.push({
             name: '📊 Performance',
-            value: `**Temps:** ${score.details.timeSpent}s\n**Essais:** ${score.details.totalAttempts}\n**Difficulté:** ${score.details.difficulty}`,
+            value: `**Temps:** ${score.details.timeSpent}s\n**Essais:** ${score.details.totalAttempts}\n**Rareté:** ${score.details.rarity}`,
             inline: true
         });
 

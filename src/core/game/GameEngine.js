@@ -205,7 +205,8 @@ class GameEngine extends EventEmitter {
         } catch (error) {
             logger.warn('Error calculating enhanced score, falling back to simple score:', error.message);
             score = gameState.calculateFullSuccessScore();
-            score.difficultyName = gameState.car.getDifficultyText();
+            score.rarityText = gameState.car.getRarityText();
+            score.rarityName = gameState.car.getRarityName();
             score.carName = gameState.car.getFullName();
             console.log('Fallback score calculated:', score);
         }
@@ -300,7 +301,8 @@ class GameEngine extends EventEmitter {
                 console.log('Fallback partial score calculated:', score);
             }
 
-            score.difficultyName = gameState.car.getDifficultyText();
+            score.rarityText = gameState.car.getRarityText();
+            score.rarityName = gameState.car.getRarityName();
             score.carName = gameState.car.getFullName();
 
             // Points gagnés (succès partiel)
