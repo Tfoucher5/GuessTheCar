@@ -350,20 +350,22 @@ class PlayerRepository extends BaseRepository {
      */
     async getPlayerCollection(userId, guildId = null) {
         // Compter les voitures trouvées
+        // Si guildId = null, on récupère TOUTES les voitures de l'utilisateur (inter-serveur)
+        // Si guildId est défini, on filtre par serveur
         let carsQuery = supabase
             .from('user_cars_found')
-            .select('car_id, brand_id', { count: 'exact' })
+            .select('car_id, brand_id')
             .eq('user_id', userId);
 
         if (guildId) {
             carsQuery = carsQuery.eq('guild_id', guildId);
-        } else {
-            carsQuery = carsQuery.is('guild_id', null);
         }
+        // Sinon, pas de filtre guild_id = on prend tout (inter-serveur)
 
-        const { data: carsData, count: carsCount } = await carsQuery;
+        const { data: carsData } = await carsQuery;
 
-        // Compter les marques uniques
+        // Compter les voitures uniques (distinctes) et marques uniques
+        const uniqueCars = [...new Set(carsData?.map(c => c.car_id) || [])];
         const uniqueBrands = [...new Set(carsData?.map(c => c.brand_id) || [])];
 
         // Compter le total de voitures et marques
@@ -371,7 +373,7 @@ class PlayerRepository extends BaseRepository {
         const { count: totalBrands } = await supabase.from('brands').select('*', { count: 'exact', head: true });
 
         return {
-            carsFound: carsCount || 0,
+            carsFound: uniqueCars.length,
             brandsFound: uniqueBrands.length,
             totalCars: totalCars || 0,
             totalBrands: totalBrands || 0
@@ -379,7 +381,7 @@ class PlayerRepository extends BaseRepository {
     }
 
     /**
-     * Obtient le classement des collectionneurs par serveur
+     * Obtient le classement des collectionneurs (inter-serveur si guildId = null)
      */
     async getCollectionLeaderboard(limit, guildId = null) {
         // Cette requête nécessite une fonction RPC côté Supabase ou un traitement côté client
@@ -390,9 +392,8 @@ class PlayerRepository extends BaseRepository {
 
         if (guildId) {
             query = query.eq('guild_id', guildId);
-        } else {
-            query = query.is('guild_id', null);
         }
+        // Sinon, pas de filtre guild_id = classement inter-serveur
 
         const { data: carsFound } = await query;
 
