@@ -135,8 +135,7 @@ class LevelSystem {
         const filled = Math.floor((percentage / 100) * length);
         const empty = length - filled;
 
-        // Utiliser des emojis carrés pour une meilleure compatibilité Discord
-        return '🟦'.repeat(filled) + '⬜'.repeat(empty);
+        return '█'.repeat(filled) + '░'.repeat(empty);
     }
 
     /**
