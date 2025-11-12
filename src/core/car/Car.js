@@ -177,11 +177,11 @@ class Car {
      */
     getRarityEmoji() {
         switch (this.rarity) {
-        case 'commune': return '🟢';
-        case 'peu_commune': return '🔵';
-        case 'rare': return '🟣';
-        case 'epique': return '🟠';
-        case 'legendaire': return '🔴';
+        case 'commune': return '⚪';
+        case 'peu_commune': return '🟢';
+        case 'rare': return '🔵';
+        case 'epique': return '🟣';
+        case 'legendaire': return '🟠';
         default: return '🟢';
         }
     }
