@@ -12,6 +12,8 @@ module.exports = {
 
     async execute(interaction) {
         try {
+            logger.debug('Starting guesscar command execution', { userId: interaction.user.id });
+
             // Récupérer l'instance du GameEngine
             const gameEngine = GameEngineManager.getInstance();
 
@@ -19,31 +21,50 @@ module.exports = {
             const existingGame = gameEngine.findActiveGameByUser(interaction.user.id);
 
             if (existingGame) {
+                logger.debug('User already has active game', { userId: interaction.user.id, threadId: existingGame.threadId });
                 const errorEmbed = EmbedBuilder.createErrorEmbed(
                     'Partie déjà en cours',
                     `Vous avez déjà une partie en cours dans <#${existingGame.threadId}> !`
                 );
-                await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
+
+                // Vérifier si l'interaction n'a pas déjà été répondue
+                if (!interaction.replied && !interaction.deferred) {
+                    await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
+                }
                 return;
             }
 
             // Différer la réponse pour éviter le timeout
-            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+            logger.debug('Deferring reply', { userId: interaction.user.id });
+            if (!interaction.replied && !interaction.deferred) {
+                await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+            } else {
+                logger.warn('Cannot defer reply - interaction already responded', {
+                    userId: interaction.user.id,
+                    replied: interaction.replied,
+                    deferred: interaction.deferred
+                });
+                return;
+            }
 
             // Créer le thread pour la partie
+            logger.debug('Creating thread', { userId: interaction.user.id });
             const thread = await interaction.channel.threads.create({
                 name: `🚗 Partie de ${interaction.user.username}`,
                 type: ChannelType.PrivateThread,
                 autoArchiveDuration: 60
             });
+            logger.debug('Thread created', { userId: interaction.user.id, threadId: thread.id });
 
             // Démarrer la partie
+            logger.debug('Starting game', { userId: interaction.user.id, threadId: thread.id });
             const gameState = await gameEngine.startGame(
                 interaction.user.id,
                 interaction.user.username,
                 thread.id,
                 interaction.guild?.id
             );
+            logger.debug('Game started', { userId: interaction.user.id, threadId: thread.id });
 
             // ✅ MODIFIÉ: Créer l'embed de démarrage avec boutons
             const gameStartResponse = EmbedBuilder.createGameStartEmbed(gameState.car, gameState);
@@ -74,7 +95,12 @@ module.exports = {
         } catch (error) {
             logger.error('Error in guesscar command:', {
                 userId: interaction.user.id,
-                error: error.message
+                error: error.message,
+                stack: error.stack,
+                interactionState: {
+                    replied: interaction.replied,
+                    deferred: interaction.deferred
+                }
             });
 
             const errorEmbed = EmbedBuilder.createErrorEmbed(
@@ -82,10 +108,19 @@ module.exports = {
                 'Impossible de créer une partie pour le moment. Veuillez réessayer.'
             );
 
-            if (interaction.deferred) {
-                await interaction.editReply({ embeds: [errorEmbed] });
-            } else {
-                await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
+            try {
+                if (interaction.deferred) {
+                    await interaction.editReply({ embeds: [errorEmbed] });
+                } else if (!interaction.replied) {
+                    await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
+                } else {
+                    logger.warn('Cannot send error message - interaction already replied', { userId: interaction.user.id });
+                }
+            } catch (replyError) {
+                logger.error('Failed to send error message:', {
+                    userId: interaction.user.id,
+                    error: replyError.message
+                });
             }
         }
     }
