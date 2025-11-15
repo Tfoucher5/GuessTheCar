@@ -30,8 +30,7 @@ module.exports = {
             // Vérifier si c'est le serveur officiel
             if (!roleManager.isOfficialGuild(interaction.guild.id)) {
                 return await interaction.editReply({
-                    content: '❌ La gestion des rôles est uniquement disponible sur le serveur officiel GuessTheCar.\n\n' +
-                        'Pour obtenir l\'ID de votre serveur et le configurer comme serveur officiel, ajoutez `OFFICIAL_GUILD_ID` dans votre fichier `.env`.',
+                    content: '❌ La gestion des rôles est uniquement disponible sur le serveur officiel GuessTheCar.',
                     ephemeral: true
                 });
             }

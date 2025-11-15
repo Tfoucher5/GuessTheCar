@@ -119,14 +119,17 @@ async function handleHintButton(interaction, threadId, gameState) {
         const gameEngine = GameEngineManager.getInstance();
         const result = gameEngine.getHint(threadId);
 
-        const hintEmbed = EmbedBuilder.createGameEmbed(gameState, {
+        // Récupérer le gameState mis à jour après l'indice
+        const updatedGameState = gameEngine.getActiveGame(threadId);
+
+        const hintEmbed = EmbedBuilder.createGameEmbed(updatedGameState, {
             color: '#FFA500',
             title: '💡 Indice',
             description: result.message
         });
 
         // Mettre à jour les boutons avec le nouvel état
-        const updatedButtons = EmbedBuilder.updateGameButtons(gameState);
+        const updatedButtons = EmbedBuilder.updateGameButtons(updatedGameState);
 
         await interaction.reply({
             embeds: [hintEmbed],
