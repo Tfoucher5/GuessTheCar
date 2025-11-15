@@ -72,7 +72,12 @@ async function handleGameButton(interaction) {
             action,
             type,
             threadId,
-            userId: interaction.user.id
+            userId: interaction.user.id,
+            channel: {
+                id: interaction.channel?.id,
+                type: interaction.channel?.type,
+                isThread: interaction.channel?.isThread()
+            }
         });
 
         if (action !== 'game') return;
@@ -80,22 +85,54 @@ async function handleGameButton(interaction) {
         // Récupérer l'instance du GameEngine
         const gameEngine = GameEngineManager.getInstance();
 
+        // Logging détaillé pour diagnostiquer le problème
+        const allActiveGames = gameEngine.getAllActiveGames();
+        logger.debug('Active games status:', {
+            totalActiveGames: allActiveGames.length,
+            activeGameThreadIds: allActiveGames.map(g => g.threadId),
+            requestedThreadId: threadId
+        });
+
         // Vérifier que l'utilisateur a une partie active dans ce thread
         const activeGame = gameEngine.getActiveGame(threadId);
 
-        if (!activeGame || activeGame.userId !== interaction.user.id) {
-            logger.warn('Game button click rejected:', {
-                hasActiveGame: !!activeGame,
-                activeGameUserId: activeGame?.userId,
-                requestUserId: interaction.user.id
+        if (!activeGame) {
+            logger.error('No active game found for thread:', {
+                requestedThreadId: threadId,
+                userId: interaction.user.id,
+                allActiveGames: allActiveGames.map(g => ({
+                    threadId: g.threadId,
+                    userId: g.gameState.userId,
+                    username: g.gameState.username
+                }))
             });
 
             await interaction.reply({
-                content: '❌ Cette partie ne vous appartient pas ou n\'est plus active.',
+                content: '❌ Aucune partie active trouvée dans ce fil. La partie a peut-être expiré.',
                 flags: MessageFlags.Ephemeral
             });
             return;
         }
+
+        if (activeGame.userId !== interaction.user.id) {
+            logger.warn('Game belongs to different user:', {
+                gameUserId: activeGame.userId,
+                requestUserId: interaction.user.id,
+                threadId: threadId
+            });
+
+            await interaction.reply({
+                content: '❌ Cette partie ne vous appartient pas.',
+                flags: MessageFlags.Ephemeral
+            });
+            return;
+        }
+
+        logger.debug('Game button validation passed:', {
+            threadId,
+            userId: interaction.user.id,
+            buttonType: type
+        });
 
         // Traiter selon le type de bouton
         switch (type) {
