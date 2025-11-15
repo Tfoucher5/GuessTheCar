@@ -1,10 +1,14 @@
 const logger = require('../../shared/utils/logger');
+const discordConfig = require('../../shared/config/discord');
 
 /**
  * Gestionnaire de rôles Discord basé sur le niveau et le prestige
  */
 class RoleManager {
     constructor() {
+        // ID du serveur officiel (seul serveur où les rôles sont gérés)
+        this.officialGuildId = discordConfig.officialGuildId;
+
         // Configuration des rôles par prestige
         this.prestigeRoles = {
             0: { name: 'Normal', color: '#808080' },         // Gris
@@ -41,6 +45,12 @@ class RoleManager {
      */
     async syncUserRoles(guild, userId, level, prestigeLevel) {
         try {
+            // Vérifier si c'est le serveur officiel
+            if (!this.isOfficialGuild(guild.id)) {
+                logger.debug(`Skipping role sync for non-official guild ${guild.id}`);
+                return;
+            }
+
             // Récupérer le membre du serveur
             const member = await guild.members.fetch(userId);
             if (!member) {
@@ -66,6 +76,19 @@ class RoleManager {
         } catch (error) {
             logger.error('Error syncing user roles:', error);
         }
+    }
+
+    /**
+     * Vérifie si un serveur est le serveur officiel
+     * @param {string} guildId - L'ID du serveur
+     * @returns {boolean}
+     */
+    isOfficialGuild(guildId) {
+        if (!this.officialGuildId) {
+            logger.warn('OFFICIAL_GUILD_ID not configured - role management disabled');
+            return false;
+        }
+        return guildId === this.officialGuildId;
     }
 
     /**

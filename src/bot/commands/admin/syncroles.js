@@ -27,6 +27,15 @@ module.exports = {
                 });
             }
 
+            // Vérifier si c'est le serveur officiel
+            if (!roleManager.isOfficialGuild(interaction.guild.id)) {
+                return await interaction.editReply({
+                    content: '❌ La gestion des rôles est uniquement disponible sur le serveur officiel GuessTheCar.\n\n' +
+                        'Pour obtenir l\'ID de votre serveur et le configurer comme serveur officiel, ajoutez `OFFICIAL_GUILD_ID` dans votre fichier `.env`.',
+                    ephemeral: true
+                });
+            }
+
             const targetUser = interaction.options.getUser('utilisateur');
             const userId = targetUser ? targetUser.id : interaction.user.id;
             const username = targetUser ? targetUser.username : interaction.user.username;

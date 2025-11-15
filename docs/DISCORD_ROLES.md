@@ -4,6 +4,8 @@
 
 Le bot GuessTheCar attribue automatiquement des rôles Discord à vos membres en fonction de leur progression dans le jeu. Les rôles sont mis à jour automatiquement lorsque les joueurs montent de niveau ou changent de prestige.
 
+**⚠️ Important** : La gestion des rôles est **uniquement active sur le serveur officiel** configuré dans les variables d'environnement. Sur les autres serveurs, le bot fonctionne normalement mais ne gère pas les rôles.
+
 ## Types de rôles
 
 ### Rôles de Prestige
@@ -36,6 +38,28 @@ Les rôles de niveau sont attribués par paliers :
 | 20 | `[GuessTheCar] Niveau 20 (Max)` | Rouge (#E74C3C) |
 
 ## Configuration requise
+
+### 0. Configuration du serveur officiel
+
+**Première étape obligatoire** : Configurer l'ID de votre serveur Discord officiel.
+
+#### Comment obtenir l'ID de votre serveur :
+
+1. Activez le **Mode Développeur** dans Discord :
+   - Paramètres utilisateur → Avancés → Mode Développeur ✅
+
+2. Faites un clic droit sur votre serveur (dans la liste de gauche)
+
+3. Cliquez sur **Copier l'identifiant du serveur**
+
+4. Ajoutez cet ID dans votre fichier `.env` :
+   ```env
+   OFFICIAL_GUILD_ID=123456789012345678
+   ```
+
+5. Redémarrez le bot
+
+⚠️ **Sans cette configuration, la gestion des rôles sera désactivée sur tous les serveurs.**
 
 ### 1. Permissions du bot
 
@@ -121,10 +145,12 @@ Pour désactiver temporairement le système de rôles sans modifier le code :
 
 ### Les rôles ne sont pas attribués
 
-1. ✅ Vérifiez que le bot a la permission "Gérer les rôles"
-2. ✅ Vérifiez que l'intent "Server Members" est activé dans le Developer Portal
-3. ✅ Vérifiez que le rôle du bot est plus haut que les rôles `[GuessTheCar]`
-4. ✅ Essayez `/syncroles` pour forcer la synchronisation
+1. ✅ **Vérifiez que `OFFICIAL_GUILD_ID` est configuré dans `.env`**
+2. ✅ **Vérifiez que vous êtes sur le bon serveur** (l'ID doit correspondre)
+3. ✅ Vérifiez que le bot a la permission "Gérer les rôles"
+4. ✅ Vérifiez que l'intent "Server Members" est activé dans le Developer Portal
+5. ✅ Vérifiez que le rôle du bot est plus haut que les rôles `[GuessTheCar]`
+6. ✅ Essayez `/syncroles` pour forcer la synchronisation
 
 ### Les rôles ne sont pas mis à jour après une partie
 
@@ -162,3 +188,20 @@ Pour toute question ou problème avec le système de rôles :
 - Un joueur ne peut avoir qu'**un seul rôle de prestige** et **un seul rôle de niveau** à la fois
 - Les rôles sont créés automatiquement s'ils n'existent pas
 - La synchronisation des rôles est non-bloquante : une erreur de rôle n'interrompra pas le jeu
+- **La gestion des rôles est limitée au serveur officiel uniquement** pour éviter :
+  - La pollution de serveurs tiers avec des rôles non désirés
+  - Des conflits de permissions sur d'autres serveurs
+  - Une charge inutile sur le bot
+
+## Multi-serveurs
+
+Si votre bot est présent sur plusieurs serveurs Discord :
+
+- ✅ Le **jeu fonctionne normalement** sur tous les serveurs
+- ✅ Les **statistiques sont séparées** par serveur (via `guildId`)
+- ✅ Les **classements** sont indépendants par serveur
+- ❌ Les **rôles** ne sont gérés **que sur le serveur officiel** configuré
+
+Pour obtenir des rôles sur d'autres serveurs, vous devriez :
+1. Créer une instance séparée du bot pour chaque communauté
+2. Ou configurer manuellement les rôles sur les autres serveurs (sans synchronisation automatique)
