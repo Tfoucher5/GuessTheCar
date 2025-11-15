@@ -1,9 +1,9 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const GameEngineManager = require('../../../core/game/GameEngineManager');
 const EmbedBuilder = require('../../utils/embedBuilder');
-const roleManager = require('../../core/roles/RoleManager');
-const PlayerManager = require('../../core/player/PlayerManager');
-const levelSystem = require('../../core/levels/LevelSystem');
+const roleManager = require('../../../core/roles/RoleManager');
+const PlayerManager = require('../../../core/player/PlayerManager');
+const levelSystem = require('../../../core/levels/LevelSystem');
 const logger = require('../../../shared/utils/logger');
 module.exports = {
     data: new SlashCommandBuilder()
