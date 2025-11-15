@@ -212,13 +212,33 @@ async function handleHintButton(interaction, threadId, gameState) {
  */
 async function handleChangeButton(interaction, threadId) {
     try {
+        logger.debug('Change car button - starting', {
+            threadId,
+            userId: interaction.user.id,
+            channelId: interaction.channelId
+        });
+
         const gameEngine = GameEngineManager.getInstance();
+
+        logger.debug('Change car button - calling changeCar', { threadId });
         const result = await gameEngine.changeCar(threadId);
+        logger.debug('Change car button - changeCar result', { result });
 
         // Récupérer l'état mis à jour
         const updatedGameState = gameEngine.getActiveGame(threadId);
+
+        if (!updatedGameState) {
+            logger.error('Change car button - no game state after changeCar!', { threadId });
+            throw new Error('État du jeu introuvable après changement');
+        }
+
         const newCar = updatedGameState.car;
         const country = newCar.country || 'Inconnu';
+
+        logger.debug('Change car button - creating embed', {
+            carName: newCar.getFullName(),
+            changesRemaining: result.changesRemaining
+        });
 
         const changeEmbed = EmbedBuilder.createGameEmbed(updatedGameState, {
             title: '🔄 Nouvelle voiture',
@@ -230,23 +250,37 @@ async function handleChangeButton(interaction, threadId) {
         // Mettre à jour les boutons
         const updatedButtons = EmbedBuilder.updateGameButtons(updatedGameState);
 
+        logger.debug('Change car button - sending reply');
         await interaction.reply({
             embeds: [changeEmbed],
             components: [updatedButtons],
             ephemeral: false
         });
 
+        logger.debug('Change car button - success');
+
     } catch (error) {
-        logger.error('Error handling change button:', error);
+        logger.error('Error handling change button:', {
+            error: error.message,
+            stack: error.stack,
+            threadId,
+            userId: interaction.user.id
+        });
 
         const errorMessage = error.message === 'Limite de changements de voiture atteinte'
             ? '❌ Vous avez atteint la limite de changements de voiture (3 maximum).'
-            : '❌ Impossible de changer de voiture pour le moment.';
+            : `❌ Impossible de changer de voiture pour le moment. (${error.message})`;
 
-        await interaction.reply({
-            content: errorMessage,
-            flags: MessageFlags.Ephemeral
-        });
+        try {
+            if (!interaction.replied && !interaction.deferred) {
+                await interaction.reply({
+                    content: errorMessage,
+                    flags: MessageFlags.Ephemeral
+                });
+            }
+        } catch (replyError) {
+            logger.error('Failed to send error reply for change button:', replyError);
+        }
     }
 }
 

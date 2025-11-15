@@ -76,16 +76,25 @@ class CommandHandler {
                 error: error.message,
                 stack: error.stack,
                 userId: interaction.user.id,
-                guildId: interaction.guild?.id
+                guildId: interaction.guild?.id,
+                interactionState: {
+                    replied: interaction.replied,
+                    deferred: interaction.deferred
+                }
             });
 
             const errorMessage = 'Une erreur est survenue lors de l\'exécution de cette commande.';
 
             try {
-                if (interaction.replied || interaction.deferred) {
-                    await interaction.followUp({
-                        content: errorMessage,
-                        ephemeral: true
+                // Ne pas envoyer de message d'erreur si la commande a déjà géré sa propre erreur
+                if (interaction.replied) {
+                    logger.debug('Interaction already replied - skipping error message');
+                    return;
+                }
+
+                if (interaction.deferred) {
+                    await interaction.editReply({
+                        content: errorMessage
                     });
                 } else {
                     await interaction.reply({
@@ -94,7 +103,13 @@ class CommandHandler {
                     });
                 }
             } catch (followUpError) {
-                logger.error('Failed to send error message to user:', followUpError);
+                logger.error('Failed to send error message to user:', {
+                    error: followUpError.message,
+                    interactionState: {
+                        replied: interaction.replied,
+                        deferred: interaction.deferred
+                    }
+                });
             }
         }
     }
