@@ -4,6 +4,7 @@ class GameEmbedBuilder {
 
     /**
      * Crée l'ActionRow avec les boutons de jeu
+     * Note : Le threadId n'est plus dans le customId car on utilise interaction.channelId
      */
     static createGameButtons(gameState) {
         // Déterminer si les boutons doivent être désactivés
@@ -11,19 +12,19 @@ class GameEmbedBuilder {
         const canChangeCar = gameState.carChangesCount < 3; // MAX_CAR_CHANGES = 3
 
         const hintButton = new ButtonBuilder()
-            .setCustomId(`game_hint_${gameState.threadId}`)
+            .setCustomId('game_hint')
             .setLabel('💡 Indice')
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(!canUseHint);
 
         const changeButton = new ButtonBuilder()
-            .setCustomId(`game_change_${gameState.threadId}`)
+            .setCustomId('game_change')
             .setLabel('🔄 Changer de voiture')
             .setStyle(ButtonStyle.Primary)
             .setDisabled(!canChangeCar);
 
         const abandonButton = new ButtonBuilder()
-            .setCustomId(`game_abandon_${gameState.threadId}`)
+            .setCustomId('game_abandon')
             .setLabel('🏳️ Abandonner')
             .setStyle(ButtonStyle.Danger);
 

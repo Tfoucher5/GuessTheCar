@@ -57,12 +57,23 @@ async function handleGameButton(interaction) {
     try {
         const customId = interaction.customId;
 
-        // Parser le customId de manière robuste
-        // Format: game_TYPE_THREADID (où THREADID peut contenir des _)
+        // Parser le type de bouton depuis le customId
+        // Format: game_TYPE_THREADID
         const parts = customId.split('_');
         const action = parts[0];
         const type = parts[1];
-        const threadId = parts.slice(2).join('_'); // Rejoindre le reste en cas de _ dans le threadId
+
+        // IMPORTANT : Utiliser interaction.channelId au lieu de parser le threadId
+        // C'est plus fiable car le channelId est toujours le channel actuel
+        const threadId = interaction.channelId;
+
+        logger.debug('Game button clicked:', {
+            customId,
+            action,
+            type,
+            threadId,
+            userId: interaction.user.id
+        });
 
         if (action !== 'game') return;
 
@@ -71,7 +82,14 @@ async function handleGameButton(interaction) {
 
         // Vérifier que l'utilisateur a une partie active dans ce thread
         const activeGame = gameEngine.getActiveGame(threadId);
+
         if (!activeGame || activeGame.userId !== interaction.user.id) {
+            logger.warn('Game button click rejected:', {
+                hasActiveGame: !!activeGame,
+                activeGameUserId: activeGame?.userId,
+                requestUserId: interaction.user.id
+            });
+
             await interaction.reply({
                 content: '❌ Cette partie ne vous appartient pas ou n\'est plus active.',
                 flags: MessageFlags.Ephemeral
@@ -207,12 +225,12 @@ async function handleAbandonButton(interaction, threadId, gameState) {
         );
 
         const confirmButton = new ButtonBuilder()
-            .setCustomId(`confirm_abandon_${threadId}`)
+            .setCustomId('confirm_abandon')
             .setLabel('✅ Oui, abandonner')
             .setStyle(ButtonStyle.Danger);
 
         const cancelButton = new ButtonBuilder()
-            .setCustomId(`cancel_abandon_${threadId}`)
+            .setCustomId('cancel_abandon')
             .setLabel('❌ Annuler')
             .setStyle(ButtonStyle.Secondary);
 
@@ -227,7 +245,7 @@ async function handleAbandonButton(interaction, threadId, gameState) {
         // Créer un collector pour les boutons de confirmation
         const filter = (i) => {
             return i.user.id === interaction.user.id &&
-                (i.customId === `confirm_abandon_${threadId}` || i.customId === `cancel_abandon_${threadId}`);
+                (i.customId === 'confirm_abandon' || i.customId === 'cancel_abandon');
         };
 
         const collector = interaction.channel.createMessageComponentCollector({
@@ -237,7 +255,7 @@ async function handleAbandonButton(interaction, threadId, gameState) {
         });
 
         collector.on('collect', async(confirmInteraction) => {
-            if (confirmInteraction.customId === `cancel_abandon_${threadId}`) {
+            if (confirmInteraction.customId === 'cancel_abandon') {
                 await confirmInteraction.update({
                     content: '✅ Abandon annulé - Continuez votre partie !',
                     embeds: [],
