@@ -56,7 +56,13 @@ module.exports = {
 async function handleGameButton(interaction) {
     try {
         const customId = interaction.customId;
-        const [action, type, threadId] = customId.split('_');
+
+        // Parser le customId de manière robuste
+        // Format: game_TYPE_THREADID (où THREADID peut contenir des _)
+        const parts = customId.split('_');
+        const action = parts[0];
+        const type = parts[1];
+        const threadId = parts.slice(2).join('_'); // Rejoindre le reste en cas de _ dans le threadId
 
         if (action !== 'game') return;
 
@@ -253,6 +259,34 @@ async function handleAbandonButton(interaction, threadId, gameState) {
 
                 // Envoyer le message d'abandon dans le thread
                 await interaction.channel.send({ embeds: [abandonEmbed] });
+
+                // Synchroniser les rôles si des points ont été gagnés
+                if (result.score && result.score.totalPoints > 0 && interaction.guild) {
+                    try {
+                        const playerManager = new PlayerManager();
+                        const guildId = interaction.guild.id;
+                        const userId = interaction.user.id;
+
+                        const playerStats = await playerManager.getPlayerWithRanking(userId, guildId);
+
+                        if (playerStats) {
+                            const prestigePoints = playerStats.prestigePoints || playerStats.prestige_points || 0;
+                            const prestigeLevel = playerStats.prestigeLevel || playerStats.prestige_level || 0;
+
+                            const currentLevel = await levelSystem.getPlayerLevelWithPrestige(prestigePoints, prestigeLevel);
+                            const currentLevelNumber = currentLevel.levelIndex + 1;
+
+                            await roleManager.syncUserRoles(
+                                interaction.guild,
+                                userId,
+                                currentLevelNumber,
+                                prestigeLevel
+                            );
+                        }
+                    } catch (roleError) {
+                        logger.error('Error syncing roles after abandon:', roleError);
+                    }
+                }
 
                 await confirmInteraction.update({
                     content: '✅ Partie abandonnée avec succès.',

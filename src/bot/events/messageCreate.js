@@ -22,7 +22,11 @@ module.exports = {
         try {
             // Traiter la réponse du joueur
             const result = await gameEngine.processGuess(message.channelId, message.content);
-            await handleGameResult(message, result, activeGame);
+
+            // Récupérer le gameState mis à jour après processGuess
+            const updatedGameState = gameEngine.getActiveGame(message.channelId);
+
+            await handleGameResult(message, result, updatedGameState);
 
         } catch (error) {
             logger.error('Error processing message in game:', {
