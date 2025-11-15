@@ -14,6 +14,35 @@ module.exports = {
         try {
             logger.debug('Starting guesscar command execution', { userId: interaction.user.id });
 
+            // Différer la réponse IMMÉDIATEMENT, avant toute autre opération
+            // Cela évite les problèmes de timing avec Discord
+            try {
+                if (!interaction.replied && !interaction.deferred) {
+                    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+                    logger.debug('Reply deferred successfully', { userId: interaction.user.id });
+                }
+            } catch (deferError) {
+                // Si l'interaction est déjà acknowledgée, on continue quand même
+                // mais on ne pourra pas répondre normalement
+                logger.warn('Failed to defer reply (interaction may be expired or already acknowledged):', {
+                    userId: interaction.user.id,
+                    error: deferError.message,
+                    code: deferError.code
+                });
+
+                // Si c'est une erreur "already acknowledged" ou "unknown interaction", on abandonne
+                if (deferError.code === 40060 || deferError.code === 10062) {
+                    logger.error('Cannot proceed - interaction is invalid', {
+                        userId: interaction.user.id,
+                        code: deferError.code
+                    });
+                    return;
+                }
+
+                // Pour d'autres erreurs, on tente de continuer
+                throw deferError;
+            }
+
             // Récupérer l'instance du GameEngine
             const gameEngine = GameEngineManager.getInstance();
 
@@ -27,23 +56,7 @@ module.exports = {
                     `Vous avez déjà une partie en cours dans <#${existingGame.threadId}> !`
                 );
 
-                // Vérifier si l'interaction n'a pas déjà été répondue
-                if (!interaction.replied && !interaction.deferred) {
-                    await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
-                }
-                return;
-            }
-
-            // Différer la réponse pour éviter le timeout
-            logger.debug('Deferring reply', { userId: interaction.user.id });
-            if (!interaction.replied && !interaction.deferred) {
-                await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-            } else {
-                logger.warn('Cannot defer reply - interaction already responded', {
-                    userId: interaction.user.id,
-                    replied: interaction.replied,
-                    deferred: interaction.deferred
-                });
+                await interaction.editReply({ embeds: [errorEmbed] });
                 return;
             }
 
@@ -103,23 +116,30 @@ module.exports = {
                 }
             });
 
-            const errorEmbed = EmbedBuilder.createErrorEmbed(
-                'Erreur',
-                'Impossible de créer une partie pour le moment. Veuillez réessayer.'
-            );
-
+            // Essayer de répondre à l'utilisateur avec l'erreur
             try {
-                if (interaction.deferred) {
+                const errorEmbed = EmbedBuilder.createErrorEmbed(
+                    'Erreur',
+                    'Impossible de créer une partie pour le moment. Veuillez réessayer.'
+                );
+
+                // Comme on a defer au début, on devrait toujours pouvoir utiliser editReply
+                if (interaction.deferred && !interaction.replied) {
                     await interaction.editReply({ embeds: [errorEmbed] });
-                } else if (!interaction.replied) {
+                } else if (!interaction.replied && !interaction.deferred) {
                     await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
                 } else {
-                    logger.warn('Cannot send error message - interaction already replied', { userId: interaction.user.id });
+                    logger.warn('Cannot send error message - interaction already handled', {
+                        userId: interaction.user.id,
+                        replied: interaction.replied,
+                        deferred: interaction.deferred
+                    });
                 }
             } catch (replyError) {
                 logger.error('Failed to send error message:', {
                     userId: interaction.user.id,
-                    error: replyError.message
+                    error: replyError.message,
+                    code: replyError.code
                 });
             }
         }
