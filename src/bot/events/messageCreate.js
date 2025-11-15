@@ -1,6 +1,9 @@
 const { Events } = require('discord.js');
 const GameEngineManager = require('../../core/game/GameEngineManager');
 const EmbedBuilder = require('../utils/embedBuilder');
+const roleManager = require('../../core/roles/RoleManager');
+const PlayerManager = require('../../core/player/PlayerManager');
+const levelSystem = require('../../core/levels/LevelSystem');
 const logger = require('../../shared/utils/logger');
 
 module.exports = {
@@ -73,6 +76,38 @@ async function handleGameResult(message, result, gameState) {
         );
         embedResponse = { embeds: [winEmbed] }; // Pas de boutons pour une partie terminée
         shouldCloseThread = true;
+
+        // Synchroniser les rôles Discord après la victoire
+        try {
+            if (message.guild) {
+                const playerManager = new PlayerManager();
+                const guildId = message.guild.id;
+                const userId = message.author.id;
+
+                // Récupérer les stats mises à jour du joueur
+                const playerStats = await playerManager.getPlayerWithRanking(userId, guildId);
+
+                if (playerStats) {
+                    const prestigePoints = playerStats.prestigePoints || playerStats.prestige_points || 0;
+                    const prestigeLevel = playerStats.prestigeLevel || playerStats.prestige_level || 0;
+
+                    // Calculer le niveau actuel
+                    const currentLevel = await levelSystem.getPlayerLevelWithPrestige(prestigePoints, prestigeLevel);
+                    const currentLevelNumber = currentLevel.levelIndex + 1;
+
+                    // Mettre à jour les rôles Discord
+                    await roleManager.syncUserRoles(
+                        message.guild,
+                        userId,
+                        currentLevelNumber,
+                        prestigeLevel
+                    );
+                }
+            }
+        } catch (error) {
+            logger.error('Error syncing roles after game completion:', error);
+            // Ne pas interrompre le flux du jeu si la synchro des rôles échoue
+        }
         break;
     }
 
@@ -96,6 +131,38 @@ async function handleGameResult(message, result, gameState) {
         }
         embedResponse = { embeds: [gameOverEmbed] }; // Pas de boutons
         shouldCloseThread = true;
+
+        // Synchroniser les rôles Discord même en cas de game over (peut avoir des points partiels)
+        try {
+            if (message.guild && result.score && result.score.totalPoints > 0) {
+                const playerManager = new PlayerManager();
+                const guildId = message.guild.id;
+                const userId = message.author.id;
+
+                // Récupérer les stats mises à jour du joueur
+                const playerStats = await playerManager.getPlayerWithRanking(userId, guildId);
+
+                if (playerStats) {
+                    const prestigePoints = playerStats.prestigePoints || playerStats.prestige_points || 0;
+                    const prestigeLevel = playerStats.prestigeLevel || playerStats.prestige_level || 0;
+
+                    // Calculer le niveau actuel
+                    const currentLevel = await levelSystem.getPlayerLevelWithPrestige(prestigePoints, prestigeLevel);
+                    const currentLevelNumber = currentLevel.levelIndex + 1;
+
+                    // Mettre à jour les rôles Discord
+                    await roleManager.syncUserRoles(
+                        message.guild,
+                        userId,
+                        currentLevelNumber,
+                        prestigeLevel
+                    );
+                }
+            }
+        } catch (error) {
+            logger.error('Error syncing roles after game over:', error);
+            // Ne pas interrompre le flux du jeu si la synchro des rôles échoue
+        }
         break; }
 
     case 'incorrect':

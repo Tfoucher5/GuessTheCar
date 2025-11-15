@@ -6,7 +6,8 @@ module.exports = {
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMembers // Requis pour la gestion des rôles
     ],
     restVersion: '10'
 };
