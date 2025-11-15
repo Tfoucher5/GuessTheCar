@@ -2,6 +2,7 @@ const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Embed
 const PlayerManager = require('../../../core/player/PlayerManager');
 const prestigeSystem = require('../../../core/prestige/PrestigeSystem');
 const levelSystem = require('../../../core/levels/LevelSystem');
+const roleManager = require('../../../core/roles/RoleManager');
 const logger = require('../../../shared/utils/logger');
 
 module.exports = {
@@ -141,8 +142,21 @@ module.exports = {
                 });
 
                 if (confirmation.customId === 'prestige_confirm') {
+                    // Acquitter immédiatement l'interaction pour éviter le timeout
+                    await confirmation.deferUpdate();
+
                     // Faire prestigier le joueur
                     const result = await playerManager.prestigePlayer(userId, guildId);
+
+                    // Mettre à jour les rôles Discord (niveau 1 après prestige)
+                    if (interaction.guild) {
+                        await roleManager.syncUserRoles(
+                            interaction.guild,
+                            userId,
+                            1, // Niveau 1 après prestige
+                            result.newPrestigeLevel
+                        );
+                    }
 
                     const successEmbed = new EmbedBuilder()
                         .setColor('#00FF00')
@@ -152,12 +166,13 @@ module.exports = {
                             `Vous êtes maintenant **${nextPrestige.emoji} Prestige ${result.newPrestigeLevel} - ${nextPrestige.name}** !\n\n` +
                             `🔄 Vous recommencez au niveau 1\n` +
                             `⚡ Difficulté: **${nextPrestige.multiplier}x** les points requis\n` +
-                            `💎 Total historique: **${playerStats.total_points.toLocaleString()} points**\n\n` +
+                            `💎 Total historique: **${playerStats.total_points.toLocaleString()} points**\n` +
+                            `🎭 Vos rôles Discord ont été mis à jour !\n\n` +
                             `**Bonne chance pour cette nouvelle aventure !** 🚀`
                         )
                         .setTimestamp();
 
-                    await confirmation.update({
+                    await confirmation.editReply({
                         embeds: [successEmbed],
                         components: []
                     });

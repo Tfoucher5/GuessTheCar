@@ -56,22 +56,83 @@ module.exports = {
 async function handleGameButton(interaction) {
     try {
         const customId = interaction.customId;
-        const [action, type, threadId] = customId.split('_');
+
+        // Parser le type de bouton depuis le customId
+        // Format: game_TYPE_THREADID
+        const parts = customId.split('_');
+        const action = parts[0];
+        const type = parts[1];
+
+        // IMPORTANT : Utiliser interaction.channelId au lieu de parser le threadId
+        // C'est plus fiable car le channelId est toujours le channel actuel
+        const threadId = interaction.channelId;
+
+        logger.debug('Game button clicked:', {
+            customId,
+            action,
+            type,
+            threadId,
+            userId: interaction.user.id,
+            channel: {
+                id: interaction.channel?.id,
+                type: interaction.channel?.type,
+                isThread: interaction.channel?.isThread()
+            }
+        });
 
         if (action !== 'game') return;
 
         // Récupérer l'instance du GameEngine
         const gameEngine = GameEngineManager.getInstance();
 
+        // Logging détaillé pour diagnostiquer le problème
+        const allActiveGames = gameEngine.getAllActiveGames();
+        logger.debug('Active games status:', {
+            totalActiveGames: allActiveGames.length,
+            activeGameThreadIds: allActiveGames.map(g => g.threadId),
+            requestedThreadId: threadId
+        });
+
         // Vérifier que l'utilisateur a une partie active dans ce thread
         const activeGame = gameEngine.getActiveGame(threadId);
-        if (!activeGame || activeGame.userId !== interaction.user.id) {
+
+        if (!activeGame) {
+            logger.error('No active game found for thread:', {
+                requestedThreadId: threadId,
+                userId: interaction.user.id,
+                allActiveGames: allActiveGames.map(g => ({
+                    threadId: g.threadId,
+                    userId: g.gameState.userId,
+                    username: g.gameState.username
+                }))
+            });
+
             await interaction.reply({
-                content: '❌ Cette partie ne vous appartient pas ou n\'est plus active.',
+                content: '❌ Aucune partie active trouvée dans ce fil. La partie a peut-être expiré.',
                 flags: MessageFlags.Ephemeral
             });
             return;
         }
+
+        if (activeGame.userId !== interaction.user.id) {
+            logger.warn('Game belongs to different user:', {
+                gameUserId: activeGame.userId,
+                requestUserId: interaction.user.id,
+                threadId: threadId
+            });
+
+            await interaction.reply({
+                content: '❌ Cette partie ne vous appartient pas.',
+                flags: MessageFlags.Ephemeral
+            });
+            return;
+        }
+
+        logger.debug('Game button validation passed:', {
+            threadId,
+            userId: interaction.user.id,
+            buttonType: type
+        });
 
         // Traiter selon le type de bouton
         switch (type) {
@@ -119,14 +180,17 @@ async function handleHintButton(interaction, threadId, gameState) {
         const gameEngine = GameEngineManager.getInstance();
         const result = gameEngine.getHint(threadId);
 
-        const hintEmbed = EmbedBuilder.createGameEmbed(gameState, {
+        // Récupérer le gameState mis à jour après l'indice
+        const updatedGameState = gameEngine.getActiveGame(threadId);
+
+        const hintEmbed = EmbedBuilder.createGameEmbed(updatedGameState, {
             color: '#FFA500',
             title: '💡 Indice',
             description: result.message
         });
 
         // Mettre à jour les boutons avec le nouvel état
-        const updatedButtons = EmbedBuilder.updateGameButtons(gameState);
+        const updatedButtons = EmbedBuilder.updateGameButtons(updatedGameState);
 
         await interaction.reply({
             embeds: [hintEmbed],
@@ -198,12 +262,12 @@ async function handleAbandonButton(interaction, threadId, gameState) {
         );
 
         const confirmButton = new ButtonBuilder()
-            .setCustomId(`confirm_abandon_${threadId}`)
+            .setCustomId('confirm_abandon')
             .setLabel('✅ Oui, abandonner')
             .setStyle(ButtonStyle.Danger);
 
         const cancelButton = new ButtonBuilder()
-            .setCustomId(`cancel_abandon_${threadId}`)
+            .setCustomId('cancel_abandon')
             .setLabel('❌ Annuler')
             .setStyle(ButtonStyle.Secondary);
 
@@ -218,7 +282,7 @@ async function handleAbandonButton(interaction, threadId, gameState) {
         // Créer un collector pour les boutons de confirmation
         const filter = (i) => {
             return i.user.id === interaction.user.id &&
-                (i.customId === `confirm_abandon_${threadId}` || i.customId === `cancel_abandon_${threadId}`);
+                (i.customId === 'confirm_abandon' || i.customId === 'cancel_abandon');
         };
 
         const collector = interaction.channel.createMessageComponentCollector({
@@ -228,7 +292,7 @@ async function handleAbandonButton(interaction, threadId, gameState) {
         });
 
         collector.on('collect', async(confirmInteraction) => {
-            if (confirmInteraction.customId === `cancel_abandon_${threadId}`) {
+            if (confirmInteraction.customId === 'cancel_abandon') {
                 await confirmInteraction.update({
                     content: '✅ Abandon annulé - Continuez votre partie !',
                     embeds: [],
@@ -250,6 +314,34 @@ async function handleAbandonButton(interaction, threadId, gameState) {
 
                 // Envoyer le message d'abandon dans le thread
                 await interaction.channel.send({ embeds: [abandonEmbed] });
+
+                // Synchroniser les rôles si des points ont été gagnés
+                if (result.score && result.score.totalPoints > 0 && interaction.guild) {
+                    try {
+                        const playerManager = new PlayerManager();
+                        const guildId = interaction.guild.id;
+                        const userId = interaction.user.id;
+
+                        const playerStats = await playerManager.getPlayerWithRanking(userId, guildId);
+
+                        if (playerStats) {
+                            const prestigePoints = playerStats.prestigePoints || playerStats.prestige_points || 0;
+                            const prestigeLevel = playerStats.prestigeLevel || playerStats.prestige_level || 0;
+
+                            const currentLevel = await levelSystem.getPlayerLevelWithPrestige(prestigePoints, prestigeLevel);
+                            const currentLevelNumber = currentLevel.levelIndex + 1;
+
+                            await roleManager.syncUserRoles(
+                                interaction.guild,
+                                userId,
+                                currentLevelNumber,
+                                prestigeLevel
+                            );
+                        }
+                    } catch (roleError) {
+                        logger.error('Error syncing roles after abandon:', roleError);
+                    }
+                }
 
                 await confirmInteraction.update({
                     content: '✅ Partie abandonnée avec succès.',

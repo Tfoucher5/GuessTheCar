@@ -1,6 +1,9 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const GameEngineManager = require('../../../core/game/GameEngineManager');
 const EmbedBuilder = require('../../utils/embedBuilder');
+const roleManager = require('../../core/roles/RoleManager');
+const PlayerManager = require('../../core/player/PlayerManager');
+const levelSystem = require('../../core/levels/LevelSystem');
 const logger = require('../../../shared/utils/logger');
 module.exports = {
     data: new SlashCommandBuilder()
@@ -31,6 +34,34 @@ module.exports = {
 
             // Abandonner la partie
             const result = await gameEngine.abandonGame(threadId);
+
+            // Synchroniser les rôles si des points ont été gagnés
+            if (result.score && result.score.totalPoints > 0 && interaction.guild) {
+                try {
+                    const playerManager = new PlayerManager();
+                    const guildId = interaction.guild.id;
+                    const userId = interaction.user.id;
+
+                    const playerStats = await playerManager.getPlayerWithRanking(userId, guildId);
+
+                    if (playerStats) {
+                        const prestigePoints = playerStats.prestigePoints || playerStats.prestige_points || 0;
+                        const prestigeLevel = playerStats.prestigeLevel || playerStats.prestige_level || 0;
+
+                        const currentLevel = await levelSystem.getPlayerLevelWithPrestige(prestigePoints, prestigeLevel);
+                        const currentLevelNumber = currentLevel.levelIndex + 1;
+
+                        await roleManager.syncUserRoles(
+                            interaction.guild,
+                            userId,
+                            currentLevelNumber,
+                            prestigeLevel
+                        );
+                    }
+                } catch (roleError) {
+                    logger.error('Error syncing roles after abandon command:', roleError);
+                }
+            }
 
             // Envoyer le message dans le thread de jeu
             try {
