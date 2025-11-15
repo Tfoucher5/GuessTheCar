@@ -12,30 +12,32 @@ Le bot GuessTheCar attribue automatiquement des rôles Discord à vos membres en
 
 Les rôles de prestige sont attribués en fonction du niveau de prestige du joueur :
 
-| Prestige | Nom du rôle | Couleur |
-|----------|-------------|---------|
-| 0 | `[GuessTheCar] Normal` | Gris (#808080) |
-| 1 | `[GuessTheCar] Bronze` | Bronze (#CD7F32) |
-| 2 | `[GuessTheCar] Bronze II` | Bronze foncé (#B87333) |
-| 3 | `[GuessTheCar] Argent` | Argent (#C0C0C0) |
-| 4 | `[GuessTheCar] Argent II` | Argent foncé (#A8A8A8) |
-| 5 | `[GuessTheCar] Or` | Or (#FFD700) |
-| 6 | `[GuessTheCar] Or II` | Or foncé (#FFA500) |
-| 7 | `[GuessTheCar] Diamant` | Diamant (#B9F2FF) |
-| 8 | `[GuessTheCar] Diamant II` | Diamant foncé (#00CED1) |
-| 9 | `[GuessTheCar] Maître` | Violet (#9400D3) |
-| 10 | `[GuessTheCar] LÉGENDE` | Rouge (#FF0000) |
+| Prestige | Nom du rôle | Couleur | Position |
+|----------|-------------|---------|----------|
+| 10 | `LÉGENDE` | Rouge (#FF0000) | ⬆️ Plus haut |
+| 9 | `Maître` | Violet (#9400D3) | |
+| 8 | `Diamant II` | Diamant foncé (#00CED1) | |
+| 7 | `Diamant` | Diamant (#B9F2FF) | |
+| 6 | `Or II` | Or foncé (#FFA500) | |
+| 5 | `Or` | Or (#FFD700) | |
+| 4 | `Argent II` | Argent foncé (#A8A8A8) | |
+| 3 | `Argent` | Argent (#C0C0C0) | |
+| 2 | `Bronze II` | Bronze foncé (#B87333) | |
+| 1 | `Bronze` | Bronze (#CD7F32) | |
+| 0 | `Normal` | Gris (#808080) | ⬇️ Plus bas |
 
 ### Rôles de Niveau
 
 Les rôles de niveau sont attribués par paliers :
 
-| Niveau | Nom du rôle | Couleur |
-|--------|-------------|---------|
-| 5+ | `[GuessTheCar] Niveau 5+` | Gris-bleu (#95A5A6) |
-| 10+ | `[GuessTheCar] Niveau 10+` | Bleu (#3498DB) |
-| 15+ | `[GuessTheCar] Niveau 15+` | Violet (#9B59B6) |
-| 20 | `[GuessTheCar] Niveau 20 (Max)` | Rouge (#E74C3C) |
+| Niveau | Nom du rôle | Couleur | Position |
+|--------|-------------|---------|----------|
+| 20 | `Niveau 20 (Max)` | Rouge (#E74C3C) | ⬆️ Plus haut |
+| 15+ | `Niveau 15+` | Violet (#9B59B6) | |
+| 10+ | `Niveau 10+` | Bleu (#3498DB) | |
+| 5+ | `Niveau 5+` | Gris-bleu (#95A5A6) | ⬇️ Plus bas |
+
+**Note** : Les rôles sont organisés hiérarchiquement du plus prestigieux (en haut) au moins prestigieux (en bas) dans votre liste de membres Discord.
 
 ## Configuration requise
 
@@ -83,8 +85,9 @@ Dans le [Discord Developer Portal](https://discord.com/developers/applications) 
 
 Pour que le bot puisse attribuer des rôles, assurez-vous que :
 
-1. Le rôle du bot est **plus haut** dans la hiérarchie que les rôles `[GuessTheCar]`
-2. Les rôles `[GuessTheCar]` sont créés automatiquement au premier lancement
+1. Le rôle du bot est **plus haut** dans la hiérarchie que les rôles de prestige et de niveau
+2. Les rôles sont créés automatiquement au premier lancement dans l'ordre hiérarchique correct
+3. Les rôles utilisent `hoist: true` pour être affichés séparément dans la liste des membres
 
 Vous pouvez réorganiser les rôles dans : **Paramètres du serveur → Rôles**
 
@@ -100,15 +103,19 @@ Les rôles sont automatiquement synchronisés dans les situations suivantes :
 
 ### Synchronisation manuelle
 
-En cas de problème, vous pouvez synchroniser manuellement les rôles avec :
+En cas de problème, les **administrateurs** peuvent synchroniser manuellement les rôles avec :
 
 ```
 /syncroles
 ```
 
+**Permissions requises** : Administrateur
+
 Options :
 - Sans option : Synchronise vos propres rôles
-- Avec `@utilisateur` : Synchronise les rôles d'un utilisateur spécifique (nécessite la permission "Gérer les rôles")
+- Avec `@utilisateur` : Synchronise les rôles d'un utilisateur spécifique
+
+**Note** : Cette commande est réservée aux administrateurs pour éviter le spam et les abus.
 
 ## Personnalisation
 
@@ -149,8 +156,8 @@ Pour désactiver temporairement le système de rôles sans modifier le code :
 2. ✅ **Vérifiez que vous êtes sur le bon serveur** (l'ID doit correspondre)
 3. ✅ Vérifiez que le bot a la permission "Gérer les rôles"
 4. ✅ Vérifiez que l'intent "Server Members" est activé dans le Developer Portal
-5. ✅ Vérifiez que le rôle du bot est plus haut que les rôles `[GuessTheCar]`
-6. ✅ Essayez `/syncroles` pour forcer la synchronisation
+5. ✅ Vérifiez que le rôle du bot est plus haut que les rôles de prestige et de niveau
+6. ✅ Essayez `/syncroles` (admin uniquement) pour forcer la synchronisation
 
 ### Les rôles ne sont pas mis à jour après une partie
 
@@ -184,14 +191,16 @@ Pour toute question ou problème avec le système de rôles :
 
 ## Notes techniques
 
-- Les rôles sont préfixés par `[GuessTheCar]` pour éviter les conflits avec d'autres rôles
+- Les rôles n'ont **pas de préfixe** - ils utilisent des noms simples comme `LÉGENDE`, `Or`, `Niveau 20 (Max)`
 - Un joueur ne peut avoir qu'**un seul rôle de prestige** et **un seul rôle de niveau** à la fois
-- Les rôles sont créés automatiquement s'ils n'existent pas
+- Les rôles sont créés automatiquement dans l'ordre hiérarchique (du plus prestigieux au moins prestigieux)
+- Les rôles utilisent `hoist: true` pour être affichés séparément dans la liste des membres
 - La synchronisation des rôles est non-bloquante : une erreur de rôle n'interrompra pas le jeu
 - **La gestion des rôles est limitée au serveur officiel uniquement** pour éviter :
   - La pollution de serveurs tiers avec des rôles non désirés
   - Des conflits de permissions sur d'autres serveurs
   - Une charge inutile sur le bot
+- La commande `/syncroles` est **réservée aux administrateurs** pour éviter le spam
 
 ## Multi-serveurs
 

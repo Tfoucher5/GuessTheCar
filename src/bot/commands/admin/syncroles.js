@@ -7,17 +7,18 @@ const logger = require('../../../shared/utils/logger');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('syncroles')
-        .setDescription('Synchronise les rôles Discord avec les niveaux de jeu')
+        .setDescription('Synchronise les rôles Discord avec les niveaux de jeu (Admin uniquement)')
         .addUserOption(option =>
             option
                 .setName('utilisateur')
                 .setDescription('L\'utilisateur à synchroniser (admin uniquement)')
                 .setRequired(false)
         )
-        .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
     async execute(interaction) {
         try {
+            // Defer immédiatement pour éviter le timeout
             await interaction.deferReply({ ephemeral: true });
 
             if (!interaction.guild) {
@@ -38,14 +39,6 @@ module.exports = {
             const targetUser = interaction.options.getUser('utilisateur');
             const userId = targetUser ? targetUser.id : interaction.user.id;
             const username = targetUser ? targetUser.username : interaction.user.username;
-
-            // Vérifier si l'utilisateur a la permission de synchroniser d'autres utilisateurs
-            if (targetUser && !interaction.member.permissions.has(PermissionFlagsBits.ManageRoles)) {
-                return await interaction.editReply({
-                    content: '❌ Vous n\'avez pas la permission de synchroniser les rôles d\'autres utilisateurs.',
-                    ephemeral: true
-                });
-            }
 
             const playerManager = new PlayerManager();
             const guildId = interaction.guild.id;
@@ -114,3 +107,4 @@ module.exports = {
         }
     }
 };
+

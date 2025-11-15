@@ -25,15 +25,13 @@ class RoleManager {
         };
 
         // Configuration des rôles par niveau (tous les 5 niveaux)
+        // Ordre inversé pour création hiérarchique (plus haut = plus important)
         this.levelMilestones = [
-            { level: 5, name: 'Niveau 5+', color: '#95A5A6' },
-            { level: 10, name: 'Niveau 10+', color: '#3498DB' },
-            { level: 15, name: 'Niveau 15+', color: '#9B59B6' },
-            { level: 20, name: 'Niveau 20 (Max)', color: '#E74C3C' }
+            { level: 20, name: 'Niveau 20 (Max)', color: '#E74C3C', position: 1 },
+            { level: 15, name: 'Niveau 15+', color: '#9B59B6', position: 2 },
+            { level: 10, name: 'Niveau 10+', color: '#3498DB', position: 3 },
+            { level: 5, name: 'Niveau 5+', color: '#95A5A6', position: 4 }
         ];
-
-        // Préfixe pour identifier les rôles gérés par le bot
-        this.rolePrefix = '[GuessTheCar]';
     }
 
     /**
@@ -99,13 +97,12 @@ class RoleManager {
             const prestigeConfig = this.prestigeRoles[prestigeLevel];
             if (!prestigeConfig) return;
 
-            const targetRoleName = `${this.rolePrefix} ${prestigeConfig.name}`;
+            const targetRoleName = prestigeConfig.name;
 
             // Retirer tous les anciens rôles de prestige
             const prestigeRolesToRemove = member.roles.cache.filter(role =>
-                role.name.startsWith(`${this.rolePrefix} `) &&
                 Object.values(this.prestigeRoles).some(p =>
-                    role.name === `${this.rolePrefix} ${p.name}`
+                    role.name === p.name
                 )
             );
 
@@ -133,17 +130,18 @@ class RoleManager {
     async updateLevelRole(guild, member, level) {
         try {
             // Trouver le palier de niveau approprié
+            // Chercher de bas en haut (la liste est maintenant triée de haut en bas)
             const milestone = [...this.levelMilestones]
                 .reverse()
                 .find(m => level >= m.level);
 
             if (!milestone) return;
 
-            const targetRoleName = `${this.rolePrefix} ${milestone.name}`;
+            const targetRoleName = milestone.name;
 
             // Retirer tous les anciens rôles de niveau
             const levelRolesToRemove = member.roles.cache.filter(role =>
-                role.name.startsWith(`${this.rolePrefix} Niveau `)
+                this.levelMilestones.some(m => role.name === m.name)
             );
 
             for (const role of levelRolesToRemove.values()) {
@@ -166,12 +164,16 @@ class RoleManager {
 
     /**
      * S'assure que tous les rôles nécessaires existent sur le serveur
+     * Créé dans l'ordre hiérarchique (plus haut = plus prestigieux)
      */
     async ensureRolesExist(guild) {
         try {
-            // Créer les rôles de prestige s'ils n'existent pas
-            for (const [level, config] of Object.entries(this.prestigeRoles)) {
-                const roleName = `${this.rolePrefix} ${config.name}`;
+            // Créer les rôles de prestige dans l'ordre décroissant (LÉGENDE -> Normal)
+            // Pour que LÉGENDE soit en haut de la hiérarchie
+            const prestigeLevels = Object.entries(this.prestigeRoles).reverse();
+
+            for (const [level, config] of prestigeLevels) {
+                const roleName = config.name;
                 const existingRole = guild.roles.cache.find(r => r.name === roleName);
 
                 if (!existingRole) {
@@ -179,15 +181,17 @@ class RoleManager {
                         name: roleName,
                         color: config.color,
                         reason: 'Rôle de prestige GuessTheCar',
-                        mentionable: false
+                        mentionable: false,
+                        hoist: true // Afficher séparément dans la liste des membres
                     });
                     logger.info(`Created prestige role: ${roleName}`);
                 }
             }
 
-            // Créer les rôles de niveau s'ils n'existent pas
+            // Créer les rôles de niveau dans l'ordre (déjà trié de haut en bas)
+            // Niveau 20 -> Niveau 5
             for (const milestone of this.levelMilestones) {
-                const roleName = `${this.rolePrefix} ${milestone.name}`;
+                const roleName = milestone.name;
                 const existingRole = guild.roles.cache.find(r => r.name === roleName);
 
                 if (!existingRole) {
@@ -195,7 +199,8 @@ class RoleManager {
                         name: roleName,
                         color: milestone.color,
                         reason: 'Rôle de niveau GuessTheCar',
-                        mentionable: false
+                        mentionable: false,
+                        hoist: true // Afficher séparément dans la liste des membres
                     });
                     logger.info(`Created level role: ${roleName}`);
                 }
@@ -211,21 +216,42 @@ class RoleManager {
      */
     async cleanupRoles(guild) {
         try {
-            const botRoles = guild.roles.cache.filter(role =>
-                role.name.startsWith(this.rolePrefix)
+            // Liste de tous les noms de rôles valides
+            const validRoleNames = [
+                ...Object.values(this.prestigeRoles).map(p => p.name),
+                ...this.levelMilestones.map(m => m.name)
+            ];
+
+            // Chercher les anciens rôles avec le préfixe [GuessTheCar]
+            const oldPrefixRoles = guild.roles.cache.filter(role =>
+                role.name.startsWith('[GuessTheCar]')
             );
 
-            for (const role of botRoles.values()) {
-                // Vérifier si le rôle est encore valide
-                const isValidPrestigeRole = Object.values(this.prestigeRoles).some(p =>
-                    role.name === `${this.rolePrefix} ${p.name}`
-                );
-                const isValidLevelRole = this.levelMilestones.some(m =>
-                    role.name === `${this.rolePrefix} ${m.name}`
-                );
+            // Supprimer les anciens rôles avec préfixe
+            for (const role of oldPrefixRoles.values()) {
+                await role.delete('Migration: suppression ancien format de rôle');
+                logger.info(`Deleted old prefixed role: ${role.name}`);
+            }
 
-                // Si le rôle n'est plus valide, le supprimer
-                if (!isValidPrestigeRole && !isValidLevelRole) {
+            // Vérifier les rôles actuels
+            for (const role of guild.roles.cache.values()) {
+                // Si c'est un rôle GuessTheCar mais pas dans la liste valide
+                if (validRoleNames.includes(role.name)) {
+                    continue; // Rôle valide, on garde
+                }
+
+                // Vérifier si c'est un ancien rôle GuessTheCar à supprimer
+                const isOldGuessTheCarRole =
+                    role.name.includes('Normal') ||
+                    role.name.includes('Bronze') ||
+                    role.name.includes('Argent') ||
+                    role.name.includes('Or') ||
+                    role.name.includes('Diamant') ||
+                    role.name.includes('Maître') ||
+                    role.name.includes('LÉGENDE') ||
+                    role.name.includes('Niveau');
+
+                if (isOldGuessTheCarRole && !validRoleNames.includes(role.name)) {
                     await role.delete('Rôle GuessTheCar obsolète');
                     logger.info(`Deleted obsolete role: ${role.name}`);
                 }
