@@ -1,9 +1,6 @@
 
 # 🚗 GuessTheCar — Discord Bot (Archivé & Open‑Source)
 
-https://img.shields.io/badge/Status-Archived-lightgrey
-https://img.shields.io/badge/License-MIT-yellow.svg
-
 **GuessTheCar** est un bot Discord développé pour proposer un jeu de devinettes automobile.  
 Le projet est désormais **archivé**, mais le code source est **public** et **réutilisable librement** sous licence MIT.
 
@@ -53,11 +50,11 @@ Le but : offrir une expérience fun aux passionnés d’automobile.
 | Commande | Description |
 |----------|-------------|
 | `/guesscar` | Lance une nouvelle partie |
-| `/profile` | Affiche les statistiques du joueur |
-| `/leaderboard` | Affiche le classement global |
+| `/profil` | Affiche les statistiques du joueur |
+| `/classement` | Affiche le classement global |
 | `/collection` | Montre les voitures gagnées |
-| `/help` | Liste les commandes et explique les règles |
-| `/giveup` | Abandonne la partie en cours |
+| `/aide` | Liste les commandes et explique les règles |
+| `/abandon` | Abandonne la partie en cours |
 
 ---
 
